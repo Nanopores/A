@@ -380,7 +380,7 @@ def MakeIVData(output, approach = 'mean', delay = 0.7, UseVoltageRange=0):
                     try:
                         ItemExp['STD'][i] = np.sqrt(np.diag(pcov))[2]
                     except RuntimeWarning:
-                        ItemExp['STD'][i] = np.sqrt(np.std(trace))
+                        ItemExp['STD'][i] = np.std(trace)/np.sqrt(len(trace))
                         print('ExpFit: STD of voltage {} failed calculating...'.format(ItemExp['Voltage'][i]))
                 else:
                     print('Exponential Fit on for ' + current + ' failed at V=' + str(ItemExp['Voltage'][0]))
