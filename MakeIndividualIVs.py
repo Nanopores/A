@@ -5,27 +5,28 @@ import Functions as uf
 import pyqtgraph as pg
 import os
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
+import matplotlib
 from tkinter import Tk
 from tkinter.filedialog import askopenfilenames
 from matplotlib.font_manager import FontProperties
 fontP = FontProperties()
 fontP.set_size('small')
 props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
+from matplotlib.ticker import EngFormatter
 Tk().withdraw()
 os.system('''/usr/bin/osascript -e 'tell app "Finder" to set frontmost of process "python" to true' ''')
 
-#filenames = ['/Volumes/backup/2017/Michael/Axopatch/20170512/10mMKClInFlowCellORingPore1mm.dat']
-#filenames = ['/Volumes/Michael/Axopatch/20180430/R17_ph74_KCl_1M_1M_0mW_473nm_IV_3.dat']
 expname = 'All'
 reversePolarity = 0
 
-filenames = askopenfilenames() # show an "Open" dialog box and return the path to the selected file
+filenames=['/Volumes/2018 User Data/Michael/Axopatch/20180627/A2_5_1M_1M_Cis_Trans_GNDonTrans_640nm_0mW_pH74_IV_After_1.dat',
+           '/Volumes/2018 User Data/Michael/Axopatch/20180627/A2_5_1M_1M_Cis_Trans_GNDonTrans_470nm_0mW_pH74_IV_1.dat']
 
+#filenames = askopenfilenames() # show an "Open" dialog box and return the path to the selected file
 for filename in filenames:
     print(filename)
-
     #Make Dir to save images
     output = uf.OpenFile(filename)
     if reversePolarity:
@@ -54,7 +55,7 @@ for filename in filenames:
 
     # Plot IV
     if output['graphene']:
-        figIV2 = plt.figure(3)
+        figIV2 = plt.figure(3, figsize=(10, 10))
         figIV2.clear()
         ax2IV = figIV2.add_subplot(111)
         ax2IV = uf.PlotIV(output, AllData, current='i2', unit=1e9, axis=ax2IV, WithFit=1)
@@ -64,19 +65,14 @@ for filename in filenames:
 
     figIV = plt.figure(2)
     ax1IV = figIV.add_subplot(111)
-    #ax1IV = uf.PlotIV(output, AllData, current='i1', unit=1e9, axis = ax1IV, WithFit = 1, PoreSize=[10, 0.7e-9], useEXP = 0, color ='b',
-    #                  labeltxt='Exponential Fit', Polynomial=0)
-    ax1IV = uf.PlotIV(output, AllData, current='i1', unit=1e9, axis = ax1IV, WithFit = 1, useEXP = 0, color ='y',
+    ax1IV = uf.PlotIV(output, AllData, current='i1', unit=1, axis = ax1IV, WithFit = 1, useEXP = 0, color ='y',
                       labeltxt='MeanFit', PoreSize=[10, 1e-9], title=str(os.path.split(filename)[1]))
+    ax1IV.xaxis.set_major_formatter(EngFormatter(unit='V'))
+    ax1IV.yaxis.set_major_formatter(EngFormatter(unit='A'))
 
     ax1IV.legend(loc='upper center', bbox_to_anchor=(0.8, 0.2),
                  ncol=1, fancybox=True, shadow=True, prop=fontP)
 
     figIV.tight_layout()
-    #Save Figures
-    #plt.show()
-    figIV.savefig(directory + os.sep + str(os.path.split(filename)[1]) + 'IV_i1.png', dpi=300)
-    figIV.savefig(directory + os.sep + str(os.path.split(filename)[1]) + 'IV_i1.eps')
-
-    #plt.show()
+    figIV.savefig(directory + os.sep + str(os.path.split(filename)[1]) + 'IV_i1.pdf', transparent=True)
     figIV.clear()

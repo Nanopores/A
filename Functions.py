@@ -25,10 +25,14 @@ from matplotlib.ticker import EngFormatter
 
 def GetKClConductivity(Conc, Temp):
     p = pkl.load(open('KCl_ConductivityValues.p', 'rb'))
+    if Conc==1.0:
+        Conc = np.uint(1)
     return np.polyval(p[str(Conc)], Temp)
 
 def GetTempFromKClConductivity(Conc, Cond):
     p = pkl.load(open('KCl_ConductivityValues.p', 'rb'))
+    if Conc==1.0:
+        Conc = np.uint(1)
     return (Cond-p[str(Conc)][1])/p[str(Conc)][0]
 
 
@@ -526,7 +530,6 @@ def GetSurfaceChargeFromLeeEquation(s, c, D, G, L, A, B, version=1):
     e = cst.elementary_charge
     Na = cst.Avogadro
     return lDu*(2 * c * Na * 1e3 * e)
-
 def ConductivityFromConductanceModel(L, d, G):
     return G * (4 * L / (np.pi * d ** 2) + 1 / d)
 
@@ -1422,6 +1425,11 @@ def ElectrostaticPotential(T, sigma, Tau=5e18, pK=7.9, pH=11):
 
 def GetTempRedoxPotential(Cdiff=1e-3/1e-1, T=293.15):
     return cst.R * T / cst.physical_constants['Faraday constant'][0] * np.log(Cdiff)
+
+def GetRedoxError(cmax, cmin, ErrorPercent = 0.1, T = 293.15):
+    cmaxErr = cmax*ErrorPercent
+    cminErr = cmin*ErrorPercent
+    return cst.R * T / cst.physical_constants['Faraday constant'][0] * np.sqrt((1/cmax**2 * cmaxErr**2 + 1/cmin**2 * cminErr**2))
 
 ##Result: Negative ion divided by positive ion
 #Goldman–Hodgkin–Katz voltage equation
