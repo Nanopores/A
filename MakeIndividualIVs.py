@@ -21,10 +21,10 @@ os.system('''/usr/bin/osascript -e 'tell app "Finder" to set frontmost of proces
 expname = 'All'
 reversePolarity = 0
 
-filenames=['/Volumes/2018 User Data/Michael/Axopatch/20180627/A2_5_1M_1M_Cis_Trans_GNDonTrans_640nm_0mW_pH74_IV_After_1.dat',
-           '/Volumes/2018 User Data/Michael/Axopatch/20180627/A2_5_1M_1M_Cis_Trans_GNDonTrans_470nm_0mW_pH74_IV_1.dat']
+#filenames=['/Volumes/2018 User Data/Michael/Axopatch/20180627/A2_5_1M_1M_Cis_Trans_GNDonTrans_640nm_0mW_pH74_IV_After_1.dat',
+#           '/Volumes/2018 User Data/Michael/Axopatch/20180627/A2_5_1M_1M_Cis_Trans_GNDonTrans_470nm_0mW_pH74_IV_1.dat']
+filenames = askopenfilenames() # show an "Open" dialog box and return the path to the selected file
 
-#filenames = askopenfilenames() # show an "Open" dialog box and return the path to the selected file
 for filename in filenames:
     print(filename)
     #Make Dir to save images
@@ -38,7 +38,7 @@ for filename in filenames:
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    AllData = uf.MakeIVData(output, delay = 9)#, UseVoltageRange = [-0.4, 0.4])
+    AllData = uf.MakeIVData(output, delay = 3)#, UseVoltageRange = [-0.4, 0.4])
     if AllData == 0:
         print('!!!! No Sweep in: ' + filename)
         continue
@@ -65,14 +65,16 @@ for filename in filenames:
 
     figIV = plt.figure(2)
     ax1IV = figIV.add_subplot(111)
-    ax1IV = uf.PlotIV(output, AllData, current='i1', unit=1, axis = ax1IV, WithFit = 1, useEXP = 0, color ='y',
-                      labeltxt='MeanFit', PoreSize=[10, 1e-9], title=str(os.path.split(filename)[1]))
+    ax1IV = uf.PlotIV(output, AllData, current='i1', unit=1e9, axis = ax1IV, WithFit = 1, useEXP = 0, color ='y',
+                    labeltxt='MeanFit', PoreSize=[10, 1e-9], title=str(os.path.split(filename)[1]))
     ax1IV.xaxis.set_major_formatter(EngFormatter(unit='V'))
     ax1IV.yaxis.set_major_formatter(EngFormatter(unit='A'))
 
     ax1IV.legend(loc='upper center', bbox_to_anchor=(0.8, 0.2),
                  ncol=1, fancybox=True, shadow=True, prop=fontP)
 
-    figIV.tight_layout()
-    figIV.savefig(directory + os.sep + str(os.path.split(filename)[1]) + 'IV_i1.pdf', transparent=True)
+    #figIV.tight_layout()
+    figIV.savefig(directory + os.sep + str(os.path.split(filename)[1]) + 'IV_i1.png', transparent=True)
+    plt.show()
     figIV.clear()
+
