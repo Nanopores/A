@@ -20,7 +20,7 @@ from timeit import default_timer as timer
 import platform
 from scipy.optimize import curve_fit
 from sys import platform
-import pyabf
+#import pyabf
 from matplotlib.ticker import EngFormatter
 
 if not 'verbose' in globals():
