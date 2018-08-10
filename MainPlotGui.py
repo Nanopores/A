@@ -22,6 +22,7 @@ currentFile = ''
 def ChangedFolder():
     global folder
     folder = QtGui.QFileDialog.getExistingDirectory(window, 'Select in which Folder to save your data', os.getcwd())
+    os.chdir(folder)
     file_list = glob.glob(folder + os.sep + '*.dat')
     file_list.sort(key=os.path.getmtime)
     for i in file_list:
