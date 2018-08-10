@@ -65,7 +65,7 @@ for filename in filenames:
 
     figIV = plt.figure(2)
     ax1IV = figIV.add_subplot(111)
-    ax1IV = uf.PlotIV(output, AllData, current='i1', unit=1e9, axis = ax1IV, WithFit = 1, useEXP = 0, color ='y',
+    ax1IV = uf.PlotIV(output, AllData, current='i1', unit=1, axis = ax1IV, WithFit = 1, useEXP = 0, color ='y',
                     labeltxt='MeanFit', PoreSize=[10, 1e-9], title=str(os.path.split(filename)[1]))
     ax1IV.xaxis.set_major_formatter(EngFormatter(unit='V'))
     ax1IV.yaxis.set_major_formatter(EngFormatter(unit='A'))
