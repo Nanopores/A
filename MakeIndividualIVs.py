@@ -70,8 +70,8 @@ for filename in filenames:
     ax1IV.xaxis.set_major_formatter(EngFormatter(unit='V'))
     ax1IV.yaxis.set_major_formatter(EngFormatter(unit='A'))
 
-    ax1IV.legend(loc='upper center', bbox_to_anchor=(0.8, 0.2),
-                 ncol=1, fancybox=True, shadow=True, prop=fontP)
+    ax1IV.legend(loc='upper center', ncol=1,
+                 bbox_to_anchor=(0.8, 0.2), fancybox=True, shadow=True, prop=fontP)
 
     #figIV.tight_layout()
     figIV.savefig(directory + os.sep + str(os.path.split(filename)[1]) + 'IV_i1.png', transparent=True)
