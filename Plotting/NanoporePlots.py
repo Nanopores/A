@@ -48,8 +48,6 @@ def PlotI_tau(current,tau):
 
     axScatter.set_xlabel('Event length (s)')
     axScatter.set_ylabel('current drop (A)')
-
-
     plt.show()
 
 def PlotCurrentTrace(currentTrace,samplerate):
@@ -74,3 +72,4 @@ def PlotCurrentTraceBaseline(before,currentTrace,after,samplerate):
     plt.xlabel('time (s)')
     plt.ylabel('current (A)')
     plt.show()
+
