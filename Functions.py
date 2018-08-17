@@ -23,11 +23,11 @@ from sys import platform
 import pyabf
 from matplotlib.ticker import EngFormatter
 
-if not 'verbose' in globals():
-    verbose = False
-
-verboseprint = print if verbose else lambda *a, **k: None
-
+# if not 'verbose' in globals():
+#     verbose = False
+#
+# verboseprint = print if verbose else lambda *a, **k: None
+#
 
 def GetKClConductivity(Conc, Temp):
     p = pkl.load(open('KCl_ConductivityValues.p', 'rb'))
@@ -218,7 +218,7 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3):
     else:
         datafilename=filename
 
-    verboseprint('Loading file... ' +filename)
+    print('Loading file... ' +filename)
 
     if datafilename[-3::] == 'dat':
         isdat = 1
@@ -226,7 +226,7 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3):
     elif datafilename[-3::] == 'log':
         isdat = 0
         output = ImportChimeraData(datafilename)
-        verboseprint('length: ' + str(len(output['i1raw'])))
+        print('length: ' + str(len(output['i1raw'])))
         if output['type'] is 'ChimeraRaw':  # Lowpass and downsample
             Wn = round(2 * ChimeraLowPass / output['samplerateRaw'], 4)  # [0,1] nyquist frequency
             b, a = signal.bessel(4, Wn, btype='low', analog=False)  # 4-th order digital filter
@@ -235,18 +235,18 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3):
             output['i1'] = scipy.signal.resample(Filt_sig, int(len(output['i1raw']) / ds_factor))
             output['samplerate'] = output['samplerateRaw'] / ds_factor
             output['v1'] = output['v1']*np.ones(len(output['i1']))
-            verboseprint('Samplerate after filtering:' + str(output['samplerate']))
-            verboseprint(len(output['i1']))
+            print('Samplerate after filtering:' + str(output['samplerate']))
+            print(len(output['i1']))
     elif datafilename[-3::] == 'abf':
         output = ImportABF(datafilename)
     st = os.stat(datafilename)
     if platform == 'darwin':
-        verboseprint('Platform Is Darwin')
+        print('Platform Is Darwin')
         output['TimeFileWritten'] = st.st_birthtime
         output['TimeFileLastModified'] = st.st_mtime
         output['ExperimentDuration'] = st.st_mtime - st.st_birthtime
     else:
-        verboseprint('Platform Is WinShit')
+        print('Platform Is WinShit')
         output['TimeFileWritten'] = st.st_ctime
         output['TimeFileLastModified'] = st.st_mtime
         output['ExperimentDuration'] = st.st_mtime - st.st_ctime
