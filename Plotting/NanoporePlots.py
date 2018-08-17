@@ -1,7 +1,10 @@
 ﻿import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.ticker import EngFormatter
 
-
+Amp = EngFormatter(unit='A', places=2)
+Time = EngFormatter(unit='s', places=2)
+Volt = EngFormatter(unit='V', places=2)
 
 
 
@@ -48,7 +51,9 @@ def PlotI_tau(current,tau):
     axHisty.set_ylim(axScatter.get_ylim())
 
     axScatter.set_xlabel('Event length (s)')
-    axScatter.set_ylabel('current drop (A)')
+    axScatter.set_ylabel('current drop (A
+    axScatter.xaxis.set_major_formatter(Time)
+    axScatter.yaxis.set_major_formatter(Amp)
     plt.show()
 
 def PlotCurrentTrace(currentTrace,samplerate):
@@ -73,4 +78,3 @@ def PlotCurrentTraceBaseline(before,currentTrace,after,samplerate):
     plt.xlabel('time (s)')
     plt.ylabel('current (A)')
     plt.show()
-
