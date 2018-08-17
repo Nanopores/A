@@ -29,19 +29,20 @@ def PlotI_tau(current,tau):
     # now determine nice limits by hand:
     extra = 0.1 #0.1 = 10%
     tauRange=np.max(tau)-np.min(tau)
-    currentRange=np.max(current)-np.min(current)
+    currentClean=[x for x in current if str(x)!= 'nan']
+    currentRange=np.max(currentClean)-np.min(currentClean)
     #
     # tauLim = (int(tauMax/binwidth) + 1) * binwidth
     # currentLim = (int(currentMax/binwidth) + 1) * binwidth
 
 
     axScatter.set_xlim((np.min(tau)-extra*tauRange, np.max(tau)+extra*tauRange))
-    axScatter.set_ylim((np.min(current)-extra*currentRange, np.max(current)+extra*currentRange))
+    axScatter.set_ylim((np.min(currentClean)-extra*currentRange, np.max(currentClean)+extra*currentRange))
 
     #tauBins = np.arange(-tauLim, tauLim + binwidth, binwidth)
     #currentBins = np.arange(-currentLim, currentLim + binwidth, binwidth)
     axHistx.hist(tau, bins=10)
-    axHisty.hist(current, bins=10, orientation='horizontal')
+    axHisty.hist(currentClean, bins=10, orientation='horizontal')
 
     axHistx.set_xlim(axScatter.get_xlim())
     axHisty.set_ylim(axScatter.get_ylim())
