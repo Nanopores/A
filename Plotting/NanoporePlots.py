@@ -26,7 +26,7 @@ def PlotI_tau(current,tau):
     axHisty = plt.axes(rect_histy)
 
     # the scatter plot:
-    axScatter.scatter(tau, current, color='coral', marker='o') # added color and marker here to improve aesthetics
+    axScatter.scatter(tau, current, color='tomato', marker='o', s=30, linewidths=0.1, edgecolors='red') # added some stuff here to improve aesthetics
 
     # now determine nice limits by hand:
     extra = 0.1  # 0.1 = 10%
@@ -42,14 +42,14 @@ def PlotI_tau(current,tau):
 
     # tauBins = np.arange(-tauLim, tauLim + binwidth, binwidth)
     # currentBins = np.arange(-currentLim, currentLim + binwidth, binwidth)
-    axHistx.hist(tau, bins=50)
-    axHisty.hist(currentClean, bins=50, orientation='horizontal')   #increased binning here to avoid overlaps in the histogram
+    axHistx.hist(tau, bins=50, color='tomato')
+    axHisty.hist(currentClean, bins=50, orientation='horizontal', color='tomato')   #increased binning here to avoid overlapping bars in the histogram, added color option
 
     axHistx.set_xlim(axScatter.get_xlim())
     axHisty.set_ylim(axScatter.get_ylim())
 
-    axScatter.set_xlabel('Event length')
-    axScatter.set_ylabel('Current drop')
+    axScatter.set_xlabel('Event length (s)')
+    axScatter.set_ylabel('Current drop (A)')
     axScatter.xaxis.set_major_formatter(Time)
     axScatter.yaxis.set_major_formatter(Amp)
     plt.show()
