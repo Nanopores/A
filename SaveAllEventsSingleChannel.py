@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.font_manager import FontProperties
 import pandas as pd
-import MiscParameters as pm
+#import MiscParameters as pm
 from matplotlib.ticker import EngFormatter
 import h5py
 from tkinter.filedialog import askopenfilenames

@@ -15,16 +15,25 @@ coefficients = {'a': 0.999, 'E': 0, 'S': 4, 'eventlengthLimit': 0.5,'minEventLen
 #folder='Z:\lben-commun\2018 User Data\Mike\Raw data\7.August\20180809\P23_1MKClboth_Pyrene_TL_200mV'
 folder = askdirectory()
 
-TranslocationEvents=ED.batcheventdetection(folder,'*.log',coefficients)
-TranslocationEvents.SaveEvents(folder)
+#TranslocationEvents=ED.batcheventdetection(folder,'*.log',coefficients)  #to re-run ananlysis uncomment these
+#TranslocationEvents.SaveEvents(folder) #to re-run ananlysis uncomment these
 
-#TranslocationEvents=ED.LoadEvents(folder)
+TranslocationEvents=ED.LoadEvents(folder) #to load the already run analysis fles, uncomment this
 
 
 LengthList=TranslocationEvents.GetAllLengths()
 meanIDrop=TranslocationEvents.GetAllIdrops()
 PlotI_tau(meanIDrop,LengthList)
 
-#Newevents=TranslocationEvents.GetEventsMinCondition(-1,1.5e-11,0.01,[])
+minCurrent=-400e-12
+maxCurrent=400e-12
+minLength=0
+maxLength=1
+Newevents=TranslocationEvents.GetEventsMinCondition(minCurrent,maxCurrent,minLength,maxLength)
 
-#Newevents.PlotAllEvents()
+LengthList=Newevents.GetAllLengths()
+meanIDrop=Newevents.GetAllIdrops()
+PlotI_tau(meanIDrop,LengthList)
+
+
+Newevents.PlotAllEvents()

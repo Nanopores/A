@@ -78,3 +78,4 @@ def PlotCurrentTraceBaseline(before, currentTrace, after, samplerate):
     plt.xlabel('time (s)')
     plt.ylabel('current (A)')
     plt.show()
+
