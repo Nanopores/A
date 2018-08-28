@@ -51,7 +51,7 @@ def PlotI_tau(current,tau):
     axHisty.set_ylim(axScatter.get_ylim())
 
     axScatter.set_xlabel('Event length (s)')
-    axScatter.set_ylabel('current drop (A
+    axScatter.set_ylabel('current drop (A)')
     axScatter.xaxis.set_major_formatter(Time)
     axScatter.yaxis.set_major_formatter(Amp)
     plt.show()
