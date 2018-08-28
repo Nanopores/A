@@ -19,9 +19,10 @@ import h5py
 from timeit import default_timer as timer
 import platform
 from scipy.optimize import curve_fit
-from sys import platform
+#from sys import platform
 import pyabf
 from matplotlib.ticker import EngFormatter
+from pprint import pprint
 
 # if not 'verbose' in globals():
 #     verbose = False
@@ -198,14 +199,37 @@ def ImportChimeraRaw(datafilename):
     output = {'matfilename': str(os.path.splitext(datafilename)[0]),'i1raw': data, 'v1': np.float64(matfile['SETUP_biasvoltage']), 'samplerateRaw': np.int64(samplerate), 'type': 'ChimeraRaw', 'filename': datafilename, 'graphene': 0}
     return output
 
+def Reshape1DTo2D(inputarray, buffersize):
+    npieces = int(len(inputarray)/buffersize)
+    voltages = np.array([], dtype=np.float64)
+    currents = np.array([], dtype=np.float64)
+
+    for i in range(1, npieces+1):
+        if i % 2 == 1:
+            currents = np.append(currents, inputarray[(i-1)*buffersize:i*buffersize-1], axis=0)
+            #print('Length Currents: {}'.format(len(currents)))
+        else:
+            voltages = np.append(voltages, inputarray[(i-1)*buffersize:i*buffersize-1], axis=0)
+            #print('Length Voltages: {}'.format(len(voltages)))
+
+    v1 = np.ones((len(voltages)), dtype=np.float64)
+    i1 = np.ones((len(currents)), dtype=np.float64)
+    v1[:]=voltages
+    i1[:]=currents
+
+    out = {'v1': v1, 'i1': i1}
+    print('Currents:' + str(v1.shape))
+    print('Voltages:' + str(i1.shape))
+    return out
+
 def ImportChimeraData(datafilename):
     matfile = io.loadmat(str(os.path.splitext(datafilename)[0]))
     samplerate = matfile['ADCSAMPLERATE']
     if samplerate<4e6:
         data = np.fromfile(datafilename, np.dtype('float64'))
-        buffersize = matfile['DisplayBuffer']
+        buffersize = int(matfile['DisplayBuffer'])
         out = Reshape1DTo2D(data, buffersize)
-        output = {'i1': out['i1'], 'v1': out['v1'], 'samplerate':float(samplerate), 'type': 'ChimeraNotRaw', 'filename': datafilename}
+        output = {'i1': out['i1'], 'v1': out['v1'], 'samplerate':float(samplerate), 'type': 'ChimeraNotRaw', 'filename': datafilename,'graphene': 0}
     else:
         output = ImportChimeraRaw(datafilename)
     return output
@@ -226,8 +250,8 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3):
     elif datafilename[-3::] == 'log':
         isdat = 0
         output = ImportChimeraData(datafilename)
-        print('length: ' + str(len(output['i1raw'])))
         if output['type'] is 'ChimeraRaw':  # Lowpass and downsample
+            print('length: ' + str(len(output['i1raw'])))
             Wn = round(2 * ChimeraLowPass / output['samplerateRaw'], 4)  # [0,1] nyquist frequency
             b, a = signal.bessel(4, Wn, btype='low', analog=False)  # 4-th order digital filter
             Filt_sig = signal.filtfilt(b, a, output['i1raw'], method = 'gust')
@@ -237,19 +261,26 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3):
             output['v1'] = output['v1']*np.ones(len(output['i1']))
             print('Samplerate after filtering:' + str(output['samplerate']))
             print(len(output['i1']))
+        if max(abs(output['i1']))>1e-6:
+            print('converting to SI units')
+            output['i1']=1e-9*output['i1']
+            output['v1']=1e-3*output['v1']
     elif datafilename[-3::] == 'abf':
         output = ImportABF(datafilename)
     st = os.stat(datafilename)
-    if platform == 'darwin':
-        print('Platform Is Darwin')
+    if platform.system() == 'Darwin' or platform.system() == 'Linux':
+        print('Platform is' + platform.system())
         output['TimeFileWritten'] = st.st_birthtime
         output['TimeFileLastModified'] = st.st_mtime
         output['ExperimentDuration'] = st.st_mtime - st.st_birthtime
-    else:
-        print('Platform Is WinShit')
+    elif platform.system() == 'Windows':
+        print('Platform is WinShit')
         output['TimeFileWritten'] = st.st_ctime
         output['TimeFileLastModified'] = st.st_mtime
         output['ExperimentDuration'] = st.st_mtime - st.st_ctime
+    else:
+        raise Exception('Platform not detected')
+
     return output
 
 def MakeIVData(output, approach = 'mean', delay = 0.7, UseVoltageRange=0):
@@ -265,6 +296,9 @@ def MakeIVData(output, approach = 'mean', delay = 0.7, UseVoltageRange=0):
     Values = output[sweepedChannel][ChangePoints]
     Values = np.append(Values, output[sweepedChannel][::-1][0])
     delayinpoints = np.int64(delay * output['samplerate'])
+    if delayinpoints>ChangePoints[0]:
+        raise ValueError("Delay is longer than Changepoint")
+
     #   Store All Data
     All={}
     for current in currents:
