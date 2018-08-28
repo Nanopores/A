@@ -17,7 +17,7 @@ class TranslocationEvent:
 
         self.meanTrace=np.mean(eventTrace)
         self.lengthEvents=len(eventTrace)/samplerate
-        self.currentDrop=np.mean(eventTrace)-baseline
+        self.currentDrop=baseline-np.mean(eventTrace)
 
     def SetCoefficients(self,coefficients):
         self.coefficients=coefficients

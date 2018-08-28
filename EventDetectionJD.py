@@ -5,6 +5,8 @@ import glob
 from time import sleep
 import Functions
 from pprint import pprint
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 
@@ -57,7 +59,7 @@ def eventdetection(fullfilename,coefficients,showFigures = False):
         meanEvent=events[i][2]
         stdEvent=events[i][3]
 
-        if (endEvent-beginEvent)>=(minTime*loadedData['samplerate']) and (endEvent-beginEvent)<(coefficients['eventlengthLimit']*loadedData['samplerate']):
+        if beginEvent>100 and (endEvent-beginEvent)>=(minTime*loadedData['samplerate']) and (endEvent-beginEvent)<(coefficients['eventlengthLimit']*loadedData['samplerate']):
             newEvent=NC.TranslocationEvent(fullfilename)
             Trace=loadedData['i1'][int(beginEvent):int(endEvent)]
             traceBefore=loadedData['i1'][int(beginEvent)-100:int(beginEvent)-1]
@@ -66,18 +68,23 @@ def eventdetection(fullfilename,coefficients,showFigures = False):
             newEvent.SetCoefficients(coefficients)
             newEvent.SetBaselineTrace(traceBefore,traceAfter)
             translocationEventList.AddEvent(newEvent)
+            print(newEvent.currentDrop)
 
 
     if showFigures:
         minVal=np.max(loadedData['i1'])#-1.05e-9 #np.min(loadedData['i1'])
         maxVal=np.max(loadedData['i1'])+0.05e-9#-1.05e-9 #np.min(loadedData['i1'])
 
-        for i in range(len(newEvents)):
-            beginEvent=newEvents[i][0]
-            plt.plot([beginEvent/loadedData['samplerate'], beginEvent/loadedData['samplerate']], [minVal, maxVal], 'y-', lw=1)
+        for i in range(len(events)):
+            beginEvent=events[i][0]
+            endEvent = events[i][1]
+            if beginEvent>100 and (endEvent - beginEvent) >= (minTime * loadedData['samplerate']) and (endEvent - beginEvent) < (
+                    coefficients['eventlengthLimit'] * loadedData['samplerate']):
+                plt.plot([beginEvent/loadedData['samplerate'], beginEvent/loadedData['samplerate']], [minVal, maxVal], 'y-', lw=1)
 
-        plt.draw()
-        plt.pause(0.001)
+        #plt.draw()
+        plt.show()
+        #plt.pause(1)
     return translocationEventList
 
 
