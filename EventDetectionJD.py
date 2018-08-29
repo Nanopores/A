@@ -62,8 +62,8 @@ def eventdetection(fullfilename,coefficients,showFigures = False):
         if beginEvent>100 and (endEvent-beginEvent)>=(minTime*loadedData['samplerate']) and (endEvent-beginEvent)<(coefficients['eventlengthLimit']*loadedData['samplerate']):
             newEvent=NC.TranslocationEvent(fullfilename)
             Trace=loadedData['i1'][int(beginEvent):int(endEvent)]
-            traceBefore=loadedData['i1'][int(beginEvent)-100:int(beginEvent)]
-            traceAfter=loadedData['i1'][int(endEvent):int(endEvent)+100]
+            traceBefore=loadedData['i1'][int(beginEvent)-100:int(beginEvent)+1]
+            traceAfter=loadedData['i1'][int(endEvent)-1:int(endEvent)+100]
             newEvent.SetEvent(Trace,meanEvent,loadedData['samplerate'])
             newEvent.SetCoefficients(coefficients)
             newEvent.SetBaselineTrace(traceBefore,traceAfter)
@@ -90,9 +90,13 @@ def eventdetection(fullfilename,coefficients,showFigures = False):
 
 
 
-def LoadEvents(folder):
-    savefile=os.path.join(folder,os.path.basename(folder)+'_Events')
-    shelfFile=shelve.open(savefile)
+def LoadEvents(loadname):
+    if os.path.isdir(loadname):
+        loadFile = os.path.join(loadname,os.path.basename(loadname)+'_Events')
+    else:
+        loadFile, file_extension = os.path.splitext(loadname)
+
+    shelfFile=shelve.open(loadFile)
     TranslocationEvents=shelfFile['TranslocationEvents']
     shelfFile.close()
     AllEvents=NC.AllEvents()
