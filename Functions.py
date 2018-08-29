@@ -268,7 +268,7 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3):
     elif datafilename[-3::] == 'abf':
         output = ImportABF(datafilename)
     st = os.stat(datafilename)
-    if platform.system() == 'Darwin' or platform.system() == 'Linux':
+    if platform.system() == 'Darwin':
         print('Platform is' + platform.system())
         output['TimeFileWritten'] = st.st_birthtime
         output['TimeFileLastModified'] = st.st_mtime
@@ -279,7 +279,14 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3):
         output['TimeFileLastModified'] = st.st_mtime
         output['ExperimentDuration'] = st.st_mtime - st.st_ctime
     else:
-        raise Exception('Platform not detected')
+        print('Platform is' + platform.system() +
+        'might not get accurate results')
+        try:
+            output['TimeFileWritten'] = st.st_ctime
+            output['TimeFileLastModified'] = st.st_mtime
+            output['ExperimentDuration'] = st.st_mtime - st.st_ctime
+        except:
+            raise Exception('Platform not detected')
 
     return output
 
