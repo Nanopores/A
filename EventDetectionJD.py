@@ -11,17 +11,27 @@ import numpy as np
 
 
 def batcheventdetection(folder,extension,coefficients):
+    #Create new class that contains all events
     AllEvents=NC.AllEvents()
+
+    #Loop over all files in folder
     for fullfilename in glob.glob(os.path.join(folder,extension)):
+
+        #Extract filename and generate filename to save located events
         print('analysing '+fullfilename)
         filename, file_extension = os.path.splitext(fullfilename)
         savefilename=filename+'data'
+
+        #Extract list of events for this file
         tEL=eventdetection(fullfilename,coefficients)
+
+        #Open savefile and save events for this file
         shelfFile=shelve.open(savefilename)
         shelfFile['translocationEvents']=tEL
-        #tEL=shelfFile['translocationEvents']
         pprint('found {} events'.format(len(tEL.events)))
         shelfFile.close()
+
+        #Add events to the initially created class that contains all events
         AllEvents.AddEvent(tEL)
 
     return AllEvents
@@ -32,15 +42,17 @@ def batcheventdetection(folder,extension,coefficients):
 
 def eventdetection(fullfilename,coefficients,showFigures = False):
     loadedData=Functions.OpenFile(fullfilename)
-    #pprint(loadedData)
     minTime=coefficients['minEventLength']
 
     print('eventdetection...', end='')
+    #Call RecursiveLowPassFast to detect events in current trace
     events=Functions.RecursiveLowPassFast(loadedData['i1'],coefficients,loadedData['samplerate'])
-    # print('nr events: {}'.format(len(events)))
+    print('nr events: {}'.format(len(events)))
 
+    #Make a new class translocationEventList that contains all the found events in this file
     translocationEventList=NC.AllEvents()
 
+    #Plot current file
     if showFigures:
         plt.figure(1)
         plt.cla()
@@ -53,24 +65,32 @@ def eventdetection(fullfilename,coefficients,showFigures = False):
     # for i in range(length(events)):
 
     #print('min ticks:{}'.format(minTime*loadedData['samplerate']))
+
+    #Loop over all detected events
     for i in range((len(events))):
         beginEvent=events[i][0]
         endEvent=events[i][1]
         meanEvent=events[i][2]
         stdEvent=events[i][3]
 
+        # Check if the start of the event is > 100 and eventtime is more then the minimal and less than the maxima;
         if beginEvent>100 and (endEvent-beginEvent)>=(minTime*loadedData['samplerate']) and (endEvent-beginEvent)<(coefficients['eventlengthLimit']*loadedData['samplerate']):
+            #Make new event class
             newEvent=NC.TranslocationEvent(fullfilename)
+            #Extract trace and extract baseline
             Trace=loadedData['i1'][int(beginEvent):int(endEvent)]
             traceBefore=loadedData['i1'][int(beginEvent)-100:int(beginEvent)+1]
             traceAfter=loadedData['i1'][int(endEvent)-1:int(endEvent)+100]
+
+            #Add Trace, mean of the event,the samplerate, coefficients and baseline to the New Event class
             newEvent.SetEvent(Trace,meanEvent,loadedData['samplerate'])
             newEvent.SetCoefficients(coefficients)
             newEvent.SetBaselineTrace(traceBefore,traceAfter)
+
+            #Add event to TranslocationList
             translocationEventList.AddEvent(newEvent)
-            print(newEvent.currentDrop)
 
-
+    #Plot events if True
     if showFigures:
         minVal=np.max(loadedData['i1'])#-1.05e-9 #np.min(loadedData['i1'])
         maxVal=np.max(loadedData['i1'])+0.05e-9#-1.05e-9 #np.min(loadedData['i1'])
@@ -91,11 +111,14 @@ def eventdetection(fullfilename,coefficients,showFigures = False):
 
 
 def LoadEvents(loadname):
+    #Check if loadname is a directory or not
     if os.path.isdir(loadname):
+        #create standard filename for loading
         loadFile = os.path.join(loadname,os.path.basename(loadname)+'_Events')
     else:
         loadFile, file_extension = os.path.splitext(loadname)
 
+    #Open file and extract TranslocationEvents
     shelfFile=shelve.open(loadFile)
     TranslocationEvents=shelfFile['TranslocationEvents']
     shelfFile.close()
