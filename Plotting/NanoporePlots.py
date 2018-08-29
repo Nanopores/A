@@ -8,7 +8,7 @@ Time = EngFormatter(unit='s', places=2)
 Volt = EngFormatter(unit='V', places=2)
 
 
-def PlotI_tau(current,tau):
+def PlotI_tau(current,tau, normalized=False):
     # definitions for the axes
     left, width = 0.15, 0.55
     bottom, height = 0.1, 0.6
@@ -49,32 +49,45 @@ def PlotI_tau(current,tau):
     plt.setp(axHisty.get_yticklabels(), visible=False)
 
     axScatter.set_xlabel('Event length (s)')
-    axScatter.set_ylabel('current drop (A)')
     axScatter.xaxis.set_major_formatter(Time)
-    axScatter.yaxis.set_major_formatter(Amp)
+    if normalized:
+        axScatter.set_ylabel('current drop (normalized)')
+    else:
+        axScatter.set_ylabel('current drop (A)')
+        axScatter.yaxis.set_major_formatter(Amp)
     plt.show()
 
 
 def PlotCurrentTrace(currentTrace, samplerate):
     timeVals = np.linspace(0, len(currentTrace) / samplerate, num=len(currentTrace))
-    plt.figure(figsize=(10, 6))
+    fig,ax=plt.subplots(figsize=(10, 6))
 
-    plt.plot(timeVals, currentTrace)
-    plt.xlabel('time (s)')
-    plt.ylabel('current (A)')
+    ax.plot(timeVals, currentTrace)
+    ax.set_xlabel('time (s)')
+    ax.set_ylabel('current (A)')
+    ax.xaxis.set_major_formatter(Time)
+    ax.yaxis.set_major_formatter(Amp)
+
     plt.show()
 
 
-def PlotCurrentTraceBaseline(before, currentTrace, after, samplerate):
+def PlotCurrentTraceBaseline(before, currentTrace, after, samplerate, plotTitle=''):
     timeVals1 = np.linspace(0, len(before) / samplerate, num=len(before))
     timeVals2 = np.linspace(0 + max(timeVals1), len(currentTrace) / samplerate + max(timeVals1), num=len(currentTrace))
     timeVals3 = np.linspace(0 + max(timeVals2), len(after) / samplerate + max(timeVals2), num=len(after))
 
-    plt.figure(figsize=(10, 6))
+    #plt.figure(figsize=(10, 6))
+    fig,ax=plt.subplots(figsize=(10, 6))
 
-    plt.plot(timeVals1, before, color='red')
-    plt.plot(timeVals2, currentTrace)
-    plt.plot(timeVals3, after, color='red')
-    plt.xlabel('time (s)')
-    plt.ylabel('current (A)')
+    ax.plot(timeVals1, before, color='red')
+    ax.plot(timeVals2, currentTrace)
+    ax.plot(timeVals3, after, color='red')
+    ax.set_xlabel('time (s)')
+    ax.set_ylabel('current (A)')
+    ax.xaxis.set_major_formatter(Time)
+    ax.yaxis.set_major_formatter(Amp)
+
+    if plotTitle:
+        plt.title(plotTitle)
+
     plt.show()
