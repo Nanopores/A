@@ -62,8 +62,8 @@ def eventdetection(fullfilename,coefficients,showFigures = False):
         if beginEvent>100 and (endEvent-beginEvent)>=(minTime*loadedData['samplerate']) and (endEvent-beginEvent)<(coefficients['eventlengthLimit']*loadedData['samplerate']):
             newEvent=NC.TranslocationEvent(fullfilename)
             Trace=loadedData['i1'][int(beginEvent):int(endEvent)]
-            traceBefore=loadedData['i1'][int(beginEvent)-100:int(beginEvent)-1]
-            traceAfter=loadedData['i1'][int(endEvent)+1:int(endEvent)+100]
+            traceBefore=loadedData['i1'][int(beginEvent)-100:int(beginEvent)]
+            traceAfter=loadedData['i1'][int(endEvent):int(endEvent)+100]
             newEvent.SetEvent(Trace,meanEvent,loadedData['samplerate'])
             newEvent.SetCoefficients(coefficients)
             newEvent.SetBaselineTrace(traceBefore,traceAfter)

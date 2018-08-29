@@ -10,20 +10,21 @@ Volt = EngFormatter(unit='V', places=2)
 
 def PlotI_tau(current,tau):
     # definitions for the axes
-    left, width = 0.1, 0.6
+    left, width = 0.15, 0.55
     bottom, height = 0.1, 0.6
-    bottom_h = left_h = left + width + 0.05
+    left_h = left + width + 0.015
+    bottom_h = bottom + height + 0.015
 
     rect_scatter = [left, bottom, width, height]
     rect_histx = [left, bottom_h, width, 0.2]
     rect_histy = [left_h, bottom, 0.2, height]
 
     # start with a rectangular Figure
-    plt.figure(1, figsize=(8, 8))
+    plt.figure(1, figsize=(10, 8))
 
     axScatter = plt.axes(rect_scatter)
-    axHistx = plt.axes(rect_histx)
-    axHisty = plt.axes(rect_histy)
+    axHistx = plt.axes(rect_histx, sharex=axScatter)
+    axHisty = plt.axes(rect_histy, sharey=axScatter)
 
     # the scatter plot:
     axScatter.scatter(tau, current, color='tomato', marker='o', s=30, linewidths=0.1, edgecolors='red') # added some stuff here to improve aesthetics
@@ -43,10 +44,9 @@ def PlotI_tau(current,tau):
     # tauBins = np.arange(-tauLim, tauLim + binwidth, binwidth)
     # currentBins = np.arange(-currentLim, currentLim + binwidth, binwidth)
     axHistx.hist(tau, bins=50, color='tomato')
+    plt.setp(axHistx.get_xticklabels(), visible=False)
     axHisty.hist(currentClean, bins=50, orientation='horizontal', color='tomato')   #increased binning here to avoid overlapping bars in the histogram, added color option
-
-    axHistx.set_xlim(axScatter.get_xlim())
-    axHisty.set_ylim(axScatter.get_ylim())
+    plt.setp(axHisty.get_yticklabels(), visible=False)
 
     axScatter.set_xlabel('Event length (s)')
     axScatter.set_ylabel('current drop (A)')

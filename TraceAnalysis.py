@@ -6,6 +6,7 @@ from Plotting.NanoporePlots import PlotI_tau
 from tkinter.filedialog import askopenfilenames,askdirectory
 import os
 
+
 #Parameters
 coefficients = {}
 coefficients = {'a': 0.99, 'E': 0, 'S': 4, 'eventlengthLimit': 0.5,'minEventLength': 0}
@@ -24,19 +25,20 @@ file='P23_1MKClboth_Pyrene_TL_20180809_005537.log'
 TranslocationEvents=ED.LoadEvents(folder) #to load the already run analysis fles, uncomment this
 
 
-#LengthList=TranslocationEvents.GetAllLengths()
-#meanIDrop=TranslocationEvents.GetAllIdrops()
-#PlotI_tau(meanIDrop,LengthList)
-
-minCurrent=-400e-12
-maxCurrent=400e-12
-minLength=0
-maxLength=1
-Newevents=TranslocationEvents.GetEventsMinCondition(minCurrent,maxCurrent,minLength,maxLength)
-
-LengthList=Newevents.GetAllLengths()
-meanIDrop=Newevents.GetAllIdrops()
+LengthList=TranslocationEvents.GetAllLengths()
+meanIDrop=TranslocationEvents.GetAllIdrops()
 PlotI_tau(meanIDrop,LengthList)
 
+#
+# minCurrent=-400e-12
+# maxCurrent=400e-12
+# minLength=0
+# maxLength=1
+# Newevents=TranslocationEvents.GetEventsMinCondition(minCurrent,maxCurrent,minLength,maxLength)
+#
+# LengthList=Newevents.GetAllLengths()
+# meanIDrop=Newevents.GetAllIdrops()
+#PlotI_tau(meanIDrop,LengthList)
 
-Newevents.PlotAllEvents()
+
+#Newevents.PlotAllEvents()
