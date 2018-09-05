@@ -566,7 +566,24 @@ def CutDataIntoVoltageSegments(output):
     return (ChangePoints, sweepedChannel)
 
 def CalculatePoreSize(G, L, s):
+    #https://doi.org/10.1088/0957-4484/22/31/315101
     return (G+np.sqrt(G*(G+16*L*s/np.pi)))/(2*s)
+
+def CalculateCapillarySize(G, D=0.3e-3, t=3.3e-3, s=10.5):
+    #DOI: 10.1021/nn405029j
+    #s=conductance (10.5 S/m at 1M KCl)
+    #t=taper length (3.3 mm)
+    #D=diameter nanocapillary at the shaft (0.3 mm)
+    return G*(4*t/np.pi+0.5*D)/(s*D-0.5*G)
+
+def CalculateShrunkenCapillarySize(G, D=0.3e-3, t=3.3e-3, s=10.5, ts=500e-9, Ds=500e-9):
+    #DOI: 10.1021/nn405029j
+    #s=conductance (10.5 S/m at 1M KCl)
+    #t=taper length (3.3 mm)
+    #D=diameter nanocapillary at the shaft (0.3 mm)
+    #ts=taper length of the shrunken part (543nm fit)
+    #Ds=diameter nanocapillary at the shrunken part (514nm fit)
+    return G * D * (8 * ts / np.pi + Ds)/((2 * s * D * Ds) - (G * (8 * t / np.pi + Ds)))
 
 def CalculateConductance(L, s, d):
     return s*1/(4*L/(np.pi*d**2)+1/d)

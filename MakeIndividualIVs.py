@@ -19,6 +19,7 @@ matplotlib.rcParams['ps.fonttype'] = 42
 from matplotlib.ticker import EngFormatter
 Res = EngFormatter(unit='Ω', places=2)
 Cond = EngFormatter(unit='S', places=2)
+SpesCond = EngFormatter(unit='S/m', places=2)
 size = EngFormatter(unit='m', places=2)
 
 Tk().withdraw()
@@ -27,11 +28,21 @@ if (platform.system()=='Darwin'):
     os.system('''/usr/bin/osascript -e 'tell app "Finder" to set frontmost of process "python" to true' ''')
 
 expname = 'All'
+Type='Nanocapillary' #Nanopore, Nanocapillary, NanocapillaryShrunken
 reversePolarity = 0
-conductivity=1
+specificConductance=10.5 #10.5 S/m for 1M KCl
+
+#Nanopore
 poreLength =  1e-9
 
+#Nanocapillary
+taperLength =  3.3e-3
+innerDiameter = 0.2e-3
+taperLengthShaft = 543e-9
+innerDiameterShaft = 514e-9
+
 filenames = askopenfilenames() # show an "Open" dialog box and return the path to the selected file
+#filenames={'/mnt/lben-archive/2018 - CURRENT/Jochem/Chimera/2018/2018-08-27/NCC3_1MKCl_1/IV/IV_NCC_1MKCl_1_20180827_084204.log'}
 
 for filename in filenames:
     print(filename)
@@ -77,8 +88,23 @@ for filename in filenames:
 
     #ax1IV = uf.PlotIV(output, AllData, current='i1', unit=1, axis = ax1IV, WithFit = 1, useEXP = 0, color ='y',
     #                labeltxt='MeanFit', PoreSize=[10, 1e-9], title=str(os.path.split(filename)[1]))
-    textstr = 'Pore Size\nConductance: {}S/m\nLenght: {}m:\ndiameter: {}m'.format(size.format_data(conductivity),
-                                                                                  pg.siFormat(poreLength), pg.siFormat(uf.CalculatePoreSize(AllData[current]['YorkFitValues']['Slope'], poreLength, conductivity)))
+    if Type=='Nanopore':
+        textstr = 'Nanopore Size\n\nSpecific Conductance: {}\nLenght: {}\n\nConductance: {}\nDiameter: {}'\
+            .format(SpesCond.format_data(specificConductance),size.format_data(poreLength), Cond.format_data(AllData[current]['YorkFitValues']['Slope']),
+                    size.format_data(uf.CalculatePoreSize(AllData[current]['YorkFitValues']['Slope'], poreLength, specificConductance)))
+    elif Type=='Nanocapillary':
+        textstr = 'Nanocapillary Size\n\nSpecific Conductance: {}\nTaper lenght: {}:\nInner diameter: {}:\n\nConductance: {}\nDiameter: {}'.\
+            format(SpesCond.format_data(specificConductance),size.format_data(taperLength),size.format_data(innerDiameter),Cond.format_data(AllData[current]['YorkFitValues']['Slope']),
+                   size.format_data(uf.CalculateCapillarySize(AllData[current]['YorkFitValues']['Slope'], innerDiameter, taperLength, specificConductance)))
+    elif Type=='NanocapillaryShrunken':
+        NCSize=uf.CalculateShrunkenCapillarySize(AllData[current]['YorkFitValues']['Slope'],innerDiameter, taperLength,specificConductance,taperLengthShaft,innerDiameterShaft)
+        textstr = 'Shrunken Nanocapillary Size\n\nSpecific Conductance: {}\nTaper lenght: {}\nInner diameter: {}\nTaper length at shaft: {}' \
+                  '\nInner Diameter at shaft: {}:\n\nConductance: {}\nDiameter: {}'.\
+            format(SpesCond.format_data(specificConductance),size.format_data(taperLength),size.format_data(innerDiameter),
+                   size.format_data(taperLengthShaft),size.format_data(innerDiameterShaft), Cond.format_data(AllData[current]['YorkFitValues']['Slope']),
+                   size.format_data(NCSize))
+
+
     ax1IV.text(0.05, 0.95, textstr, transform=ax1IV.transAxes, fontsize=12,
               verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
 
@@ -95,7 +121,7 @@ for filename in filenames:
 
 
 
-    figIV.savefig(directory + os.sep + str(os.path.split(filename)[1]) + 'IV_i1.pdf', transparent=True)
+    figIV.savefig(directory + os.sep + str(os.path.split(filename)[1]) + Type+'IV_i1.pdf', transparent=True)
     plt.show()
     figIV.clear()
 
