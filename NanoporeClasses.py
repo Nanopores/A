@@ -87,7 +87,11 @@ class AllEvents:
         return Lengths
 
     def GetAllIdrops(self):
-        currentDrops=[-event.currentDrop/event.baseline for event in self.events]
+        currentDrops=[event.currentDrop for event in self.events]
+        return currentDrops
+
+    def GetAllIdropsNorm(self):
+        currentDrops = [event.currentDrop/ event.baseline for event in self.events]
         return currentDrops
 
     def SaveEvents(self,savename):

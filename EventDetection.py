@@ -7,6 +7,9 @@ import Functions
 from pprint import pprint
 import matplotlib.pyplot as plt
 import numpy as np
+import sys
+import argparse
+
 
 
 
@@ -21,14 +24,20 @@ def batcheventdetection(folder,extension,coefficients):
         print('analysing '+fullfilename)
         filename, file_extension = os.path.splitext(fullfilename)
         savefilename=filename+'data'
+        shelfFile = shelve.open(savefilename)
+        try:
+            coefficientsloaded=shelfFile['coefficients']
+            tEL=shelfFile['translocationEvents']
+            print('loaded from file')
+        except:
+            #Extract list of events for this file
+            tEL=eventdetection(fullfilename,coefficients)
 
-        #Extract list of events for this file
-        tEL=eventdetection(fullfilename,coefficients)
-
-        #Open savefile and save events for this file
-        shelfFile=shelve.open(savefilename)
-        shelfFile['translocationEvents']=tEL
-        pprint('found {} events'.format(len(tEL.events)))
+            #Open savefile and save events for this file
+            shelfFile=shelve.open(savefilename)
+            shelfFile['translocationEvents']=tEL
+            shelfFile['coefficients']=coefficients
+            pprint('found {} events'.format(len(tEL.events)))
         shelfFile.close()
 
         #Add events to the initially created class that contains all events
@@ -125,3 +134,43 @@ def LoadEvents(loadname):
     AllEvents=NC.AllEvents()
     AllEvents.AddEvent(TranslocationEvents)
     return AllEvents
+
+if __name__=='__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-i', '--input', help='input directory or file')
+    parser.add_argument('-e', '--ext', help='extension for input directory')
+    parser.add_argument('-o', '--output', help='output file for saving')
+    parser.add_argument('-c', '--coeff', help='Coefficients for selecting events [-C filter E standarddev maxlength minlength', type = float, nargs = 5)
+
+    args = parser.parse_args()
+    inputData=args.input
+    if inputData==None:
+        inputData=askdirectory()
+
+    outputData=args.output
+    if outputData==None:
+        outputData=os.path.dirname(inputData)+'_data_'+datetime.date.today().strftime("%Y%m%d")
+
+    if args.coeff==None:
+        coefficients= {'a': 0.999, 'E': 0, 'S': 5, 'eventlengthLimit': 0.5,'minEventLength': 100e-6}
+    else:
+        coefficients = {'a': args.coeff[0] , 'E': args.coeff[1], 'S': args.coeff[2], 'eventlengthLimit': args.coeff[3], 'minEventLength': args.coeff[4]}
+
+    extension=args.ext
+    if extension==None:
+        extension='.log'
+
+    print('Loading from: ' + inputData)
+    print('Saving to: ' + outputData)
+    print('Coefficients are: ', end='')
+    pprint(coefficients)
+
+
+
+    if os.path.isdir(inputData):
+        print('extension is: ' + extension)
+        TranslocationEvents=batcheventdetection(inputData, extension, coefficients)
+    else:
+        TranslocationEvents=eventdetection(inputData,coefficients)
+
+    TranslocationEvents.SaveEvents(outputData)
