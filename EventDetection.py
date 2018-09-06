@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sys
 import argparse
+import datetime
+from tkinter.filedialog import askopenfilenames,askdirectory
 
 
 
@@ -28,16 +30,17 @@ def batcheventdetection(folder,extension,coefficients):
         try:
             coefficientsloaded=shelfFile['coefficients']
             tEL=shelfFile['translocationEvents']
+            assert(coefficientsloaded==coefficients)
             print('loaded from file')
         except:
             #Extract list of events for this file
             tEL=eventdetection(fullfilename,coefficients)
+            pprint('found {} events'.format(len(tEL.events)))
 
             #Open savefile and save events for this file
-            shelfFile=shelve.open(savefilename)
             shelfFile['translocationEvents']=tEL
             shelfFile['coefficients']=coefficients
-            pprint('found {} events'.format(len(tEL.events)))
+            print('saved to file')
         shelfFile.close()
 
         #Add events to the initially created class that contains all events
@@ -152,13 +155,13 @@ if __name__=='__main__':
         outputData=os.path.dirname(inputData)+'_data_'+datetime.date.today().strftime("%Y%m%d")
 
     if args.coeff==None:
-        coefficients= {'a': 0.999, 'E': 0, 'S': 5, 'eventlengthLimit': 0.5,'minEventLength': 100e-6}
+        coefficients= {'a': 0.99, 'E': 0, 'S': 5, 'eventlengthLimit': 0.5,'minEventLength': 100e-6}
     else:
         coefficients = {'a': args.coeff[0] , 'E': args.coeff[1], 'S': args.coeff[2], 'eventlengthLimit': args.coeff[3], 'minEventLength': args.coeff[4]}
 
     extension=args.ext
     if extension==None:
-        extension='.log'
+        extension='*.log'
 
     print('Loading from: ' + inputData)
     print('Saving to: ' + outputData)
@@ -168,9 +171,12 @@ if __name__=='__main__':
 
 
     if os.path.isdir(inputData):
-        print('extension is: ' + extension)
+        print('extension is: ' + extension +'\nStarting.... \n')
         TranslocationEvents=batcheventdetection(inputData, extension, coefficients)
     else:
+        print('Starting.... \n')
         TranslocationEvents=eventdetection(inputData,coefficients)
 
-    TranslocationEvents.SaveEvents(outputData)
+    #Check if list is empty
+    if TranslocationEvents.events:
+        TranslocationEvents.SaveEvents(outputData)
