@@ -4,6 +4,12 @@ import shelve
 import os
 import math
 from Plotting.NanoporePlots import PlotCurrentTrace,PlotCurrentTraceBaseline
+import matplotlib.pyplot as plt
+from matplotlib.ticker import EngFormatter
+
+Amp = EngFormatter(unit='A', places=2)
+Time = EngFormatter(unit='s', places=2)
+Volt = EngFormatter(unit='V', places=2)
 
 
 class TranslocationEvent:
@@ -17,7 +23,7 @@ class TranslocationEvent:
 
         self.meanTrace=np.mean(eventTrace)
         self.lengthEvents=len(eventTrace)/samplerate
-        self.currentDrop=np.mean(eventTrace)-baseline
+        self.currentDrop=baseline-np.mean(eventTrace)
 
     def SetCoefficients(self,coefficients):
         self.coefficients=coefficients
@@ -28,11 +34,41 @@ class TranslocationEvent:
 
     def PlotEvent(self):
         part1=np.append(self.before,self.eventTrace)
-        currentTrace=np.append(part1,self.after)
-        #PlotCurrentTrace(currentTrace,self.samplerate)
-        PlotCurrentTraceBaseline(self.before,self.eventTrace,self.after,self.samplerate)
 
+        fn=filename_w_ext = os.path.basename(self.filename)
 
+        plotTitle = fn + '\n' + 'Event length: {}\nCurrent drop: {}'.format(Time.format_data(self.lengthEvents), Amp.format_data(self.currentDrop))
+        #PlotCurrentTraceBaseline(self.before, self.eventTrace, self.after, self.samplerate, titleplot)
+
+        timeVals1 = np.linspace(0, len(self.before) / self.samplerate, num=len(self.before))
+        timeVals2 = np.linspace(0 + max(timeVals1), len(self.eventTrace) / self.samplerate + max(timeVals1),
+                                num=len(self.eventTrace))
+        timeVals3 = np.linspace(0 + max(timeVals2), len(self.after) / self.samplerate + max(timeVals2), num=len(self.after))
+
+        # plt.figure(figsize=(10, 6))
+        fig, ax = plt.subplots(figsize=(10, 6))
+
+        ax.plot(timeVals1, self.before, color='tomato')
+        ax.plot(timeVals2, self.eventTrace, color='mediumslateblue')
+        ax.plot(timeVals3, self.after, color='tomato')
+
+        beforeBaseline=np.full(len(self.before), self.baseline)
+        ax.plot(timeVals1,beforeBaseline, '--', color='tomato')
+        afterBaseline = np.full(len(self.after), self.baseline)
+        ax.plot(timeVals3,afterBaseline, '--', color='tomato')
+
+        meanTrace = np.full(len(self.eventTrace), self.meanTrace)
+        ax.plot(timeVals2,meanTrace, '--', color='mediumslateblue')
+
+        ax.set_xlabel('time (s)')
+        ax.set_ylabel('current (A)')
+        ax.xaxis.set_major_formatter(Time)
+        ax.yaxis.set_major_formatter(Amp)
+
+        if plotTitle:
+            plt.title(plotTitle)
+
+        plt.show()
 
 class AllEvents:
     def __init__(self):
@@ -54,12 +90,27 @@ class AllEvents:
         currentDrops=[event.currentDrop for event in self.events]
         return currentDrops
 
-    def SaveEvents(self,folder):
-        savefile=os.path.join(folder,os.path.basename(folder)+'_Events')
+    def GetAllIdropsNorm(self):
+        currentDrops = [event.currentDrop/ event.baseline for event in self.events]
+        return currentDrops
+
+    def SaveEvents(self,savename):
+        if os.path.isdir(savename):
+            savefile=os.path.join(savename,os.path.basename(savename)+'_Events')
+        else:
+            if os.path.isfile(savename + '.dat'):
+                raise IOError('File ' + savename + '.dat already exists.')
+            else:
+                savefile = savename
+
         shelfFile=shelve.open(savefile)
         shelfFile['TranslocationEvents']=self.events
         shelfFile.close()
-        print('saved as: ' + savefile)
+        print('saved as: ' + savefile + '.dat')
+        # if os.path.exists(savefile + '.bak'):
+        #     os.remove(savefile + '.bak')
+        # if os.path.exists(savefile + '.dir'):
+        #     os.remove(savefile + '.dir')
 
     def GetEventsMinCondition(self,minCurrent=-math.inf,maxCurrent=math.inf,minLength=0,maxLength=math.inf):
         minCurrent = -math.inf if not minCurrent else minCurrent
@@ -77,3 +128,7 @@ class AllEvents:
     def PlotAllEvents(self):
         for event in self.events:
             event.PlotEvent()
+
+    def PlotIEvent(self,i):
+        event=self.events[i]
+        event.Plotevent()
