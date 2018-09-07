@@ -234,7 +234,9 @@ def ImportChimeraData(datafilename):
         output = ImportChimeraRaw(datafilename)
     return output
 
-def OpenFile(filename = '', ChimeraLowPass = 10e3):
+def OpenFile(filename = '', ChimeraLowPass = 10e3,approxImpulseResponse=False,):
+    if ChimeraLowPass==None:
+        ChimeraLowPass=10e3
     if filename == '':
         datafilename = QtGui.QFileDialog.getOpenFileName()
         datafilename=datafilename[0]
@@ -254,7 +256,14 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3):
             print('length: ' + str(len(output['i1raw'])))
             Wn = round(2 * ChimeraLowPass / output['samplerateRaw'], 4)  # [0,1] nyquist frequency
             b, a = signal.bessel(4, Wn, btype='low', analog=False)  # 4-th order digital filter
-            Filt_sig = signal.filtfilt(b, a, output['i1raw'], method = 'gust')
+            if approxImpulseResponse:
+                z, p, k = signal.tf2zpk(b, a)
+                eps = 1e-9
+                r = np.max(np.abs(p))
+                approx_impulse_len = int(np.ceil(np.log(eps) / np.log(r)))
+                Filt_sig = signal.filtfilt(b, a, output['i1raw'], method='gust', irlen=approx_impulse_len)
+            else:
+                Filt_sig = signal.filtfilt(b, a, output['i1raw'], method = 'gust')
             ds_factor = output['samplerateRaw'] / (5 * ChimeraLowPass)
             output['i1'] = scipy.signal.resample(Filt_sig, int(len(output['i1raw']) / ds_factor))
             output['samplerate'] = output['samplerateRaw'] / ds_factor
@@ -269,7 +278,7 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3):
         output = ImportABF(datafilename)
     st = os.stat(datafilename)
     if platform.system() == 'Darwin':
-        print('Platform is' + platform.system())
+        print('Platform is ' + platform.system())
         output['TimeFileWritten'] = st.st_birthtime
         output['TimeFileLastModified'] = st.st_mtime
         output['ExperimentDuration'] = st.st_mtime - st.st_birthtime
@@ -279,8 +288,8 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3):
         output['TimeFileLastModified'] = st.st_mtime
         output['ExperimentDuration'] = st.st_mtime - st.st_ctime
     else:
-        print('Platform is' + platform.system() +
-        'might not get accurate results')
+        print('Platform is ' + platform.system() +
+        ' might not get accurate results')
         try:
             output['TimeFileWritten'] = st.st_ctime
             output['TimeFileLastModified'] = st.st_mtime

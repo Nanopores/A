@@ -11,7 +11,7 @@ import sys
 import argparse
 import datetime
 from tkinter.filedialog import askopenfilenames,askdirectory
-
+import timeit
 
 
 
@@ -32,7 +32,7 @@ def batcheventdetection(folder,extension,coefficients):
             tEL=shelfFile['translocationEvents']
             assert(coefficientsloaded==coefficients)
             print('loaded from file')
-        except:
+        except KeyError or AssertionError:
             #Extract list of events for this file
             tEL=eventdetection(fullfilename,coefficients)
             pprint('found {} events'.format(len(tEL.events)))
@@ -41,6 +41,7 @@ def batcheventdetection(folder,extension,coefficients):
             shelfFile['translocationEvents']=tEL
             shelfFile['coefficients']=coefficients
             print('saved to file')
+            pass
         shelfFile.close()
 
         #Add events to the initially created class that contains all events
@@ -53,12 +54,14 @@ def batcheventdetection(folder,extension,coefficients):
 
 
 def eventdetection(fullfilename,coefficients,showFigures = False):
-    loadedData=Functions.OpenFile(fullfilename)
+    loadedData=Functions.OpenFile(fullfilename,None,True)
     minTime=coefficients['minEventLength']
 
     print('eventdetection...', end='')
     #Call RecursiveLowPassFast to detect events in current trace
+    start_time = timeit.default_timer()
     events=Functions.RecursiveLowPassFast(loadedData['i1'],coefficients,loadedData['samplerate'])
+    print('done. Calculation took ' + str(timeit.default_timer() - start_time) + 's')
     print('nr events: {}'.format(len(events)))
 
     #Make a new class translocationEventList that contains all the found events in this file
