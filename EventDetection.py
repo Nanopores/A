@@ -29,13 +29,22 @@ def batcheventdetection(folder,extension,coefficients, forceRun=False, CutTraces
         filename, file_extension = os.path.splitext(fullfilename)
         savefilename=filename+'data'
         shelfFile = shelve.open(savefilename)
-        try:
-            assert(~forceRun)
-            coefficientsloaded=shelfFile['coefficients']
-            tEL=shelfFile['translocationEvents']
-            assert(coefficientsloaded==coefficients)
-            print('loaded from file')
-        except KeyError or AssertionError:
+        if ~forceRun:
+            try: #Check if file can be loaded
+                coefficientsloaded=shelfFile['coefficients']
+                tEL=shelfFile['translocationEvents']
+
+                # If coefficients before are not identical, analysis needs to run again
+                if ~(coefficientsloaded==coefficients):
+                    forceRun=True
+                else:
+                    print('loaded from file')
+            except:
+                #Except if cannot be loaded, analysis needs to run
+                forceRun=True
+                pass
+
+        if forceRun:
             #Extract list of events for this file
             tEL=eventdetection(fullfilename,coefficients,CutTraces)
             print('Saved {} events'.format(len(tEL.events)))
@@ -44,7 +53,7 @@ def batcheventdetection(folder,extension,coefficients, forceRun=False, CutTraces
             shelfFile['translocationEvents']=tEL
             shelfFile['coefficients']=coefficients
             print('saved to file')
-            pass
+
         shelfFile.close()
 
         #Add events to the initially created class that contains all events
