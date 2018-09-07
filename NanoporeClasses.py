@@ -103,6 +103,11 @@ class AllEvents:
             else:
                 savefile = savename
 
+        #Check if directory exists
+        directory = os.path.dirname(savefile)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
         shelfFile=shelve.open(savefile)
         shelfFile['TranslocationEvents']=self.events
         shelfFile.close()
