@@ -267,9 +267,9 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3,approxImpulseResponse=False,Sp
                 eps = 1e-9
                 r = np.max(np.abs(p))
                 approx_impulse_len = int(np.ceil(np.log(eps) / np.log(r)))
-                Filt_sig=(signal.filtfilt(b, a, raw, method='gust', irlen=approx_impulse_len))
+                Filt_sig=(signal.filtfilt(b, a, output['i1raw'], method='gust', irlen=approx_impulse_len))
             else:
-                Filt_sig=(signal.filtfilt(b, a, raw, method='gust'))
+                Filt_sig=(signal.filtfilt(b, a, output['i1raw'], method='gust'))
 
             ds_factor = np.ceil(output['samplerateRaw'] / (5 * ChimeraLowPass))
             output['i1'] = scipy.signal.resample(Filt_sig, int(len(output['i1raw']) / ds_factor))
