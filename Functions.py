@@ -190,13 +190,17 @@ def ImportChimeraRaw(datafilename):
     currentoffset = np.float64(matfile['SETUP_pAoffset'])
     ADCvref = np.float64(matfile['SETUP_ADCVREF'])
     ADCbits = np.int32(matfile['SETUP_ADCBITS'])
+    if blockLength in matfile:
+        blockLength=np.int32(matfile['blockLength'])
+    else:
+        blockLength=1048576
 
     closedloop_gain = TIAgain * preADCgain
     bitmask = (2 ** 16 - 1) - (2 ** (16 - ADCbits) - 1)
     data = -ADCvref + (2 * ADCvref) * (data & bitmask) / 2 ** 16
     data = (data / closedloop_gain + currentoffset)
     data.shape = [data.shape[1], ]
-    output = {'matfilename': str(os.path.splitext(datafilename)[0]),'i1raw': data, 'v1': np.float64(matfile['SETUP_biasvoltage']), 'samplerateRaw': np.int64(samplerate), 'type': 'ChimeraRaw', 'filename': datafilename, 'graphene': 0}
+    output = {'matfilename': str(os.path.splitext(datafilename)[0]),'i1raw': data, 'v1': np.float64(matfile['SETUP_biasvoltage']), 'samplerateRaw': np.int64(samplerate), 'type': 'ChimeraRaw', 'filename': datafilename, 'graphene': 0, 'blockLength':blockLength}
     return output
 
 def Reshape1DTo2D(inputarray, buffersize):
@@ -234,7 +238,7 @@ def ImportChimeraData(datafilename):
         output = ImportChimeraRaw(datafilename)
     return output
 
-def OpenFile(filename = '', ChimeraLowPass = 10e3,approxImpulseResponse=False,):
+def OpenFile(filename = '', ChimeraLowPass = 10e3,approxImpulseResponse=False,Split=False):
     if ChimeraLowPass==None:
         ChimeraLowPass=10e3
     if filename == '':
@@ -261,15 +265,34 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3,approxImpulseResponse=False,):
                 eps = 1e-9
                 r = np.max(np.abs(p))
                 approx_impulse_len = int(np.ceil(np.log(eps) / np.log(r)))
-                Filt_sig = signal.filtfilt(b, a, output['i1raw'], method='gust', irlen=approx_impulse_len)
+                Filt_sig.append(signal.filtfilt(b, a, raw, method='gust', irlen=approx_impulse_len))
             else:
-                Filt_sig = signal.filtfilt(b, a, output['i1raw'], method = 'gust')
-            ds_factor = output['samplerateRaw'] / (5 * ChimeraLowPass)
+                Filt_sig.append(signal.filtfilt(b, a, raw, method='gust'))
+
+            ds_factor = np.floor(output['samplerateRaw'] / (5 * ChimeraLowPass))
             output['i1'] = scipy.signal.resample(Filt_sig, int(len(output['i1raw']) / ds_factor))
             output['samplerate'] = output['samplerateRaw'] / ds_factor
             output['v1'] = output['v1']*np.ones(len(output['i1']))
             print('Samplerate after filtering:' + str(output['samplerate']))
-            print(len(output['i1']))
+            print('new length: ' + str(len(output['i1'])))
+
+            if Split:
+                splitNr=len(output['i1raw'])/output['blockLength']
+                assert(splitNr.is_integer())
+                rawSplit=np.array_split(output['i1raw'], splitNr)
+                Filt_sigSplit=[]
+                for raw in rawSplit:
+                    if approxImpulseResponse:
+                        z, p, k = signal.tf2zpk(b, a)
+                        eps = 1e-9
+                        r = np.max(np.abs(p))
+                        approx_impulse_len = int(np.ceil(np.log(eps) / np.log(r)))
+                        signalSplit=signal.filtfilt(b, a, raw, method='gust', irlen=approx_impulse_len)
+                    else:
+                        signalSplit=signal.filtfilt(b, a, raw, method = 'gust')
+                    Filt_sigSplit.append(scipy.signal.resample(signalSplit, int(len(raw) / ds_factor)))
+                output['i1Cut']=Filt_sigSplit
+
         if max(abs(output['i1']))>1e-6:
             print('converting to SI units')
             output['i1']=1e-9*output['i1']
@@ -289,7 +312,7 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3,approxImpulseResponse=False,):
         output['ExperimentDuration'] = st.st_mtime - st.st_ctime
     else:
         print('Platform is ' + platform.system() +
-        ' might not get accurate results')
+            ', might not get accurate results.')
         try:
             output['TimeFileWritten'] = st.st_ctime
             output['TimeFileLastModified'] = st.st_mtime

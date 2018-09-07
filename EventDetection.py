@@ -6,6 +6,7 @@ from time import sleep
 import Functions
 from pprint import pprint
 import matplotlib.pyplot as plt
+from matplotlib.ticker import EngFormatter
 import numpy as np
 import sys
 import argparse
@@ -13,9 +14,10 @@ import datetime
 from tkinter.filedialog import askopenfilenames,askdirectory
 import timeit
 
+timeInSec= EngFormatter(unit='s', places=2)
 
 
-def batcheventdetection(folder,extension,coefficients):
+def batcheventdetection(folder,extension,coefficients, forceRun=False, CutTraces=False):
     #Create new class that contains all events
     AllEvents=NC.AllEvents()
 
@@ -28,14 +30,15 @@ def batcheventdetection(folder,extension,coefficients):
         savefilename=filename+'data'
         shelfFile = shelve.open(savefilename)
         try:
+            assert(~forceRun)
             coefficientsloaded=shelfFile['coefficients']
             tEL=shelfFile['translocationEvents']
             assert(coefficientsloaded==coefficients)
             print('loaded from file')
         except KeyError or AssertionError:
             #Extract list of events for this file
-            tEL=eventdetection(fullfilename,coefficients)
-            pprint('found {} events'.format(len(tEL.events)))
+            tEL=eventdetection(fullfilename,coefficients,CutTraces)
+            print('Saved {} events'.format(len(tEL.events)))
 
             #Open savefile and save events for this file
             shelfFile['translocationEvents']=tEL
@@ -53,15 +56,20 @@ def batcheventdetection(folder,extension,coefficients):
 
 
 
-def eventdetection(fullfilename,coefficients,showFigures = False):
-    loadedData=Functions.OpenFile(fullfilename,None,True)
+def eventdetection(fullfilename, coefficients, CutTraces=False, showFigures = False):
+    loadedData=Functions.OpenFile(fullfilename, None, True, CutTraces)
     minTime=coefficients['minEventLength']
 
     print('eventdetection...', end='')
     #Call RecursiveLowPassFast to detect events in current trace
     start_time = timeit.default_timer()
-    events=Functions.RecursiveLowPassFast(loadedData['i1'],coefficients,loadedData['samplerate'])
-    print('done. Calculation took ' + str(timeit.default_timer() - start_time) + 's')
+    if 'i1Cut' in loadedData:
+        events=[]
+        for cutTrace in loadedData['i1Cut']:
+            events.extend(Functions.RecursiveLowPassFast(cutTrace,coefficients,loadedData['samplerate']))
+    else:
+        events=Functions.RecursiveLowPassFast(loadedData['i1'],coefficients,loadedData['samplerate'])
+    print('done. Calculation took {}'.format(timeInSec.format_data(timeit.default_timer() - start_time)))
     print('nr events: {}'.format(len(events)))
 
     #Make a new class translocationEventList that contains all the found events in this file
@@ -143,10 +151,12 @@ def LoadEvents(loadname):
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-i', '--input', help='input directory or file')
-    parser.add_argument('-e', '--ext', help='extension for input directory')
-    parser.add_argument('-o', '--output', help='output file for saving')
+    parser.add_argument('-i', '--input', help='Input directory or file')
+    parser.add_argument('-e', '--ext', help='Extension for input directory')
+    parser.add_argument('-o', '--output', help='Output file for saving')
     parser.add_argument('-c', '--coeff', help='Coefficients for selecting events [-C filter E standarddev maxlength minlength', type = float, nargs = 5)
+    parser.add_argument('-u', '--cut', help='Cut Traces before detecting event, prevent detecting appended chunks as event', action='store_true')
+    parser.add_argument('-f', '--force', help='Force analysis to run (don''t load from file', action='store_true')
 
     args = parser.parse_args()
     inputData=args.input
@@ -155,16 +165,17 @@ if __name__=='__main__':
 
     outputData=args.output
     if outputData==None:
-        outputData=os.path.dirname(inputData)+'_data_'+datetime.date.today().strftime("%Y%m%d")
+        outputData=os.path.dirname(inputData) + os.sep + 'Data' + os.sep + 'Data' + datetime.date.today().strftime("%Y%m%d")
 
     if args.coeff==None:
-        coefficients= {'a': 0.99, 'E': 0, 'S': 5, 'eventlengthLimit': 0.5,'minEventLength': 100e-6}
+        coefficients= {'a': 0.999, 'E': 0, 'S': 5, 'eventlengthLimit': 0.5,'minEventLength': 100e-6}
     else:
         coefficients = {'a': args.coeff[0] , 'E': args.coeff[1], 'S': args.coeff[2], 'eventlengthLimit': args.coeff[3], 'minEventLength': args.coeff[4]}
 
     extension=args.ext
     if extension==None:
         extension='*.log'
+
 
     print('Loading from: ' + inputData)
     print('Saving to: ' + outputData)
@@ -175,10 +186,10 @@ if __name__=='__main__':
 
     if os.path.isdir(inputData):
         print('extension is: ' + extension +'\nStarting.... \n')
-        TranslocationEvents=batcheventdetection(inputData, extension, coefficients)
+        TranslocationEvents=batcheventdetection(inputData, extension, coefficients, args.force, args.cut)
     else:
         print('Starting.... \n')
-        TranslocationEvents=eventdetection(inputData,coefficients)
+        TranslocationEvents=eventdetection(inputData,coefficients, args.cut)
 
     #Check if list is empty
     if TranslocationEvents.events:
