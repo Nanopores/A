@@ -190,7 +190,7 @@ def ImportChimeraRaw(datafilename):
     currentoffset = np.float64(matfile['SETUP_pAoffset'])
     ADCvref = np.float64(matfile['SETUP_ADCVREF'])
     ADCbits = np.int32(matfile['SETUP_ADCBITS'])
-    if blockLength in matfile:
+    if 'blockLength' in matfile:
         blockLength=np.int32(matfile['blockLength'])
     else:
         blockLength=1048576
