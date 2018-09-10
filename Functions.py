@@ -1454,3 +1454,6 @@ def GetIonSelectivityWithPotential(c_trans, c_cis, Erev, T, phi):
 
 def Selectivity(ConcGradient, V):
     return V * cst.physical_constants['Faraday constant'][0]/((cst.R*293.15) * np.log(ConcGradient))
+
+def GetRedox(cmax, cmin, T = 295.15):
+    return cst.R * T / cst.physical_constants['Faraday constant'][0] * np.log(cmax/cmin)
