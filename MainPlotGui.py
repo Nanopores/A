@@ -22,10 +22,14 @@ currentFile = ''
 def ChangedFolder():
     global folder
     folder = QtGui.QFileDialog.getExistingDirectory(window, 'Select in which Folder to save your data', os.getcwd())
-    file_list = glob.glob(folder + os.sep + '*.dat')
-    file_list.sort(key=os.path.getmtime)
-    for i in file_list:
-        ui.listWidget.addItem(os.path.split(i)[1])
+    if folder:
+        print('Opening ' + folder)
+        os.chdir(folder)
+        file_list = glob.glob(folder + os.sep + '*.dat')
+        file_list.extend(glob.glob(folder + os.sep + '*.log'))
+        file_list.sort(key=os.path.getmtime)
+        for i in file_list:
+            ui.listWidget.addItem(os.path.split(i)[1])
 
 def ItemChanged(it):
     print(it.text())
@@ -36,14 +40,18 @@ def ItemChanged(it):
     ui.label.setText(currentFile)
 
 def UpdatePlots(currentFile):
-    inp = f.OpenFile(folder + os.sep + currentFile)
+    inp = f.OpenFile(folder + os.sep + currentFile,None,True)
     ui.graphicsView.plotItem.clear()
     ui.graphicsView_2.plotItem.clear()
     ui.graphicsView_3.plotItem.clear()
-    ui.graphicsView.plot(y=inp['i1'], x=np.arange(0, len(inp['i1']))/ inp['samplerate'], pen = 'k')
-    ui.graphicsView_3.plot(y=inp['i2'], x=np.arange(0, len(inp['i2']))/inp['samplerate'], pen = 'r')
-    ui.graphicsView_2.plot(y=inp['v2'], x=np.arange(0, len(inp['i2']))/inp['samplerate'], pen = 'r')
-    ui.graphicsView_2.plot(y=inp['v1'], x=np.arange(0, len(inp['i1']))/inp['samplerate'], pen = 'k')
+    if 'i1' in inp:
+        ui.graphicsView.plot(y=inp['i1'], x=np.arange(0, len(inp['i1']))/ inp['samplerate'], pen = 'r')
+    if 'i2' in inp:
+        ui.graphicsView_3.plot(y=inp['i2'], x=np.arange(0, len(inp['i2']))/inp['samplerate'], pen = 'r')
+    if 'v2' in inp:
+        ui.graphicsView_2.plot(y=inp['v2'], x=np.arange(0, len(inp['i2']))/inp['samplerate'], pen = 'r')
+    if 'v1' in inp:
+        ui.graphicsView_2.plot(y=inp['v1'], x=np.arange(0, len(inp['i1']))/inp['samplerate'], pen = 'k')
 
 def SaveWindow():
     win = pg.GraphicsWindow()
