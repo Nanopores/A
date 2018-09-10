@@ -10,6 +10,7 @@ from tkinter import Tk
 from tkinter.filedialog import askopenfilenames
 from matplotlib.font_manager import FontProperties
 import platform
+import csv
 
 fontP = FontProperties()
 fontP.set_size('small')
@@ -122,6 +123,17 @@ for filename in filenames:
 
 
     figIV.savefig(directory + os.sep + str(os.path.split(filename)[1]) + Type+'IV_i1.pdf', transparent=True)
+
+
+
+    x=AllData[current]['Voltage'][ind]
+    y=AllData[current]['Mean'][ind]
+
+    csvfile=directory + os.sep + str(os.path.split(filename)[1]) + Type+'IV_i1.csv'
+    with open(csvfile, 'w') as output:
+        writer=csv.writer(output, lineterminator='\n')
+        for i in range(len(x)):
+            writer.writerow([x[i] , y[i]])
+
     plt.show()
     figIV.clear()
-
