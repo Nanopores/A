@@ -13,8 +13,9 @@ Volt = EngFormatter(unit='V', places=2)
 
 
 class TranslocationEvent:
-    def __init__(self, filename):
+    def __init__(self, filename,type='roughEvent'):
         self.filename = filename
+        self.type=type
 
     def SetEvent(self,eventTrace,baseline,samplerate):
         self.eventTrace=eventTrace
@@ -22,15 +23,29 @@ class TranslocationEvent:
         self.samplerate=samplerate
 
         self.meanTrace=np.mean(eventTrace)
+        self.minTrace = np.min(eventTrace)
         self.lengthEvents=len(eventTrace)/samplerate
-        self.currentDrop=baseline-np.mean(eventTrace)
 
-    def SetCoefficients(self,coefficients):
+        if self.type=='Real':
+            self.currentDrop=baseline-self.meanTrace
+        else:
+            self.currentDrop = baseline - self.minTrace
+
+    def SetCoefficients(self,coefficients,voltage):
         self.coefficients=coefficients
+        self.voltage=voltage
 
     def SetBaselineTrace(self, before,after):
         self.before=before
         self.after=after
+
+    def SetCUSUMVariables(self, segmentedSignal, kd, changeTimes):
+        self.segmentedSignal=segmentedSignal
+        self.changeTimes=changeTimes
+
+        self.kd=kd
+        # self.krmv=krmv
+        # self.mc=mc
 
     def PlotEvent(self):
         part1=np.append(self.before,self.eventTrace)
