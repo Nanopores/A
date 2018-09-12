@@ -192,7 +192,7 @@ if __name__=='__main__':
     parser.add_argument('-i', '--input', help='Input directory or file')
     parser.add_argument('-e', '--ext', help='Extension for input directory')
     parser.add_argument('-o', '--output', help='Output file for saving')
-    parser.add_argument('-c', '--coeff', help='Coefficients for selecting events [-C filter E standarddev maxlength minlength', type = float, nargs = '+')
+    parser.add_argument('-c', '--coeff', help='Coefficients for selecting events [-C filter E standarddev maxlength minlength', nargs = '+')
     parser.add_argument('-u', '--cut', help='Cut Traces before detecting event, prevent detecting appended chunks as event', action='store_true')
     parser.add_argument('-f', '--force', help='Force analysis to run (don''t load from file', action='store_true')
 
@@ -214,7 +214,7 @@ if __name__=='__main__':
         if len(args.coeff) % 2 == 0:
             for i in range(0, len(coefficients.keys()), 2):
                 if i <= len(args.coeff):
-                    coefficients[args.coeff[i]]=args.coeff[i+1]
+                    coefficients[string(args.coeff[i])]=float(args.coeff[i+1])
 
     extension=args.ext
     if extension==None:
