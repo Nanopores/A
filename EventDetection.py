@@ -66,7 +66,11 @@ def batcheventdetection(folder,extension,coefficients, forceRun=False, CutTraces
 
 
 def eventdetection(fullfilename, coefficients, CutTraces=False, showFigures = False):
-    loadedData=Functions.OpenFile(fullfilename, None, True, CutTraces)
+    if 'ChimeraLowPass' in coefficients:
+        ChimeraLowPass=coefficients['ChimeraLowPass']
+    else:
+        ChimeraLowPass=None
+    loadedData=Functions.OpenFile(fullfilename, ChimeraLowPass, True, CutTraces)
     minTime=coefficients['minEventLength']
     IncludedBaseline = int(1e-2 * loadedData['samplerate'])
     delta=coefficients['delta']
@@ -134,15 +138,15 @@ def eventdetection(fullfilename, coefficients, CutTraces=False, showFigures = Fa
                 newEvent=NC.TranslocationEvent(fullfilename,'Real')
 
                 #CUSUM fit
-                sigma = np.sqrt(stdEvent)
-                h = hbook * delta / sigma
-                (mc, kd, krmv)= Functions.CUSUM(loadedData['i1'][int(beginEvent) - IncludedBaseline: int(endEvent) + IncludedBaseline], delta, h)
-                krmv = krmv + int(beginEvent) - IncludedBaseline + 1
+                #sigma = np.sqrt(stdEvent)
+                #h = hbook * delta / sigma
+                #(mc, kd, krmv)= Functions.CUSUM(loadedData['i1'][int(beginEvent) - IncludedBaseline: int(endEvent) + IncludedBaseline], delta, h)
+                #krmv = krmv + int(beginEvent) - IncludedBaseline + 1
                 #Add Trace, mean of the event,the samplerate, coefficients and baseline to the New Event class
                 newEvent.SetEvent(Trace,localBaseline,loadedData['samplerate'])
                 newEvent.SetCoefficients(coefficients,loadedData['v1'])
                 newEvent.SetBaselineTrace(traceBefore,traceAfter)
-                newEvent.SetCUSUMVariables(mc, kd, krmv)
+                #newEvent.SetCUSUMVariables(mc, kd, krmv)
 
                 #Add event to TranslocationList
                 translocationEventList.AddEvent(newEvent)
@@ -204,14 +208,13 @@ if __name__=='__main__':
         else:
             outputData=os.path.dirname(inputData) + os.sep + 'Data' + os.sep + 'Data' + datetime.date.today().strftime("%Y%m%d")
 
-    coefficientslist=['a','E','S','eventlengthLimit','minEventLength','hbook','delta']
 
-
-    coefficients = {'a': 0.999, 'E': 0, 'S': 5, 'eventlengthLimit': 200e-3, 'minEventLength': 500e-6, 'hbook':1,'delta':2e-9}
+    coefficients = {'a': 0.999, 'E': 0, 'S': 5, 'eventlengthLimit': 200e-3, 'minEventLength': 500e-6, 'hbook':1,'delta':2e-9,'ChimeraLowPass':10e3}
     if args.coeff is not None:
-        for i in range(len(coefficientslist)):
-            if i <= len(args.coeff):
-                coefficients[coefficientslist[i]]=args.coeff[0]
+        if len(args.coeff) % 2 == 0:
+            for i in range(0, len(coefficients.keys()), 2):
+                if i <= len(args.coeff):
+                    coefficients[args.coeff[i]]=args.coeff[i+1]
 
     extension=args.ext
     if extension==None:

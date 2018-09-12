@@ -63,16 +63,16 @@ class TranslocationEvent:
         # plt.figure(figsize=(10, 6))
         fig, ax = plt.subplots(figsize=(10, 6))
 
-        ax.plot(timeVals1, self.before, color='tomato')
+        ax.plot(np.append(timeVals1,timeVals2[0]), np.append(self.before,self.eventTrace[0]), color='tomato')
         ax.plot(timeVals2, self.eventTrace, color='mediumslateblue')
-        ax.plot(timeVals3, self.after, color='tomato')
+        ax.plot(np.append(timeVals2[-1],timeVals3), np.append(self.eventTrace[-1],self.after), color='tomato')
 
         beforeBaseline=np.full(len(self.before), self.baseline)
         ax.plot(timeVals1,beforeBaseline, '--', color='tomato')
         afterBaseline = np.full(len(self.after), self.baseline)
         ax.plot(timeVals3,afterBaseline, '--', color='tomato')
 
-        meanTrace = np.full(len(self.eventTrace), self.meanTrace)
+        meanTrace = np.full(len(self.eventTrace), self.baseline-self.currentDrop)
         ax.plot(timeVals2,meanTrace, '--', color='mediumslateblue')
 
         ax.set_xlabel('time (s)')
@@ -152,3 +152,11 @@ class AllEvents:
     def PlotIEvent(self,i):
         event=self.events[i]
         event.Plotevent()
+
+    def PlotHistogram(self):
+        appendTrace=[]
+        for event in self.events:
+            appendTrace.extend(event.eventTrace)
+
+        plt.hist(appendTrace,bins=40)
+        plt.show()
