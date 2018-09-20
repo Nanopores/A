@@ -843,6 +843,7 @@ def AddInfoAfterRecursive(self):
 
     CusumBaseline=500
     numberofevents = len(startpoints)
+
     self.AnalysisResults[self.sig]['StartPoints'] = startpoints
     self.AnalysisResults[self.sig]['EndPoints'] = endpoints
     self.AnalysisResults[self.sig]['LocalBaseline'] = localBaseline
@@ -867,10 +868,10 @@ def AddInfoAfterRecursive(self):
             deli[i] = localBaseline[i] - np.mean(self.out[self.sig][startpoints[i]+5:endpoints[i]-5])
             dwell[i] = (endpoints[i] - startpoints[i]) / self.out['samplerate']
             # # Cusum Fit
-            # sigma = np.sqrt(localVariance[i])
-            # delta = 2e-9
-            # h = 1 * delta / sigma
-            # (mc, kd, krmv) = CUSUM(self.out[self.sig][startpoints[i]-CusumBaseline:endpoints[i]+CusumBaseline], delta, h)
+             #sigma = np.sqrt(localVariance[i])
+             #delta = 2e-9
+             #h = 1 * delta / sigma
+             #(mc, kd, krmv) = CUSUM(self.out[self.sig][startpoints[i]-CusumBaseline:endpoints[i]+CusumBaseline], delta, h)
             # zeroPoint = startpoints[i]-CusumBaseline
             # krmv = krmv+zeroPoint+1
             # AllFits['Event' + str(i)] = {}
