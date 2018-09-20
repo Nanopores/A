@@ -33,6 +33,8 @@ Type='Nanocapillary' #Nanopore, Nanocapillary, NanocapillaryShrunken
 reversePolarity = 0
 specificConductance=10.5 #10.5 S/m for 1M KCl
 
+delay=0.5 #seconds for reading current
+
 #Nanopore
 poreLength =  1e-9
 
@@ -58,7 +60,7 @@ for filename in filenames:
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    AllData = uf.MakeIVData(output, delay = 1)#, UseVoltageRange = [-0.4, 0.4])
+    AllData = uf.MakeIVData(output, delay = delay)#, UseVoltageRange = [-0.4, 0.4])
     if AllData == 0:
         print('!!!! No Sweep in: ' + filename)
         continue
