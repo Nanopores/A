@@ -23,27 +23,27 @@ Cond = EngFormatter(unit='S', places=2)
 SpesCond = EngFormatter(unit='S/m', places=2)
 size = EngFormatter(unit='m', places=2)
 
-Tk().withdraw()
-
-if (platform.system()=='Darwin'):
-    os.system('''/usr/bin/osascript -e 'tell app "Finder" to set frontmost of process "python" to true' ''')
+#Tk().withdraw()
+#
+#if (platform.system()=='Darwin'):
+#    os.system('''/usr/bin/osascript -e 'tell app "Finder" to set frontmost of process "python" to true' ''')
 
 expname = 'All'
-Type='Nanocapillary' #Nanopore, Nanocapillary, NanocapillaryShrunken
+Type='Nanopore' #Nanopore, Nanocapillary, NanocapillaryShrunken
 reversePolarity = 0
-specificConductance=10.5 #10.5 S/m for 1M KCl
+specificConductance = 10.5 #10.5 S/m for 1M KCl
 
 #Nanopore
 poreLength =  1e-9
 
 #Nanocapillary
-taperLength =  3.3e-3
+taperLength = 3.3e-3
 innerDiameter = 0.2e-3
 taperLengthShaft = 543e-9
 innerDiameterShaft = 514e-9
 
-filenames = askopenfilenames() # show an "Open" dialog box and return the path to the selected file
-#filenames={'/mnt/lben-archive/2018 - CURRENT/Jochem/Chimera/2018/2018-08-27/NCC3_1MKCl_1/IV/IV_NCC_1MKCl_1_20180827_084204.log'}
+#filenames = askopenfilenames() # show an "Open" dialog box and return the path to the selected file
+filenames={'/Volumes/lben/lben-commun/2018 User Data/Michael/Axopatch/20180626/A2_5_Enlarged_1M_1mM_Cis_Trans_GNDonTrans_470nm_0mW_pH74_IV_After_1.dat'}
 
 for filename in filenames:
     print(filename)
@@ -58,7 +58,7 @@ for filename in filenames:
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    AllData = uf.MakeIVData(output, delay = 1)#, UseVoltageRange = [-0.4, 0.4])
+    AllData = uf.MakeIVData(output, delay = 1, approach='exp')#, UseVoltageRange = [-0.4, 0.4])
     if AllData == 0:
         print('!!!! No Sweep in: ' + filename)
         continue
@@ -75,7 +75,7 @@ for filename in filenames:
 
     # Plot IV
     if output['graphene']:
-        figIV2 = plt.figure(3, figsize=(10, 10))
+        figIV2 = plt.figure(3, figsize=(5, 4))
         figIV2.clear()
         ax2IV = figIV2.add_subplot(111)
         ax2IV = uf.PlotIV(output, AllData, current='i2', unit=1e9, axis=ax2IV, WithFit=1)
@@ -115,25 +115,22 @@ for filename in filenames:
                   yerr=AllData[current]['STD'][ind], fmt='o', color='b')
     ax1IV.plot(AllData[current]['Voltage'][ind], np.polyval(p, AllData[current]['Voltage'][ind]), color='r')
     ax1IV.set_title(str(os.path.split(filename)[1])+ '\nR=' + Res.format_data(1/p[0]) + ', G=' + Cond.format_data(p[0]))
+
     ax1IV.set_ylabel('Current')
     ax1IV.set_xlabel('Voltage')
+
     ax1IV.xaxis.set_major_formatter(EngFormatter(unit='V'))
     ax1IV.yaxis.set_major_formatter(EngFormatter(unit='A'))
-
-
+    ax1IV.set_xlim(-300e-3, 200e-3)
+    ax1IV.set_ylim(-5e-9, 13e-9)
 
     figIV.savefig(directory + os.sep + str(os.path.split(filename)[1]) + Type+'IV_i1.pdf', transparent=True)
-
-
-
     x=AllData[current]['Voltage'][ind]
     y=AllData[current]['Mean'][ind]
-
     csvfile=directory + os.sep + str(os.path.split(filename)[1]) + Type+'IV_i1.csv'
     with open(csvfile, 'w') as output:
         writer=csv.writer(output, lineterminator='\n')
         for i in range(len(x)):
             writer.writerow([x[i] , y[i]])
-
-    plt.show()
+    #plt.show()
     figIV.clear()
