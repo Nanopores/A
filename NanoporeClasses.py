@@ -114,28 +114,6 @@ class AllEvents:
         currentDrops = [event.currentDrop/ event.baseline for event in self.events]
         return currentDrops
 
-    def SaveEvents(self,savename):
-        if os.path.isdir(savename):
-            savefile=os.path.join(savename,os.path.basename(savename)+'_Events')
-        else:
-            if os.path.isfile(savename + '.dat'):
-                raise IOError('File ' + savename + '.dat already exists.')
-            else:
-                savefile = savename
-
-        self.savefile=savefile
-
-        #Check if directory exists
-        directory = os.path.dirname(savefile)
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-
-        shelfFile=shelve.open(savefile)
-        shelfFile['TranslocationEvents']=self.events
-        shelfFile.close()
-        print('saved as: ' + savefile + '.dat')
-
-
     def SetFolder(self,loadname):
         self.savefile=loadname
 

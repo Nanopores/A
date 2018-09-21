@@ -242,4 +242,4 @@ if __name__=='__main__':
 
     #Check if list is empty
     if TranslocationEvents.events:
-        TranslocationEvents.SaveEvents(outputData)
+        Functions.SaveVariables(outputData,TranslocationEvents=TranslocationEvents)

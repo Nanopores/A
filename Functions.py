@@ -23,6 +23,7 @@ from scipy.optimize import curve_fit
 import pyabf
 from matplotlib.ticker import EngFormatter
 from pprint import pprint
+import shelve
 
 # if not 'verbose' in globals():
 #     verbose = False
@@ -35,6 +36,27 @@ def GetKClConductivity(Conc, Temp):
     if Conc==1.0:
         Conc = np.uint(1)
     return np.polyval(p[str(Conc)], Temp)
+
+def SaveVariables(savename, **kwargs):
+    if os.path.isdir(savename):
+        savefile=os.path.join(savename,os.path.basename(savename)+'_Events')
+    else:
+        if os.path.isfile(savename + '.dat'):
+            raise IOError('File ' + savename + '.dat already exists.')
+        else:
+            savefile = savename
+
+    #Check if directory exists
+    directory = os.path.dirname(savefile)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    shelfFile=shelve.open(savefile)
+    for arg_name in kwargs:
+        shelfFile[arg_name]=kwargs[arg_name]
+    shelfFile.close()
+    print('saved as: ' + savefile + '.dat')
+
 
 def GetTempFromKClConductivity(Conc, Cond):
     p = pkl.load(open('KCl_ConductivityValues.p', 'rb'))
