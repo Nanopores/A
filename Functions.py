@@ -42,8 +42,6 @@ def GetTempFromKClConductivity(Conc, Cond):
         Conc = np.uint(1)
     return (Cond-p[str(Conc)][1])/p[str(Conc)][0]
 
-
-
 def RecursiveLowPassFast(signal, coeff, samplerate):
     padlen = np.uint64(samplerate)
     prepadded = np.ones(padlen)*np.mean(signal[0:1000])
@@ -1168,8 +1166,8 @@ def xcorr(x, y, k, normalize=True):
 
 def CUSUM(input, delta, h):
     Nd = 0
-    kd = len(input)
-    krmv = len(input)
+    kd = []
+    krmv = []
     k0 = 0
     k = 1
     l = len(input)
@@ -1184,8 +1182,8 @@ def CUSUM(input, delta, h):
     gn = np.zeros(l)
 
     while k < l:
-        m[k] = np.mean(input[k0:k+1])
-        v[k] = np.var(input[k0:k+1])
+        m[k] = np.mean(input[k0:k + 1])
+        v[k] = np.var(input[k0:k + 1])
 
         sp[k] = delta / v[k] * (input[k] - m[k] - delta / 2)
         sn[k] = -delta / v[k] * (input[k] - m[k] + delta / 2)
@@ -1193,37 +1191,35 @@ def CUSUM(input, delta, h):
         Sp[k] = Sp[k - 1] + sp[k]
         Sn[k] = Sn[k - 1] + sn[k]
 
-        gp[k] = np.max(gp[k - 1] + sp[k], 0)
-        gn[k] = np.max(gn[k - 1] + sn[k], 0)
+        gp[k] = np.max([gp[k - 1] + sp[k], 0])
+        gn[k] = np.max([gn[k - 1] + sn[k], 0])
 
         if gp[k] > h or gn[k] > h:
-            kd[Nd] = k
-            kmin = int(np.where(Sn == np.min(Sn[k0:k+1]))[0])
-            krmv[Nd] = kmin + k0 - 1
-            if gp(k) > h:
-                kmin = int(np.where(Sn == np.min(Sn[k0:k+1]))[0])
-                krmv[Nd] = kmin + k0 - 1
+            kd.append(k)
+            if gp[k] > h:
+                kmin = np.argmin(Sp[k0:k + 1])
+                krmv.append(kmin + k0 - 1)
+            else:
+                kmin=np.argmin(Sn[k0:k+1])
+                krmv.append(kmin + k0 - 1)
+
+            #Re-initialize
             k0 = k
             m[k0] = input[k0]
-            v[k0] = 0
-            sp[k0] = 0
-            Sp[k0] = 0
-            gp[k0] = 0
-            sn[k0] = 0
-            Sn[k0] = 0
-            gn[k0] = 0
+            v[k0] = sp[k0] = Sp[k0] = gp[k0] = sn[k0] = Sn[k0] = gn[k0] = 0
+
             Nd = Nd + 1
         k += 1
 
     if Nd == 0:
         mc = np.mean(input) * np.ones(k)
     elif Nd == 1:
-        mc = [m[krmv[0]] * np.ones(krmv[0]), m[k] * np.ones(k - krmv[0])]
+        mc = np.append(m[krmv[0]] * np.ones(krmv[0]), m[k] * np.ones(k - krmv[0]))
     else:
         mc = m[krmv[0]] * np.ones(krmv[0])
         for ii in range(1, Nd):
-            mc = [mc, m[krmv[ii]] * np.ones(krmv[ii] - krmv[ii - 1])]
-        mc = [mc, m(k) * np.ones(k - krmv[Nd])]
+            mc=np.append(mc , m[krmv[ii]] * np.ones(krmv[ii] - krmv[ii - 1]))
+        mc=np.append(mc , m[k-1] * np.ones(k - krmv[Nd-1]))
     return (mc, kd, krmv)
 
 def SetCusum2ARL0(deltax,sigmax,Arl0_2=1000,thresholdlevels=[1000,0.1,10]):
