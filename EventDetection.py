@@ -26,8 +26,12 @@ def batcheventdetection(folder,extension,coefficients, forceRun=False, CutTraces
 
         #Extract filename and generate filename to save located events
         print('analysing '+fullfilename)
-        filename, file_extension = os.path.splitext(fullfilename)
-        savefilename=filename+'data'
+        filename, file_extension = os.path.splitext(os.path.basename(fullfilename))
+        directory=os.path.dirname(fullfilename) + os.sep + 'analysisfiles'
+        if not os.path.exists(directory):
+            os.makedirs(directory,exist_ok=True)
+
+        savefilename=directory + os.sep + filename + 'data'
         shelfFile = shelve.open(savefilename)
         if ~forceRun:
             try: #Check if file can be loaded
@@ -116,7 +120,7 @@ def eventdetection(fullfilename, coefficients, CutTraces=False, showFigures = Fa
 
         lengthevent=endEvent-beginEvent
 
-        # Check if the start of the event is > 100 and eventtime is more then the minimal and less than the maxima;
+        # Check if the start of the event is > IncludedBaseline then compare eventtime to minimal and maxima;
         if beginEvent > IncludedBaseline:
             # Extract trace and extract baseline
             Trace = loadedData['i1'][int(beginEvent):int(endEvent)]
@@ -127,7 +131,7 @@ def eventdetection(fullfilename, coefficients, CutTraces=False, showFigures = Fa
                 newEvent = NC.TranslocationEvent(fullfilename,'impulse')
 
                 # Add Trace, mean of the event,the samplerate, coefficients and baseline to the New Event class
-                newEvent.SetEvent(Trace, localBaseline, loadedData['samplerate'])
+                newEvent.SetEvent(Trace, beginEvent,localBaseline, loadedData['samplerate'])
                 newEvent.SetCoefficients(coefficients, loadedData['v1'])
                 newEvent.SetBaselineTrace(traceBefore, traceAfter)
 
@@ -138,15 +142,15 @@ def eventdetection(fullfilename, coefficients, CutTraces=False, showFigures = Fa
                 newEvent=NC.TranslocationEvent(fullfilename,'Real')
 
                 #CUSUM fit
-                #sigma = np.sqrt(stdEvent)
-                #h = hbook * delta / sigma
-                #(mc, kd, krmv)= Functions.CUSUM(loadedData['i1'][int(beginEvent) - IncludedBaseline: int(endEvent) + IncludedBaseline], delta, h)
-                #krmv = krmv + int(beginEvent) - IncludedBaseline + 1
+                sigma = np.sqrt(stdEvent)
+                h = hbook * delta / sigma
+                (mc, kd, krmv)= Functions.CUSUM(loadedData['i1'][int(beginEvent) - IncludedBaseline: int(endEvent) + IncludedBaseline], delta, h)
+                krmv = [krmvVal + int(beginEvent) - IncludedBaseline + 1 for krmvVal in krmv]
                 #Add Trace, mean of the event,the samplerate, coefficients and baseline to the New Event class
-                newEvent.SetEvent(Trace,localBaseline,loadedData['samplerate'])
+                newEvent.SetEvent(Trace,beginEvent,localBaseline,loadedData['samplerate'])
                 newEvent.SetCoefficients(coefficients,loadedData['v1'])
                 newEvent.SetBaselineTrace(traceBefore,traceAfter)
-                #newEvent.SetCUSUMVariables(mc, kd, krmv)
+                newEvent.SetCUSUMVariables(mc, kd, krmv)
 
                 #Add event to TranslocationList
                 translocationEventList.AddEvent(newEvent)
@@ -185,6 +189,7 @@ def LoadEvents(loadname):
     shelfFile.close()
     AllEvents=NC.AllEvents()
     AllEvents.AddEvent(TranslocationEvents)
+    AllEvents.SetFolder(loadname)
     return AllEvents
 
 if __name__=='__main__':
@@ -209,7 +214,7 @@ if __name__=='__main__':
             outputData=os.path.dirname(inputData) + os.sep + 'Data' + os.sep + 'Data' + datetime.date.today().strftime("%Y%m%d")
 
 
-    coefficients = {'a': 0.999, 'E': 0, 'S': 5, 'eventlengthLimit': 200e-3, 'minEventLength': 500e-6, 'hbook':1,'delta':2e-9,'ChimeraLowPass':10e3}
+    coefficients = {'a': 0.999, 'E': 0, 'S': 5, 'eventlengthLimit': 200e-3, 'minEventLength': 500e-6, 'hbook':1,'delta':0.2e-9,'ChimeraLowPass':10e3}
     if args.coeff is not None:
         if len(args.coeff) % 2 == 0:
             for i in range(0, len(coefficients.keys()), 2):

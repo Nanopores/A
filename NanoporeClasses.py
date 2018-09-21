@@ -17,14 +17,16 @@ class TranslocationEvent:
         self.filename = filename
         self.type=type
 
-    def SetEvent(self,eventTrace,baseline,samplerate):
+    def SetEvent(self,eventTrace,beginEvent,baseline,samplerate):
         self.eventTrace=eventTrace
         self.baseline=baseline
         self.samplerate=samplerate
+        self.beginEvent=beginEvent
+        self.endEvent=beginEvent+len(eventTrace)
 
         self.meanTrace=np.mean(eventTrace)
         self.minTrace = np.min(eventTrace)
-        self.lengthEvents=len(eventTrace)/samplerate
+        self.eventLength=len(eventTrace)/samplerate
 
         if self.type=='Real':
             self.currentDrop=baseline-self.meanTrace
@@ -44,8 +46,11 @@ class TranslocationEvent:
         self.changeTimes=changeTimes
 
         self.kd=kd
-        # self.krmv=krmv
-        # self.mc=mc
+        self.segmentedSignal=segmentedSignal
+        self.changeTimes=changeTimes
+        self.beginEventCUSUM=changeTimes[0]
+        self.endEventCUSUM = changeTimes[-1]
+        self.eventLengthCUSUM=(changeTimes[-1]-changeTimes[0])/self.samplerate
 
     def PlotEvent(self):
         part1=np.append(self.before,self.eventTrace)
@@ -118,6 +123,8 @@ class AllEvents:
             else:
                 savefile = savename
 
+        self.savefile=savefile
+
         #Check if directory exists
         directory = os.path.dirname(savefile)
         if not os.path.exists(directory):
@@ -127,10 +134,10 @@ class AllEvents:
         shelfFile['TranslocationEvents']=self.events
         shelfFile.close()
         print('saved as: ' + savefile + '.dat')
-        # if os.path.exists(savefile + '.bak'):
-        #     os.remove(savefile + '.bak')
-        # if os.path.exists(savefile + '.dir'):
-        #     os.remove(savefile + '.dir')
+
+
+    def SetFolder(self,loadname):
+        self.savefile=loadname
 
     def GetEventsMinCondition(self,minCurrent=-math.inf,maxCurrent=math.inf,minLength=0,maxLength=math.inf):
         minCurrent = -math.inf if not minCurrent else minCurrent
@@ -142,6 +149,7 @@ class AllEvents:
         for event in self.events:
             if minCurrent<event.currentDrop<maxCurrent and minLength<event.lengthEvents<maxLength:
                 newEvents.AddEvent(event)
+        newEvents.SetFolder(self.savefile)
         print('selected {} events from {}'.format(len(newEvents.events), len(self.events)))
         return newEvents
 
@@ -158,5 +166,76 @@ class AllEvents:
         for event in self.events:
             appendTrace.extend(event.eventTrace)
 
-        plt.hist(appendTrace,bins=40)
+        fig, ax = plt.subplots(figsize=(6, 10))
+
+        weights = np.ones_like(appendTrace) / float(len(appendTrace))
+        ax.hist(appendTrace,weights=weights,bins=40,orientation='horizontal')
+        ax.yaxis.set_major_formatter(Amp)
+
+        savefile=self.savefile
+        # Check if directory exists
+        directory = os.path.dirname(savefile)
+        fig.savefig(directory + os.sep + 'Histogram.pdf', transparent=True)
         plt.show()
+
+
+    def PlotI_tau(self,  normalized=False):
+
+        current = [event.currentDrop for event in self.events]
+        tau=[event.eventLength for event in self.events]
+
+        # definitions for the axes
+        left, width = 0.15, 0.55
+        bottom, height = 0.1, 0.6
+        left_h = left + width + 0.015
+        bottom_h = bottom + height + 0.015
+
+        rect_scatter = [left, bottom, width, height]
+        rect_histx = [left, bottom_h, width, 0.2]
+        rect_histy = [left_h, bottom, 0.2, height]
+
+        # start with a rectangular Figure
+        fig = plt.figure(1, figsize=(10, 8))
+
+        axScatter = plt.axes(rect_scatter)
+        axHistx = plt.axes(rect_histx, sharex=axScatter)
+        axHisty = plt.axes(rect_histy, sharey=axScatter)
+
+        # the scatter plot:
+        axScatter.scatter(tau, current, color='tomato', marker='o', s=30, linewidths=0.1, edgecolors='red') # added some stuff here to improve aesthetics
+
+        # now determine nice limits by hand:
+        extra = 0.1  # 0.1 = 10%
+        tauRange = np.max(tau) - np.min(tau)
+        currentClean = [x for x in current if str(x) != 'nan']
+        currentRange = np.max(currentClean) - np.min(currentClean)
+        #
+        # tauLim = (int(tauMax/binwidth) + 1) * binwidth
+        # currentLim = (int(currentMax/binwidth) + 1) * binwidth
+
+        axScatter.set_xlim((np.min(tau) - extra * tauRange, np.max(tau) + extra * tauRange))
+        axScatter.set_ylim((np.min(currentClean) - extra * currentRange, np.max(currentClean) + extra * currentRange))
+
+        # tauBins = np.arange(-tauLim, tauLim + binwidth, binwidth)
+        # currentBins = np.arange(-currentLim, currentLim + binwidth, binwidth)
+        axHistx.hist(tau, bins=50, color='tomato')
+        plt.setp(axHistx.get_xticklabels(), visible=False)
+        axHisty.hist(currentClean, bins=50, orientation='horizontal', color='tomato')   #increased binning here to avoid overlapping bars in the histogram, added color option
+        plt.setp(axHisty.get_yticklabels(), visible=False)
+
+        axScatter.set_xlabel('Event length (s)')
+        axScatter.xaxis.set_major_formatter(Time)
+        if normalized:
+            axScatter.set_ylabel('current drop (normalized)')
+        else:
+            axScatter.set_ylabel('current drop (A)')
+            axScatter.yaxis.set_major_formatter(Amp)
+
+
+        savefile=self.savefile
+        # Check if directory exists
+        directory = os.path.dirname(savefile)
+        fig.savefig(directory + os.sep + 'PlotITau.pdf', transparent=True)
+
+        plt.show()
+
