@@ -10,6 +10,7 @@ from tkinter import Tk
 from tkinter.filedialog import askopenfilenames
 from matplotlib.font_manager import FontProperties
 import platform
+import csv
 
 fontP = FontProperties()
 fontP.set_size('small')
@@ -47,7 +48,6 @@ filenames = askopenfilenames() # show an "Open" dialog box and return the path t
 #filenames={'/mnt/lben-archive/2018 - CURRENT/Jochem/Chimera/2018/2018-08-27/NCC3_1MKCl_1/IV/IV_NCC_1MKCl_1_20180827_084204.log'}
 
 for filename in filenames:
-    os.chdir(os.path.dirname(filename))
     print(filename)
     #Make Dir to save images
     output = uf.OpenFile(filename)
@@ -125,6 +125,17 @@ for filename in filenames:
 
 
     figIV.savefig(directory + os.sep + str(os.path.split(filename)[1]) + Type+'IV_i1.pdf', transparent=True)
+
+
+
+    x=AllData[current]['Voltage'][ind]
+    y=AllData[current]['Mean'][ind]
+
+    csvfile=directory + os.sep + str(os.path.split(filename)[1]) + Type+'IV_i1.csv'
+    with open(csvfile, 'w') as output:
+        writer=csv.writer(output, lineterminator='\n')
+        for i in range(len(x)):
+            writer.writerow([x[i] , y[i]])
+
     plt.show()
     figIV.clear()
-
