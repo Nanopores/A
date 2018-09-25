@@ -128,18 +128,22 @@ def eventdetection(fullfilename, coefficients, CutTraces=False, showFigures = Fa
             traceAfter = loadedData['i1'][int(endEvent):int(endEvent) + IncludedBaseline]
 
             if lengthevent<=(minTime*loadedData['samplerate']) and lengthevent>3:
-                newEvent = NC.TranslocationEvent(fullfilename,'impulse')
+
+                newEvent = NC.TranslocationEvent(fullfilename,'Impulse')
 
                 # Add Trace, mean of the event,the samplerate, coefficients and baseline to the New Event class
                 newEvent.SetEvent(Trace, beginEvent,localBaseline, loadedData['samplerate'])
-                newEvent.SetCoefficients(coefficients, loadedData['v1'])
+                if 'blockLength' in loadedData:
+                    voltI = int(beginEvent/loadedData['blockLength'])
+                else:
+                    voltI = int(0)
+                newEvent.SetCoefficients(coefficients, loadedData['v1'][voltI])
                 newEvent.SetBaselineTrace(traceBefore, traceAfter)
 
                 # Add event to TranslocationList
                 translocationEventList.AddEvent(newEvent)
             elif lengthevent>(minTime*loadedData['samplerate']) and lengthevent<(coefficients['eventlengthLimit']*loadedData['samplerate']):
                 #Make new event class
-                newEvent=NC.TranslocationEvent(fullfilename,'Real')
 
                 #CUSUM fit
                 sigma = np.sqrt(stdEvent)
@@ -147,10 +151,24 @@ def eventdetection(fullfilename, coefficients, CutTraces=False, showFigures = Fa
                 (mc, kd, krmv)= Functions.CUSUM(loadedData['i1'][int(beginEvent) - IncludedBaseline: int(endEvent) + IncludedBaseline], delta, h)
                 krmv = [krmvVal + int(beginEvent) - IncludedBaseline + 1 for krmvVal in krmv]
                 #Add Trace, mean of the event,the samplerate, coefficients and baseline to the New Event class
+                if len(krmv)>2:
+                    newEvent = NC.TranslocationEvent(fullfilename, 'Real')
+                    Trace=loadedData['i1'][int(krmv[0]):int(krmv[-1])]
+                    traceBefore = loadedData['i1'][int(krmv[0]) - IncludedBaseline:int(krmv[0])]
+                    traceAfter = loadedData['i1'][int(krmv[-1]):int(krmv[-1]) + IncludedBaseline]
+                    beginEvent=krmv[0]
+                else:
+                    newEvent = NC.TranslocationEvent(fullfilename, 'Rough')
+
                 newEvent.SetEvent(Trace,beginEvent,localBaseline,loadedData['samplerate'])
-                newEvent.SetCoefficients(coefficients,loadedData['v1'])
-                newEvent.SetBaselineTrace(traceBefore,traceAfter)
+                newEvent.SetBaselineTrace(traceBefore, traceAfter)
                 newEvent.SetCUSUMVariables(mc, kd, krmv)
+
+                if 'blockLength' in loadedData:
+                    voltI = int(beginEvent/loadedData['blockLength'])
+                else:
+                    voltI = int(0)
+                newEvent.SetCoefficients(coefficients,loadedData['v1'][voltI])
 
                 #Add event to TranslocationList
                 translocationEventList.AddEvent(newEvent)

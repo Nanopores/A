@@ -24,6 +24,7 @@ import pyabf
 from matplotlib.ticker import EngFormatter
 from pprint import pprint
 import shelve
+from tkinter import filedialog
 
 # if not 'verbose' in globals():
 #     verbose = False
@@ -42,7 +43,11 @@ def SaveVariables(savename, **kwargs):
         savefile=os.path.join(savename,os.path.basename(savename)+'_Events')
     else:
         if os.path.isfile(savename + '.dat'):
-            raise IOError('File ' + savename + '.dat already exists.')
+            savename = filedialog.asksaveasfile(mode='w', defaultextension=".dat")
+            if savename is None:  # asksaveasfile return `None` if dialog closed with "cancel".
+                return
+            savefile=base=os.path.splitext(savename.name)[0]
+            # raise IOError('File ' + savename + '.dat already exists.')
         else:
             savefile = savename
 
@@ -1187,10 +1192,11 @@ def xcorr(x, y, k, normalize=True):
 
 
 def CUSUM(input, delta, h):
-    Nd = 0
+
+    #initialization
+    Nd = k0 = 0
     kd = []
     krmv = []
-    k0 = 0
     k = 1
     l = len(input)
     m = np.zeros(l)
@@ -1236,7 +1242,7 @@ def CUSUM(input, delta, h):
     if Nd == 0:
         mc = np.mean(input) * np.ones(k)
     elif Nd == 1:
-        mc = np.append(m[krmv[0]] * np.ones(krmv[0]), m[k] * np.ones(k - krmv[0]))
+        mc = np.append(m[krmv[0]] * np.ones(krmv[0]), m[k-1] * np.ones(k - krmv[0]))
     else:
         mc = m[krmv[0]] * np.ones(krmv[0])
         for ii in range(1, Nd):
