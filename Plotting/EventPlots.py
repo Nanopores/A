@@ -369,10 +369,13 @@ if __name__=='__main__':
     args = parser.parse_args()
     inputData=args.input
     if inputData==None:
-        inputData=askopenfilenames()
+        inputData=askopenfilenames(filetypes=[('data files', 'Data*.dat')])
+        if inputData:
+            inputData=os.path.splitext(inputData[0])[0]
 
-    shelfFile=shelve.open(inputData)
-    translocationEvents=shelfFile['TranslocationEvents']
-    shelfFile.close()
+    if inputData:
+        shelfFile=shelve.open(inputData)
+        translocationEvents=shelfFile['TranslocationEvents']
+        shelfFile.close()
 
-    PlotG_tau(translocationEvents.events,inputData)
+        PlotG_tau(translocationEvents.events,inputData)
