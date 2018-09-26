@@ -159,6 +159,7 @@ def PlotG_tau(events, savefile, showCurrentInstead=False, normalized=False,showC
         if len(alltau)>0:
             limits(alltau,allyVals,axScatter)
         setlabels()
+        plt.title('{} number of events'.format(len(alltau)))
 
     PlotEvents(visBool)
 
