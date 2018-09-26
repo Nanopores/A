@@ -230,7 +230,7 @@ def PlotEvent(event,ax=None, savefile=os.getcwd(), showCUSUM=False):
 
     fn=filename_w_ext = os.path.basename(event.filename)
 
-    plotTitle = fn + '\n' + 'Event length: {}\nConductance drop: {}'.format(Time.format_data(eventLength), Cond.format_data(currentDrop/event.voltage))
+    plotTitle = fn + '\n' + 'Event length: {}\nConductance drop: {} with voltage {}'.format(Time.format_data(eventLength), Cond.format_data(currentDrop/event.voltage),Volt.format_data(event.voltage))
 
     ax.set_xlabel('time (s)')
     ax.set_ylabel('current (A)')
