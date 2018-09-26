@@ -1,13 +1,15 @@
 ﻿import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 from matplotlib.ticker import EngFormatter
+from matplotlib.widgets import CheckButtons, Button
 import argparse
 from tkinter.filedialog import askopenfilenames,askdirectory
 import shelve
-from matplotlib.ticker import EngFormatter
 import os
 from pprint import pprint
-from matplotlib.widgets import CheckButtons, Button
+
+import Functions
 
 
 Amp = EngFormatter(unit='A', places=2)
@@ -179,7 +181,7 @@ def PlotG_tau(events, savefile, showCurrentInstead=False, normalized=False,showC
                 figi = plt.figure(figsize=(10, 6))
                 for subplotnum, dataind in enumerate(event.ind):
                     ax = figi.add_subplot(N, 1, subplotnum + 1)
-                    PlotEvent(catEvents[i][dataind], ax, showCUSUM)
+                    PlotEvent(catEvents[i][dataind], ax, savefile, showCUSUM)
                 figi.show()
         return True
 
@@ -188,11 +190,32 @@ def PlotG_tau(events, savefile, showCurrentInstead=False, normalized=False,showC
 
     plt.show()
 
-def PlotEvent(event,ax=None,showCUSUM=False):
+def PlotEvent(event,ax=None, savefile=os.getcwd(), showCUSUM=False):
 
+    #Link event to axes to keep it around
+
+    ax._event=event
     if ax is None:
-        plt.figure(figsize=(10, 6))
+        #plt.figure(figsize=(10, 6))
         fig, ax = plt.subplots(figsize=(10, 6))
+
+    def SavePlot(eventMouse):
+        # Check if directory exists
+        directory = os.path.dirname(savefile)
+        savename=directory + os.sep + 'event.pdf'
+        i=1
+
+        while os.path.exists(directory + os.sep + 'event_{}.pdf'.format(i)):
+            i += 1
+        savename = directory + os.sep + 'event_{}.pdf'.format(i)
+
+        eventMouse.inaxes.figure.savefig(savename, transparent=True)
+
+    def ShowFullTrace(eventMouse):
+        event=eventMouse.inaxes.figure.axes[0]._event
+        ShowEventInTrace(event)
+
+
 
 
     if showCUSUM and hasattr(event, 'changeTimes') and len(event.changeTimes)>2:
@@ -204,13 +227,36 @@ def PlotEvent(event,ax=None,showCUSUM=False):
         currentDrop = event.currentDrop
 
 
-    part1=np.append(event.before,event.eventTrace)
-
     fn=filename_w_ext = os.path.basename(event.filename)
 
     plotTitle = fn + '\n' + 'Event length: {}\nConductance drop: {}'.format(Time.format_data(eventLength), Cond.format_data(currentDrop/event.voltage))
-    #PlotCurrentTraceBaseline(self.before, self.eventTrace, self.after, self.samplerate, titleplot)
 
+    ax.set_xlabel('time (s)')
+    ax.set_ylabel('current (A)')
+    ax.xaxis.set_major_formatter(Time)
+    ax.yaxis.set_major_formatter(Amp)
+
+    if plotTitle:
+        plt.title(plotTitle)
+
+
+    #Add buttons
+
+    #Save button
+    bax = plt.axes([0.77, 0.95, 0.15, 0.03])
+    bsave = Button(bax, 'Save figure')
+    bsave.on_clicked(SavePlot)
+    #Link button to axes to preserve function
+    ax._bsave = bsave
+
+    #Show original trace button
+    bax2 = plt.axes([0.77, 0.9, 0.15, 0.03])
+    bfull = Button(bax2, 'Show original Trace')
+    # Link button to axes to preserve function
+    ax._bfull = bfull
+    bfull.on_clicked(ShowFullTrace)
+
+    #Plotting
     timeVals1 = np.linspace(0, len(event.before) / event.samplerate, num=len(event.before))
     timeVals2 = np.linspace(0 + max(timeVals1), len(event.eventTrace) / event.samplerate + max(timeVals1),
                             num=len(event.eventTrace))
@@ -243,16 +289,44 @@ def PlotEvent(event,ax=None,showCUSUM=False):
         meanTrace = np.full(len(event.eventTrace), event.baseline-event.currentDrop)
         ax.plot(timeVals2,meanTrace, '--', color='mediumslateblue')
 
+    if 'fig' in locals():
+         plt.show()
+
+def ShowEventInTrace(event):
+    filename=event.filename
+    loadedData = Functions.OpenFile(filename,10e3,True) #, ChimeraLowPass, True, CutTraces)
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    FullTrace=loadedData['i1']
+
+    times=np.linspace(0, len(FullTrace) / event.samplerate, num=len(FullTrace))
+    ax.plot(times,FullTrace,zorder=1)
+
     ax.set_xlabel('time (s)')
     ax.set_ylabel('current (A)')
     ax.xaxis.set_major_formatter(Time)
     ax.yaxis.set_major_formatter(Amp)
 
-    if plotTitle:
-        plt.title(plotTitle)
 
-    if 'fig' in locals():
-        plt.show()
+    # Create a Rectangle patch
+    if hasattr(event,'changeTimes') and len(event.changeTimes)>2:
+        start_i = (event.beginEventCUSUM - len(event.before))/event.samplerate
+        end_i = (event.endEventCUSUM + len(event.after))/event.samplerate
+    else:
+        start_i = (event.beginEvent - len(event.before))/event.samplerate
+        end_i = (event.endEvent + len(event.after))/event.samplerate
+    minE=np.min(np.append(np.append(event.eventTrace,event.before),event.after))
+    maxE=np.max(np.append(np.append(event.eventTrace,event.before),event.after))
+    rect = patches.Rectangle((start_i, minE-0.1*(maxE-minE)), end_i-start_i, maxE+0.2*(maxE-minE)-minE, linestyle='--', linewidth=1, edgecolor='r', facecolor='none',zorder=10)
+
+    # Add the patch to the Axes
+    ax.add_patch(rect)
+
+    plt.title(os.path.basename(filename))
+
+    plt.show()
+
 
 def PlotCurrentTrace(currentTrace, samplerate):
     timeVals = np.linspace(0, len(currentTrace) / samplerate, num=len(currentTrace))
