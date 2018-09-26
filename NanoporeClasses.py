@@ -42,11 +42,11 @@ class TranslocationEvent:
         self.before=before
         self.after=after
 
-        self.baseline=mean(np.append(before,after))
+        self.baseline=np.mean(np.append(before,after))
         if self.type=='Real':
-            self.currentDrop=baseline-self.meanTrace
+            self.currentDrop = self.baseline - self.meanTrace
         else:
-            self.currentDrop = baseline - self.minTrace
+            self.currentDrop = self.baseline - self.minTrace
 
 
     def SetCUSUMVariables(self, segmentedSignal, kd, changeTimes):
