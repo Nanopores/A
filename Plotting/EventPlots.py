@@ -24,7 +24,7 @@ def PlotG_tau(events, savefile, showCurrentInstead=False, normalized=False,showC
 
     #categorize events in three types
     #CUSUM fitted events
-    if any(hasattr(event, 'changeTimes') and len(event.changeTimes) for event in events):
+    if any(hasattr(event, 'changeTimes') and len(event.changeTimes)>2 for event in events):
         CUSUMIndices, CUSUMEdevents = zip(*[(ind, event) for ind, event in enumerate(events) if
                                         hasattr(event, 'changeTimes') and len(event.changeTimes) > 2])
     else:
