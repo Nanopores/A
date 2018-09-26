@@ -29,7 +29,7 @@ class TranslocationEvent:
         self.minTrace = np.min(eventTrace)
         self.eventLength=len(eventTrace)/samplerate
 
-        if self.type=='Real':
+        if self.type=='Rough':
             self.currentDrop=baseline-self.meanTrace
         else:
             self.currentDrop = baseline - self.minTrace
@@ -43,7 +43,7 @@ class TranslocationEvent:
         self.after=after
 
         self.baseline=np.mean(np.append(before,after))
-        if self.type=='Real':
+        if self.type=='Rough':
             self.currentDrop = self.baseline - self.meanTrace
         else:
             self.currentDrop = self.baseline - self.minTrace
