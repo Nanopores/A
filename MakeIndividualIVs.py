@@ -46,8 +46,8 @@ innerDiameterShaft = 514e-9
 
 CurveFit='PolyFit' #PolyFit YorkFit
 
-#filenames = askopenfilenames() # show an "Open" dialog box and return the path to the selected file
-filenames={'/mnt/lben-archive/2018 - CURRENT/Mike(archives)/Raw data/Oct/20181015/afterstamping/P64_1MKCl_IV_aftrECRtrial2.dat'}
+filenames = askopenfilenames() # show an "Open" dialog box and return the path to the selected file
+#filenames={'/mnt/lben-archive/2018 - CURRENT/Mike(archives)/Raw data/Oct/20181015/afterstamping/P64_1MKCl_IV_aftrECRtrial2.dat'}
 
 for filename in filenames:
     os.chdir(os.path.dirname(filename))
