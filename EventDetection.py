@@ -14,6 +14,7 @@ import datetime
 from tkinter.filedialog import askopenfilenames,askdirectory
 import timeit
 
+
 timeInSec= EngFormatter(unit='s', places=2)
 
 
@@ -39,10 +40,10 @@ def batcheventdetection(folder,extension,coefficients, forceRun=False, CutTraces
                 tEL=shelfFile['translocationEvents']
 
                 # If coefficients before are not identical, analysis needs to run again
-                if ~(coefficientsloaded==coefficients):
-                    forceRun=True
-                else:
+                if (coefficientsloaded==coefficients):
                     print('loaded from file')
+                else:
+                    forceRun = True
             except:
                 #Except if cannot be loaded, analysis needs to run
                 forceRun=True
@@ -110,7 +111,9 @@ def eventdetection(fullfilename, coefficients, CutTraces=False, showFigures = Fa
         plt.draw()
         plt.pause(0.001)
 
-
+    print('CUSUM fitting...', end='')
+    #Call RecursiveLowPassFast to detect events in current trace
+    start_time = timeit.default_timer()
     #Loop over all detected events
     for event in events:
         beginEvent = event[0]
@@ -172,6 +175,8 @@ def eventdetection(fullfilename, coefficients, CutTraces=False, showFigures = Fa
 
                 #Add event to TranslocationList
                 translocationEventList.AddEvent(newEvent)
+
+    print('done. Calculation took {}'.format(timeInSec.format_data(timeit.default_timer() - start_time)))
 
     #Plot events if True
     if showFigures:
@@ -235,9 +240,9 @@ if __name__=='__main__':
     coefficients = {'a': 0.999, 'E': 0, 'S': 5, 'eventlengthLimit': 200e-3, 'minEventLength': 500e-6, 'hbook':1,'delta':0.2e-9,'ChimeraLowPass':10e3}
     if args.coeff is not None:
         if len(args.coeff) % 2 == 0:
-            for i in range(0, len(coefficients.keys()), 2):
+            for i in range(0, len(args.coeff), 2):
                 if i <= len(args.coeff):
-                    coefficients[string(args.coeff[i])]=float(args.coeff[i+1])
+                    coefficients[str(args.coeff[i])]=float(args.coeff[i+1])
 
     extension=args.ext
     if extension==None:

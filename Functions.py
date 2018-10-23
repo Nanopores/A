@@ -1239,10 +1239,10 @@ def CUSUM(input, delta, h):
             kd.append(k)
             if gp[k] > h:
                 kmin = np.argmin(Sp[k0:k + 1])
-                krmv.append(kmin + k0 - 1)
+                krmv.append(kmin + k0)
             else:
                 kmin=np.argmin(Sn[k0:k+1])
-                krmv.append(kmin + k0 - 1)
+                krmv.append(kmin + k0)
 
             #Re-initialize
             k0 = k
