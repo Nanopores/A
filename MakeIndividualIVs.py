@@ -29,11 +29,11 @@ if (platform.system()=='Darwin'):
     os.system('''/usr/bin/osascript -e 'tell app "Finder" to set frontmost of process "python" to true' ''')
 
 expname = 'All'
-Type='Nanocapillary' #Nanopore, Nanocapillary, NanocapillaryShrunken
+Type='Nanopore' #Nanopore, Nanocapillary, NanocapillaryShrunken
 reversePolarity = 0
 specificConductance=10.5 #10.5 S/m for 1M KCl
 
-delay=0.5 #seconds for reading current
+delay=2 #seconds for reading current
 
 #Nanopore
 poreLength =  1e-9
@@ -44,8 +44,10 @@ innerDiameter = 0.2e-3
 taperLengthShaft = 543e-9
 innerDiameterShaft = 514e-9
 
-filenames = askopenfilenames() # show an "Open" dialog box and return the path to the selected file
-#filenames={'/mnt/lben-archive/2018 - CURRENT/Jochem/Chimera/2018/2018-08-27/NCC3_1MKCl_1/IV/IV_NCC_1MKCl_1_20180827_084204.log'}
+CurveFit='PolyFit' #PolyFit YorkFit
+
+#filenames = askopenfilenames() # show an "Open" dialog box and return the path to the selected file
+filenames={'/mnt/lben-archive/2018 - CURRENT/Mike(archives)/Raw data/Oct/20181015/afterstamping/P64_1MKCl_IV_aftrECRtrial2.dat'}
 
 for filename in filenames:
     os.chdir(os.path.dirname(filename))
@@ -61,7 +63,7 @@ for filename in filenames:
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    AllData = uf.MakeIVData(output, delay = delay)#, UseVoltageRange = [-0.4, 0.4])
+    AllData = uf.MakeIVData(output, approach='mean', delay = delay)#, UseVoltageRange = [-0.4, 0.4])
     if AllData == 0:
         print('!!!! No Sweep in: ' + filename)
         continue
@@ -92,16 +94,18 @@ for filename in filenames:
 
     #ax1IV = uf.PlotIV(output, AllData, current='i1', unit=1, axis = ax1IV, WithFit = 1, useEXP = 0, color ='y',
     #                labeltxt='MeanFit', PoreSize=[10, 1e-9], title=str(os.path.split(filename)[1]))
+    Slope=AllData[current][CurveFit]['Slope']
+    Yintercept=AllData[current][CurveFit]['Yintercept']
     if Type=='Nanopore':
         textstr = 'Nanopore Size\n\nSpecific Conductance: {}\nLenght: {}\n\nConductance: {}\nDiameter: {}'\
-            .format(SpesCond.format_data(specificConductance),size.format_data(poreLength), Cond.format_data(AllData[current]['YorkFitValues']['Slope']),
-                    size.format_data(uf.CalculatePoreSize(AllData[current]['YorkFitValues']['Slope'], poreLength, specificConductance)))
+            .format(SpesCond.format_data(specificConductance),size.format_data(poreLength), Cond.format_data(Slope),
+                    size.format_data(uf.CalculatePoreSize(Slope, poreLength, specificConductance)))
     elif Type=='Nanocapillary':
         textstr = 'Nanocapillary Size\n\nSpecific Conductance: {}\nTaper lenght: {}:\nInner diameter: {}:\n\nConductance: {}\nDiameter: {}'.\
             format(SpesCond.format_data(specificConductance),size.format_data(taperLength),size.format_data(innerDiameter),Cond.format_data(AllData[current]['YorkFitValues']['Slope']),
-                   size.format_data(uf.CalculateCapillarySize(AllData[current]['YorkFitValues']['Slope'], innerDiameter, taperLength, specificConductance)))
+                   size.format_data(uf.CalculateCapillarySize(Slope, innerDiameter, taperLength, specificConductance)))
     elif Type=='NanocapillaryShrunken':
-        NCSize=uf.CalculateShrunkenCapillarySize(AllData[current]['YorkFitValues']['Slope'],innerDiameter, taperLength,specificConductance,taperLengthShaft,innerDiameterShaft)
+        NCSize=uf.CalculateShrunkenCapillarySize(Slope,innerDiameter, taperLength,specificConductance,taperLengthShaft,innerDiameterShaft)
         textstr = 'Shrunken Nanocapillary Size\n\nSpecific Conductance: {}\nTaper lenght: {}\nInner diameter: {}\nTaper length at shaft: {}' \
                   '\nInner Diameter at shaft: {}:\n\nConductance: {}\nDiameter: {}'.\
             format(SpesCond.format_data(specificConductance),size.format_data(taperLength),size.format_data(innerDiameter),
@@ -112,12 +116,13 @@ for filename in filenames:
     ax1IV.text(0.05, 0.95, textstr, transform=ax1IV.transAxes, fontsize=12,
               verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
 
+
     ind = np.argsort(AllData[current]['Voltage'])
-    p = np.polyfit(AllData[current]['Voltage'][ind], AllData[current]['Mean'][ind], 1)
+
     ax1IV.errorbar(AllData[current]['Voltage'][ind], AllData[current]['Mean'][ind],
-                  yerr=AllData[current]['STD'][ind], fmt='o', color='b')
-    ax1IV.plot(AllData[current]['Voltage'][ind], np.polyval(p, AllData[current]['Voltage'][ind]), color='r')
-    ax1IV.set_title(str(os.path.split(filename)[1])+ '\nR=' + Res.format_data(1/p[0]) + ', G=' + Cond.format_data(p[0]))
+                  yerr=AllData[current]['SE'][ind], fmt='o', color='b')
+    ax1IV.plot(AllData[current]['Voltage'][ind], np.polyval([Slope,Yintercept], AllData[current]['Voltage'][ind]), color='r')
+    ax1IV.set_title(str(os.path.split(filename)[1])+ '\nR=' + Res.format_data(1/Slope) + ', G=' + Cond.format_data(Slope))
     ax1IV.set_ylabel('Current')
     ax1IV.set_xlabel('Voltage')
     ax1IV.xaxis.set_major_formatter(EngFormatter(unit='V'))

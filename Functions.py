@@ -376,6 +376,7 @@ def MakeIVData(output, approach = 'mean', delay = 0.7, UseVoltageRange=0):
         Item['EndPoint'] = np.zeros(l, dtype=np.uint64)
         Item['Mean'] = np.zeros(l)
         Item['STD'] = np.zeros(l)
+        Item['SE'] = np.zeros(l)
         Item['SweepedChannel'] = sweepedChannel
         ItemExp['SweepedChannel'] = sweepedChannel
         Item['YorkFitValues'] = {}
@@ -393,6 +394,7 @@ def MakeIVData(output, approach = 'mean', delay = 0.7, UseVoltageRange=0):
             Item['STD'][0] = np.std(trace[-np.int64(output['samplerate']):])
         else:
             Item['STD'][0] = np.std(trace)
+        Item['SE'][0]=Item['STD'][0]/np.sqrt(len(trace))
         for i in range(1, len(Values) - 1):
             trace = output[current][ChangePoints[i - 1] + delayinpoints : ChangePoints[i]]
             Item['Voltage'][i] = Values[i]
@@ -406,6 +408,7 @@ def MakeIVData(output, approach = 'mean', delay = 0.7, UseVoltageRange=0):
                 Item['STD'][i] = np.std(trace[-np.int64(output['samplerate']):])
             else:
                 Item['STD'][i] = np.std(trace)
+            Item['SE'][i] = Item['STD'][i] / np.sqrt(len(trace))
             print('{}, {},{}'.format(i, ChangePoints[i - 1] + delayinpoints, ChangePoints[i]))
         # Last
         if 1:
@@ -422,6 +425,7 @@ def MakeIVData(output, approach = 'mean', delay = 0.7, UseVoltageRange=0):
                 Item['STD'][-1:] = np.std(trace[-np.int64(output['samplerate']):])
             else:
                 Item['STD'][-1:] = np.std(trace)
+            Item['SE'][-1:] = Item['STD'][-1:] / np.sqrt(len(trace))
 
         ## GET RECTIFICATION FACTOR
         parts = {'pos': Item['Voltage'] > 0, 'neg': Item['Voltage'] < 0}
@@ -500,15 +504,15 @@ def MakeIVData(output, approach = 'mean', delay = 0.7, UseVoltageRange=0):
                     ItemExp['Mean'][i] = np.mean(trace)
                     ItemExp['STD'][i] = np.std(trace)
 
-                ## FIT THE EXP CALCULATED VALUES ###
-                (a, b, sigma_a, sigma_b, b_save) = YorkFit(ItemExp['Voltage'], ItemExp['Mean'],
-                                                           1e-12 * np.ones(len(ItemExp['Voltage'])), ItemExp['STD'])
-                x_fit = np.linspace(min(Item['Voltage']), max(Item['Voltage']), 1000)
-                y_fit = scipy.polyval([b, a], x_fit)
-                ItemExp['YorkFitValues'] = {'x_fit': x_fit, 'y_fit': y_fit, 'Yintercept': a, 'Slope': b,
-                                            'Sigma_Yintercept': sigma_a,
-                                            'Sigma_Slope': sigma_b, 'Parameter': b_save}
-                All[current + '_Exp'] = ItemExp
+            ## FIT THE EXP CALCULATED VALUES ###
+            (a, b, sigma_a, sigma_b, b_save) = YorkFit(ItemExp['Voltage'], ItemExp['Mean'],
+                                                       1e-12 * np.ones(len(ItemExp['Voltage'])), ItemExp['STD'])
+            x_fit = np.linspace(min(Item['Voltage']), max(Item['Voltage']), 1000)
+            y_fit = scipy.polyval([b, a], x_fit)
+            ItemExp['YorkFitValues'] = {'x_fit': x_fit, 'y_fit': y_fit, 'Yintercept': a, 'Slope': b,
+                                        'Sigma_Yintercept': sigma_a,
+                                        'Sigma_Slope': sigma_b, 'Parameter': b_save}
+            All[current + '_Exp'] = ItemExp
 
         ##Remove NaNs
         nans = np.isnan(Item['Mean'][:])
@@ -518,6 +522,7 @@ def MakeIVData(output, approach = 'mean', delay = 0.7, UseVoltageRange=0):
         Item['EndPoint'] = Item['EndPoint'][nans]
         Item['Mean'] = Item['Mean'][nans]
         Item['STD'] = Item['STD'][nans]
+        Item['SE'] = Item['SE'][nans]
 
         ## Restrict to set voltage Range
         if UseVoltageRange is not 0:
@@ -528,13 +533,21 @@ def MakeIVData(output, approach = 'mean', delay = 0.7, UseVoltageRange=0):
             Item['EndPoint'] = Item['EndPoint'][ind].flatten()
             Item['Mean'] = Item['Mean'][ind].flatten()
             Item['STD'] = Item['STD'][ind].flatten()
+            Item['SE'] = Item['SE'][ind].flatten()
 
         ## FIT THE MEAN CALCULATED VALUES ###
+        #Yorkfit
         (a, b, sigma_a, sigma_b, b_save) = YorkFit(Item['Voltage'].flatten(), Item['Mean'].flatten(), 1e-9 * np.ones(len(Item['Voltage'])), Item['STD'].flatten())
         x_fit = np.linspace(min(Item['Voltage']), max(Item['Voltage']), 1000)
         y_fit = scipy.polyval([b, a], x_fit)
-        Item['YorkFitValues'] = {'x_fit': x_fit, 'y_fit': y_fit, 'Yintercept': a, 'Slope': b, 'Sigma_Yintercept': sigma_a,
+        Item['YorkFit'] = {'x_fit': x_fit, 'y_fit': y_fit, 'Yintercept': a, 'Slope': b, 'Sigma_Yintercept': sigma_a,
                          'Sigma_Slope': sigma_b, 'Parameter': b_save}
+        # Yorkfit
+        p = np.polyfit(Item['Voltage'].flatten(), Item['Mean'].flatten(), 1)
+        x_fit2 = np.linspace(min(Item['Voltage']), max(Item['Voltage']), 1000)
+        y_fit2 = scipy.polyval(p, x_fit)
+        Item['PolyFit'] = {'x_fit': x_fit2, 'y_fit': y_fit2, 'Yintercept': p[1], 'Slope': p[0]}
+
 
         All[current] = Item
         All['Currents'] = currents
