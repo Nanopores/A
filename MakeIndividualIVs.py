@@ -36,7 +36,7 @@ specificConductance=10.5 #10.5 S/m for 1M KCl
 delay=2 #seconds for reading current
 
 #Nanopore
-poreLength =  1e-9
+poreLength =  0.65e-9
 
 #Nanocapillary
 taperLength =  3.3e-3
@@ -44,7 +44,7 @@ innerDiameter = 0.2e-3
 taperLengthShaft = 543e-9
 innerDiameterShaft = 514e-9
 
-CurveFit='PolyFit' #PolyFit YorkFit
+CurveFit='YorkFit' #PolyFit YorkFit
 
 filenames = askopenfilenames() # show an "Open" dialog box and return the path to the selected file
 #filenames={'/mnt/lben-archive/2018 - CURRENT/Mike(archives)/Raw data/Oct/20181015/afterstamping/P64_1MKCl_IV_aftrECRtrial2.dat'}
@@ -97,16 +97,16 @@ for filename in filenames:
     Slope=AllData[current][CurveFit]['Slope']
     Yintercept=AllData[current][CurveFit]['Yintercept']
     if Type=='Nanopore':
-        textstr = 'Nanopore Size\n\nSpecific Conductance: {}\nLenght: {}\n\nConductance: {}\nDiameter: {}'\
+        textstr = 'Nanopore Size\n\nSpecific Conductance: {}\nLength: {}\n\nConductance: {}\nDiameter: {}'\
             .format(SpesCond.format_data(specificConductance),size.format_data(poreLength), Cond.format_data(Slope),
                     size.format_data(uf.CalculatePoreSize(Slope, poreLength, specificConductance)))
     elif Type=='Nanocapillary':
-        textstr = 'Nanocapillary Size\n\nSpecific Conductance: {}\nTaper lenght: {}:\nInner diameter: {}:\n\nConductance: {}\nDiameter: {}'.\
+        textstr = 'Nanocapillary Size\n\nSpecific Conductance: {}\nTaper length: {}:\nInner diameter: {}:\n\nConductance: {}\nDiameter: {}'.\
             format(SpesCond.format_data(specificConductance),size.format_data(taperLength),size.format_data(innerDiameter),Cond.format_data(AllData[current]['YorkFitValues']['Slope']),
                    size.format_data(uf.CalculateCapillarySize(Slope, innerDiameter, taperLength, specificConductance)))
     elif Type=='NanocapillaryShrunken':
         NCSize=uf.CalculateShrunkenCapillarySize(Slope,innerDiameter, taperLength,specificConductance,taperLengthShaft,innerDiameterShaft)
-        textstr = 'Shrunken Nanocapillary Size\n\nSpecific Conductance: {}\nTaper lenght: {}\nInner diameter: {}\nTaper length at shaft: {}' \
+        textstr = 'Shrunken Nanocapillary Size\n\nSpecific Conductance: {}\nTaper length: {}\nInner diameter: {}\nTaper length at shaft: {}' \
                   '\nInner Diameter at shaft: {}:\n\nConductance: {}\nDiameter: {}'.\
             format(SpesCond.format_data(specificConductance),size.format_data(taperLength),size.format_data(innerDiameter),
                    size.format_data(taperLengthShaft),size.format_data(innerDiameterShaft), Cond.format_data(AllData[current]['YorkFitValues']['Slope']),
