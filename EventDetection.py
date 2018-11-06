@@ -17,8 +17,19 @@ import timeit
 
 timeInSec= EngFormatter(unit='s', places=2)
 
+#Default parameters
+extension = '*.log'
+coefficients = {'a': 0.999,
+                'E': 0,
+                'S': 5,
+                'eventlengthLimit': 200e-3,
+                'minEventLength': 500e-6,
+                'hbook': 1,
+                'delta': 0.2e-9,
+                'ChimeraLowPass': 10e3}
 
-def batcheventdetection(folder,extension,coefficients, forceRun=False, CutTraces=False):
+
+def batcheventdetection(folder,extension,coefficients, verbose=True, forceRun=False, CutTraces=False):
     #Create new class that contains all events
     AllEvents=NC.AllEvents()
 
@@ -26,7 +37,8 @@ def batcheventdetection(folder,extension,coefficients, forceRun=False, CutTraces
     for fullfilename in glob.glob(os.path.join(folder,extension)):
 
         #Extract filename and generate filename to save located events
-        print('analysing '+fullfilename)
+        if verbose:
+            print('analysing '+fullfilename)
         filename, file_extension = os.path.splitext(os.path.basename(fullfilename))
         directory=os.path.dirname(fullfilename) + os.sep + 'analysisfiles'
         if not os.path.exists(directory):
@@ -41,7 +53,8 @@ def batcheventdetection(folder,extension,coefficients, forceRun=False, CutTraces
 
                 # If coefficients before are not identical, analysis needs to run again
                 if (coefficientsloaded==coefficients):
-                    print('loaded from file')
+                    if verbose:
+                        print('loaded from file')
                 else:
                     forceRun = True
             except:
@@ -51,13 +64,15 @@ def batcheventdetection(folder,extension,coefficients, forceRun=False, CutTraces
 
         if forceRun:
             #Extract list of events for this file
-            tEL=eventdetection(fullfilename,coefficients,CutTraces)
-            print('Saved {} events'.format(len(tEL.events)))
+            tEL=eventdetection(fullfilename,coefficients,verbose, CutTraces)
+            if verbose:
+                print('Saved {} events'.format(len(tEL.events)))
 
             #Open savefile and save events for this file
             shelfFile['translocationEvents']=tEL
             shelfFile['coefficients']=coefficients
-            print('saved to file')
+            if verbose:
+                print('saved to file')
 
         shelfFile.close()
 
@@ -70,7 +85,7 @@ def batcheventdetection(folder,extension,coefficients, forceRun=False, CutTraces
 
 
 
-def eventdetection(fullfilename, coefficients, CutTraces=False, showFigures = False):
+def eventdetection(fullfilename, coefficients, verbose=True, CutTraces=False, showFigures = False):
     if 'ChimeraLowPass' in coefficients:
         ChimeraLowPass=coefficients['ChimeraLowPass']
     else:
@@ -81,8 +96,8 @@ def eventdetection(fullfilename, coefficients, CutTraces=False, showFigures = Fa
     delta=coefficients['delta']
     hbook=coefficients['hbook']
 
-
-    print('Recursive lowpass...', end='')
+    if verbose:
+        print('Recursive lowpass...', end='')
     #Call RecursiveLowPassFast to detect events in current trace
     start_time = timeit.default_timer()
     if 'i1Cut' in loadedData:
@@ -91,8 +106,9 @@ def eventdetection(fullfilename, coefficients, CutTraces=False, showFigures = Fa
             events.extend(Functions.RecursiveLowPassFast(cutTrace,coefficients,loadedData['samplerate']))
     else:
         events=Functions.RecursiveLowPassFast(loadedData['i1'],coefficients,loadedData['samplerate'])
-    print('done. Calculation took {}'.format(timeInSec.format_data(timeit.default_timer() - start_time)))
-    print('nr events: {}'.format(len(events)))
+    if verbose:
+        print('done. Calculation took {}'.format(timeInSec.format_data(timeit.default_timer() - start_time)))
+        print('nr events: {}'.format(len(events)))
 
     #CusumParameters = [delta sigma Normalize ImpulsionLimit IncludedBaseline TooMuchLevels IncludedBaselinePlots 1
     #                   SamplingFrequency];
@@ -111,7 +127,8 @@ def eventdetection(fullfilename, coefficients, CutTraces=False, showFigures = Fa
         plt.draw()
         plt.pause(0.001)
 
-    print('CUSUM fitting...', end='')
+    if verbose:
+        print('CUSUM fitting...', end='')
     #Call RecursiveLowPassFast to detect events in current trace
     start_time = timeit.default_timer()
     #Loop over all detected events
@@ -175,8 +192,8 @@ def eventdetection(fullfilename, coefficients, CutTraces=False, showFigures = Fa
 
                 #Add event to TranslocationList
                 translocationEventList.AddEvent(newEvent)
-
-    print('done. Calculation took {}'.format(timeInSec.format_data(timeit.default_timer() - start_time)))
+    if verbose:
+        print('done. Calculation took {}'.format(timeInSec.format_data(timeit.default_timer() - start_time)))
 
     #Plot events if True
     if showFigures:
@@ -215,6 +232,28 @@ def LoadEvents(loadname):
     AllEvents.SetFolder(loadname)
     return AllEvents
 
+def run(inputData, newExtension=None, newCoefficients={}, outputData=None, force=False, cut=False, verbose=False):
+
+    if newExtension is None:
+        newExtension = extension
+
+    for key in newCoefficients:
+        coefficients[key]=newCoefficients[key]
+
+    if os.path.isdir(inputData):
+        TranslocationEvents=batcheventdetection(inputData, newExtension, coefficients, verbose, force, cut)
+    else:
+        TranslocationEvents=eventdetection(inputData,coefficients, verbose, cut)
+
+    #Check if list is empty
+    if outputData is not None and TranslocationEvents.events:
+        if os.path.isdir(inputData):
+            outputData = inputData + os.sep + 'Data' + os.sep + 'Data' + datetime.date.today().strftime("%Y%m%d")
+        Functions.SaveVariables(outputData,TranslocationEvents=TranslocationEvents)
+        return True
+    else:
+        return TranslocationEvents
+
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--input', help='Input directory or file')
@@ -237,17 +276,14 @@ if __name__=='__main__':
             outputData=os.path.dirname(inputData) + os.sep + 'Data' + os.sep + 'Data' + datetime.date.today().strftime("%Y%m%d")
 
 
-    coefficients = {'a': 0.999, 'E': 0, 'S': 5, 'eventlengthLimit': 200e-3, 'minEventLength': 500e-6, 'hbook':1,'delta':0.2e-9,'ChimeraLowPass':10e3}
     if args.coeff is not None:
         if len(args.coeff) % 2 == 0:
             for i in range(0, len(args.coeff), 2):
                 if i <= len(args.coeff):
                     coefficients[str(args.coeff[i])]=float(args.coeff[i+1])
 
-    extension=args.ext
-    if extension==None:
-        extension='*.log'
-
+    if extension is not None:
+        extension = args.ext
 
     print('Loading from: ' + inputData)
     print('Saving to: ' + outputData)

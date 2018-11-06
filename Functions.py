@@ -263,7 +263,7 @@ def ImportChimeraData(datafilename):
         output = ImportChimeraRaw(datafilename)
     return output
 
-def OpenFile(filename = '', ChimeraLowPass = 10e3,approxImpulseResponse=False,Split=False):
+def OpenFile(filename = '', ChimeraLowPass = 10e3,approxImpulseResponse=False,Split=False,verbose=False):
     if ChimeraLowPass==None:
         ChimeraLowPass=10e3
     if filename == '':
@@ -273,7 +273,8 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3,approxImpulseResponse=False,Sp
     else:
         datafilename=filename
 
-    print('Loading file... ' +filename)
+    if verbose:
+        print('Loading file... ' +filename)
 
     if datafilename[-3::] == 'dat':
         isdat = 1
@@ -282,7 +283,8 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3,approxImpulseResponse=False,Sp
         isdat = 0
         output = ImportChimeraData(datafilename)
         if output['type'] is 'ChimeraRaw':  # Lowpass and downsample
-            print('length: ' + str(len(output['i1raw'])))
+            if verbose:
+                print('length: ' + str(len(output['i1raw'])))
             Wn = round(2 * ChimeraLowPass / output['samplerateRaw'], 4)  # [0,1] nyquist frequency
             b, a = signal.bessel(4, Wn, btype='low', analog=False)  # 4-th order digital filter
 
@@ -300,8 +302,9 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3,approxImpulseResponse=False,Sp
             output['i1'] = scipy.signal.resample(Filt_sig, int(len(output['i1raw']) / ds_factor))
             output['samplerate'] = output['samplerateRaw'] / ds_factor
             output['v1'] = output['v1']*np.ones(len(output['i1']))
-            print('Samplerate after filtering:' + str(output['samplerate']))
-            print('new length: ' + str(len(output['i1'])))
+            if verbose:
+                print('Samplerate after filtering:' + str(output['samplerate']))
+                print('new length: ' + str(len(output['i1'])))
 
             if Split:
                 splitNr=len(output['i1raw'])/output['blockLength']
@@ -321,25 +324,29 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3,approxImpulseResponse=False,Sp
                 output['i1Cut']=Filt_sigSplit
 
         if max(abs(output['i1']))>1e-6:
-            print('converting to SI units')
+            if verbose:
+                print('converting to SI units')
             output['i1']=1e-9*output['i1']
             output['v1']=1e-3*output['v1']
     elif datafilename[-3::] == 'abf':
         output = ImportABF(datafilename)
     st = os.stat(datafilename)
     if platform.system() == 'Darwin':
-        print('Platform is ' + platform.system())
+        if verbose:
+            print('Platform is ' + platform.system())
         output['TimeFileWritten'] = st.st_birthtime
         output['TimeFileLastModified'] = st.st_mtime
         output['ExperimentDuration'] = st.st_mtime - st.st_birthtime
     elif platform.system() == 'Windows':
-        print('Platform is WinShit')
+        if verbose:
+            print('Platform is WinShit')
         output['TimeFileWritten'] = st.st_ctime
         output['TimeFileLastModified'] = st.st_mtime
         output['ExperimentDuration'] = st.st_mtime - st.st_ctime
     else:
-        print('Platform is ' + platform.system() +
-            ', might not get accurate results.')
+        if verbose:
+            print('Platform is ' + platform.system() +
+                ', might not get accurate results.')
         try:
             output['TimeFileWritten'] = st.st_ctime
             output['TimeFileLastModified'] = st.st_mtime
@@ -349,8 +356,8 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3,approxImpulseResponse=False,Sp
 
     return output
 
-def MakeIVData(output, approach = 'mean', delay = 0.7, UseVoltageRange=0):
-    (ChangePoints, sweepedChannel) = CutDataIntoVoltageSegments(output)
+def MakeIVData(output, approach = 'mean', delay = 0.7, UseVoltageRange=0,verbose=False):
+    (ChangePoints, sweepedChannel) = CutDataIntoVoltageSegments(output,verbose)
     if ChangePoints is 0:
         return 0
 
@@ -409,7 +416,8 @@ def MakeIVData(output, approach = 'mean', delay = 0.7, UseVoltageRange=0):
             else:
                 Item['STD'][i] = np.std(trace)
             Item['SE'][i] = Item['STD'][i] / np.sqrt(len(trace))
-            print('{}, {},{}'.format(i, ChangePoints[i - 1] + delayinpoints, ChangePoints[i]))
+            if verbose:
+                print('{}, {},{}'.format(i, ChangePoints[i - 1] + delayinpoints, ChangePoints[i]))
         # Last
         if 1:
             trace = output[current][ChangePoints[len(ChangePoints) - 1] + delayinpoints : len(output[current]) - 1]
@@ -616,7 +624,7 @@ def MakeExponentialFit(xdata, ydata):
         pcov = 0
         return (popt, pcov)
 
-def CutDataIntoVoltageSegments(output):
+def CutDataIntoVoltageSegments(output,verbose=False):
     sweepedChannel = ''
     if output['type'] == 'ChimeraNotRaw' or (output['type'] == 'Axopatch' and not output['graphene']):
         ChangePoints = np.where(np.diff(output['v1']))[0]
@@ -634,7 +642,8 @@ def CutDataIntoVoltageSegments(output):
                 return (0,0)
             else:
                 sweepedChannel = 'v2'
-    print('Cutting into Segments...\n{} change points detected in channel {}...'.format(len(ChangePoints), sweepedChannel))
+    if verbose:
+        print('Cutting into Segments...\n{} change points detected in channel {}...'.format(len(ChangePoints), sweepedChannel))
     return (ChangePoints, sweepedChannel)
 
 def CalculatePoreSize(G, L, s):

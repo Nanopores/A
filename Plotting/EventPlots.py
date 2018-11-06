@@ -8,7 +8,6 @@ from tkinter.filedialog import askopenfilenames,askdirectory
 import shelve
 import os
 from pprint import pprint
-
 import Functions
 
 
@@ -195,10 +194,10 @@ def PlotEvent(event,ax=None, savefile=os.getcwd(), showCUSUM=False):
 
     #Link event to axes to keep it around
 
-    ax._event=event
     if ax is None:
         #plt.figure(figsize=(10, 6))
         fig, ax = plt.subplots(figsize=(10, 6))
+    ax._event=event
 
     def SavePlot(eventMouse):
         # Check if directory exists
