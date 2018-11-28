@@ -171,9 +171,12 @@ def RecursiveLowPassFastUp(signal, coeff, samplerate):
 
 def ImportABF(datafilename):
     abf = pyabf.ABF(datafilename)
-    abf.info()  # shows what is available
-    output={'type': 'Clampfit', 'graphene': 0, 'samplerate': abf.pointsPerSec, 'i1': -20000./65536 * abf.dataY, 'v1': abf.dataC, 'filename': datafilename}
+    #abf.info()  # shows what is available
+    #output={'type': 'Clampfit', 'graphene': 0, 'samplerate': abf.pointsPerSec, 'i1': -20000./65536 * abf.dataY, 'v1': abf.dataC, 'filename': datafilename}
+    output = {'type': 'Clampfit', 'graphene': 0, 'samplerate': abf.dataRate, 'i1': abf.data[0] * 1e-12,
+              'v1': abf.data[1], 'filename': datafilename}
     return output
+
 
 def ImportAxopatchData(datafilename):
     x=np.fromfile(datafilename, np.dtype('>f4'))
@@ -332,6 +335,10 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3,approxImpulseResponse=False,Sp
             output['v1']=1e-3*output['v1']
     elif datafilename[-3::] == 'abf':
         output = ImportABF(datafilename)
+
+        if verbose:
+            print('length: ' + str(len(output['i1'])))
+
     st = os.stat(datafilename)
     if platform.system() == 'Darwin':
         if verbose:

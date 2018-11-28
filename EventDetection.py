@@ -33,6 +33,8 @@ def batcheventdetection(folder,extension,coefficients, verbose=True, forceRun=Fa
     #Create new class that contains all events
     AllEvents=NC.AllEvents()
 
+    print('found ' + str(len(glob.glob(os.path.join(folder,extension)))) + ' files.')
+
     #Loop over all files in folder
     for fullfilename in glob.glob(os.path.join(folder,extension)):
 
@@ -282,7 +284,7 @@ if __name__=='__main__':
                 if i <= len(args.coeff):
                     coefficients[str(args.coeff[i])]=float(args.coeff[i+1])
 
-    if extension is not None:
+    if args.ext is not None:
         extension = args.ext
 
     print('Loading from: ' + inputData)
