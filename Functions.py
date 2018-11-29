@@ -1,10 +1,11 @@
+# -*- coding: utf-8 -*-
+
 import matplotlib
 #matplotlib.use('Qt5Agg')
 import numpy as np
 import math
 import scipy
 import scipy.signal as sig
-from scipy import stats as sta
 import os
 import pickle as pkl
 from scipy import constants as cst
@@ -24,6 +25,8 @@ from scipy.optimize import curve_fit
 import pyabf
 from matplotlib.ticker import EngFormatter
 from pprint import pprint
+import shelve
+from tkinter import filedialog
 
 # if not 'verbose' in globals():
 #     verbose = False
@@ -36,6 +39,31 @@ def GetKClConductivity(Conc, Temp):
     if Conc==1.0:
         Conc = np.uint(1)
     return np.polyval(p[str(Conc)], Temp)
+
+def SaveVariables(savename, **kwargs):
+    if os.path.isdir(savename):
+        savefile=os.path.join(savename,os.path.basename(savename)+'_Events')
+    else:
+        if os.path.isfile(savename + '.dat'):
+            savename = filedialog.asksaveasfile(mode='w', defaultextension=".dat")
+            if savename is None:  # asksaveasfile return `None` if dialog closed with "cancel".
+                return
+            savefile=base=os.path.splitext(savename.name)[0]
+            # raise IOError('File ' + savename + '.dat already exists.')
+        else:
+            savefile = savename
+
+    #Check if directory exists
+    directory = os.path.dirname(savefile)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    shelfFile=shelve.open(savefile)
+    for arg_name in kwargs:
+        shelfFile[arg_name]=kwargs[arg_name]
+    shelfFile.close()
+    print('saved as: ' + savefile + '.dat')
+
 
 def GetTempFromKClConductivity(Conc, Cond):
     p = pkl.load(open('KCl_ConductivityValues.p', 'rb'))
@@ -143,9 +171,12 @@ def RecursiveLowPassFastUp(signal, coeff, samplerate):
 
 def ImportABF(datafilename):
     abf = pyabf.ABF(datafilename)
-    abf.info()  # shows what is available
-    output={'type': 'Clampfit', 'graphene': 0, 'samplerate': abf.pointsPerSec, 'i1': -20000./65536 * abf.dataY, 'v1': abf.dataC, 'filename': datafilename}
+    #abf.info()  # shows what is available
+    #output={'type': 'Clampfit', 'graphene': 0, 'samplerate': abf.pointsPerSec, 'i1': -20000./65536 * abf.dataY, 'v1': abf.dataC, 'filename': datafilename}
+    output = {'type': 'Clampfit', 'graphene': 0, 'samplerate': abf.dataRate, 'i1': abf.data[0] * 1e-12,
+              'v1': abf.data[1], 'filename': datafilename}
     return output
+
 
 def ImportAxopatchData(datafilename):
     x=np.fromfile(datafilename, np.dtype('>f4'))
@@ -153,7 +184,7 @@ def ImportAxopatchData(datafilename):
     graphene=0
     for i in range(0, 10):
         a=str(f.readline())
-        print(a)
+        #print(a)
         if 'Acquisition' in a or 'Sample Rate' in a:
             samplerate=int(''.join(i for i in a if i.isdigit()))/1000
         if 'FEMTO preamp Bandwidth' in a:
@@ -237,7 +268,7 @@ def ImportChimeraData(datafilename):
         output = ImportChimeraRaw(datafilename)
     return output
 
-def OpenFile(filename = '', ChimeraLowPass = 10e3, approxImpulseResponse=False, Split=False):
+def OpenFile(filename = '', ChimeraLowPass = 10e3,approxImpulseResponse=False,Split=False,verbose=False):
     if ChimeraLowPass==None:
         ChimeraLowPass=10e3
     if filename == '':
@@ -246,7 +277,10 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3, approxImpulseResponse=False, 
         print(datafilename)
     else:
         datafilename=filename
-    print('Loading file... ' +filename)
+
+    if verbose:
+        print('Loading file... ' +filename)
+
     if datafilename[-3::] == 'dat':
         isdat = 1
         output = ImportAxopatchData(datafilename)
@@ -254,9 +288,12 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3, approxImpulseResponse=False, 
         isdat = 0
         output = ImportChimeraData(datafilename)
         if output['type'] is 'ChimeraRaw':  # Lowpass and downsample
-            print('length: ' + str(len(output['i1raw'])))
+            if verbose:
+                print('length: ' + str(len(output['i1raw'])))
             Wn = round(2 * ChimeraLowPass / output['samplerateRaw'], 4)  # [0,1] nyquist frequency
             b, a = signal.bessel(4, Wn, btype='low', analog=False)  # 4-th order digital filter
+
+
             if approxImpulseResponse:
                 z, p, k = signal.tf2zpk(b, a)
                 eps = 1e-9
@@ -266,28 +303,19 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3, approxImpulseResponse=False, 
             else:
                 Filt_sig=(signal.filtfilt(b, a, output['i1raw'], method='gust'))
 
-            ds_factor = int(np.ceil(output['samplerateRaw'] / (5 * ChimeraLowPass)))
-            output['i1'] = scipy.signal.decimate(Filt_sig, ds_factor)
-            '''
-            howmanytimes = np.floor(np.log10(ds_factor))
-            output['i1'] = Filt_sig
-
-            for i in np.arange(howmanytimes):
-                print(i)
-                output['i1'] = scipy.signal.decimate(output['i1'], 10)
-                ds_factor = ds_factor/10
-            output['i1'] = scipy.signal.decimate(output['i1'], int(ds_factor))
-            '''
+            ds_factor = np.ceil(output['samplerateRaw'] / (5 * ChimeraLowPass))
+            output['i1'] = scipy.signal.resample(Filt_sig, int(len(output['i1raw']) / ds_factor))
             output['samplerate'] = output['samplerateRaw'] / ds_factor
             output['v1'] = output['v1']*np.ones(len(output['i1']))
-            print('Samplerate after filtering:' + str(output['samplerate']))
-            print('new length: ' + str(len(output['i1'])))
+            if verbose:
+                print('Samplerate after filtering:' + str(output['samplerate']))
+                print('new length: ' + str(len(output['i1'])))
 
             if Split:
-                splitNr = len(output['i1raw'])/output['blockLength']
+                splitNr=len(output['i1raw'])/output['blockLength']
                 assert(splitNr.is_integer())
-                rawSplit = np.array_split(output['i1raw'], splitNr)
-                Filt_sigSplit = []
+                rawSplit=np.array_split(output['i1raw'], splitNr)
+                Filt_sigSplit=[]
                 for raw in rawSplit:
                     if approxImpulseResponse:
                         z, p, k = signal.tf2zpk(b, a)
@@ -298,29 +326,36 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3, approxImpulseResponse=False, 
                     else:
                         signalSplit=signal.filtfilt(b, a, raw, method = 'gust')
                     Filt_sigSplit.append(scipy.signal.resample(signalSplit, int(len(raw) / ds_factor)))
-                output['i1Cut'] = Filt_sigSplit
+                output['i1Cut']=Filt_sigSplit
 
-        if max(abs(output['i1'])) > 1e-6:
-            print('converting to SI units')
+        if max(abs(output['i1']))>1e-6:
+            if verbose:
+                print('converting to SI units')
             output['i1']=1e-9*output['i1']
             output['v1']=1e-3*output['v1']
-
     elif datafilename[-3::] == 'abf':
         output = ImportABF(datafilename)
+
+        if verbose:
+            print('length: ' + str(len(output['i1'])))
+
     st = os.stat(datafilename)
     if platform.system() == 'Darwin':
-        print('Platform is ' + platform.system())
+        if verbose:
+            print('Platform is ' + platform.system())
         output['TimeFileWritten'] = st.st_birthtime
         output['TimeFileLastModified'] = st.st_mtime
         output['ExperimentDuration'] = st.st_mtime - st.st_birthtime
     elif platform.system() == 'Windows':
-        print('Platform is WinShit')
+        if verbose:
+            print('Platform is WinShit')
         output['TimeFileWritten'] = st.st_ctime
         output['TimeFileLastModified'] = st.st_mtime
         output['ExperimentDuration'] = st.st_mtime - st.st_ctime
     else:
-        print('Platform is ' + platform.system() +
-            ', might not get accurate results.')
+        if verbose:
+            print('Platform is ' + platform.system() +
+                ', might not get accurate results.')
         try:
             output['TimeFileWritten'] = st.st_ctime
             output['TimeFileLastModified'] = st.st_mtime
@@ -330,8 +365,8 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3, approxImpulseResponse=False, 
 
     return output
 
-def MakeIVData(output, approach = 'mean', delay = 0.7, UseVoltageRange=0):
-    (ChangePoints, sweepedChannel) = CutDataIntoVoltageSegments(output)
+def MakeIVData(output, approach = 'mean', delay = 0.7, UseVoltageRange=0,verbose=False):
+    (ChangePoints, sweepedChannel) = CutDataIntoVoltageSegments(output,verbose)
     if ChangePoints is 0:
         return 0
 
@@ -357,6 +392,7 @@ def MakeIVData(output, approach = 'mean', delay = 0.7, UseVoltageRange=0):
         Item['EndPoint'] = np.zeros(l, dtype=np.uint64)
         Item['Mean'] = np.zeros(l)
         Item['STD'] = np.zeros(l)
+        Item['SE'] = np.zeros(l)
         Item['SweepedChannel'] = sweepedChannel
         ItemExp['SweepedChannel'] = sweepedChannel
         Item['YorkFitValues'] = {}
@@ -374,6 +410,7 @@ def MakeIVData(output, approach = 'mean', delay = 0.7, UseVoltageRange=0):
             Item['STD'][0] = np.std(trace[-np.int64(output['samplerate']):])
         else:
             Item['STD'][0] = np.std(trace)
+        Item['SE'][0]=Item['STD'][0]/np.sqrt(len(trace))
         for i in range(1, len(Values) - 1):
             trace = output[current][ChangePoints[i - 1] + delayinpoints : ChangePoints[i]]
             Item['Voltage'][i] = Values[i]
@@ -387,7 +424,9 @@ def MakeIVData(output, approach = 'mean', delay = 0.7, UseVoltageRange=0):
                 Item['STD'][i] = np.std(trace[-np.int64(output['samplerate']):])
             else:
                 Item['STD'][i] = np.std(trace)
-            print('{}, {},{}'.format(i, ChangePoints[i - 1] + delayinpoints, ChangePoints[i]))
+            Item['SE'][i] = Item['STD'][i] / np.sqrt(len(trace))
+            if verbose:
+                print('{}, {},{}'.format(i, ChangePoints[i - 1] + delayinpoints, ChangePoints[i]))
         # Last
         if 1:
             trace = output[current][ChangePoints[len(ChangePoints) - 1] + delayinpoints : len(output[current]) - 1]
@@ -403,6 +442,7 @@ def MakeIVData(output, approach = 'mean', delay = 0.7, UseVoltageRange=0):
                 Item['STD'][-1:] = np.std(trace[-np.int64(output['samplerate']):])
             else:
                 Item['STD'][-1:] = np.std(trace)
+            Item['SE'][-1:] = Item['STD'][-1:] / np.sqrt(len(trace))
 
         ## GET RECTIFICATION FACTOR
         parts = {'pos': Item['Voltage'] > 0, 'neg': Item['Voltage'] < 0}
@@ -466,6 +506,7 @@ def MakeIVData(output, approach = 'mean', delay = 0.7, UseVoltageRange=0):
             for i in np.arange(0, NumberOfPieces):
                 trace = output[current][ItemExp['StartPoint'][i]:ItemExp['EndPoint'][i]]
                 popt, pcov = MakeExponentialFit(np.arange(len(trace)) / output['samplerate'], trace)
+
                 ItemExp['Voltage'][i] = output[sweepedChannel][ItemExp['StartPoint'][i]]
                 if popt[0]:
                     ItemExp['ExpValues'][:, i] = popt
@@ -480,15 +521,15 @@ def MakeIVData(output, approach = 'mean', delay = 0.7, UseVoltageRange=0):
                     ItemExp['Mean'][i] = np.mean(trace)
                     ItemExp['STD'][i] = np.std(trace)
 
-                ## FIT THE EXP CALCULATED VALUES ###
-                (a, b, sigma_a, sigma_b, b_save) = YorkFit(ItemExp['Voltage'], ItemExp['Mean'],
-                                                           1e-12 * np.ones(len(ItemExp['Voltage'])), ItemExp['STD'])
-                x_fit = np.linspace(min(Item['Voltage']), max(Item['Voltage']), 1000)
-                y_fit = scipy.polyval([b, a], x_fit)
-                ItemExp['YorkFitValues'] = {'x_fit': x_fit, 'y_fit': y_fit, 'Yintercept': a, 'Slope': b,
-                                            'Sigma_Yintercept': sigma_a,
-                                            'Sigma_Slope': sigma_b, 'Parameter': b_save}
-                All[current + '_Exp'] = ItemExp
+            ## FIT THE EXP CALCULATED VALUES ###
+            (a, b, sigma_a, sigma_b, b_save) = YorkFit(ItemExp['Voltage'], ItemExp['Mean'],
+                                                       1e-12 * np.ones(len(ItemExp['Voltage'])), ItemExp['STD'])
+            x_fit = np.linspace(min(Item['Voltage']), max(Item['Voltage']), 1000)
+            y_fit = scipy.polyval([b, a], x_fit)
+            ItemExp['YorkFitValues'] = {'x_fit': x_fit, 'y_fit': y_fit, 'Yintercept': a, 'Slope': b,
+                                        'Sigma_Yintercept': sigma_a,
+                                        'Sigma_Slope': sigma_b, 'Parameter': b_save}
+            All[current + '_Exp'] = ItemExp
 
         ##Remove NaNs
         nans = np.isnan(Item['Mean'][:])
@@ -498,6 +539,7 @@ def MakeIVData(output, approach = 'mean', delay = 0.7, UseVoltageRange=0):
         Item['EndPoint'] = Item['EndPoint'][nans]
         Item['Mean'] = Item['Mean'][nans]
         Item['STD'] = Item['STD'][nans]
+        Item['SE'] = Item['SE'][nans]
 
         ## Restrict to set voltage Range
         if UseVoltageRange is not 0:
@@ -508,13 +550,21 @@ def MakeIVData(output, approach = 'mean', delay = 0.7, UseVoltageRange=0):
             Item['EndPoint'] = Item['EndPoint'][ind].flatten()
             Item['Mean'] = Item['Mean'][ind].flatten()
             Item['STD'] = Item['STD'][ind].flatten()
+            Item['SE'] = Item['SE'][ind].flatten()
 
         ## FIT THE MEAN CALCULATED VALUES ###
+        #Yorkfit
         (a, b, sigma_a, sigma_b, b_save) = YorkFit(Item['Voltage'].flatten(), Item['Mean'].flatten(), 1e-9 * np.ones(len(Item['Voltage'])), Item['STD'].flatten())
         x_fit = np.linspace(min(Item['Voltage']), max(Item['Voltage']), 1000)
         y_fit = scipy.polyval([b, a], x_fit)
-        Item['YorkFitValues'] = {'x_fit': x_fit, 'y_fit': y_fit, 'Yintercept': a, 'Slope': b, 'Sigma_Yintercept': sigma_a,
+        Item['YorkFit'] = {'x_fit': x_fit, 'y_fit': y_fit, 'Yintercept': a, 'Slope': b, 'Sigma_Yintercept': sigma_a,
                          'Sigma_Slope': sigma_b, 'Parameter': b_save}
+        # Yorkfit
+        p = np.polyfit(Item['Voltage'].flatten(), Item['Mean'].flatten(), 1)
+        x_fit2 = np.linspace(min(Item['Voltage']), max(Item['Voltage']), 1000)
+        y_fit2 = scipy.polyval(p, x_fit)
+        Item['PolyFit'] = {'x_fit': x_fit2, 'y_fit': y_fit2, 'Yintercept': p[1], 'Slope': p[0]}
+
 
         All[current] = Item
         All['Currents'] = currents
@@ -583,7 +633,7 @@ def MakeExponentialFit(xdata, ydata):
         pcov = 0
         return (popt, pcov)
 
-def CutDataIntoVoltageSegments(output):
+def CutDataIntoVoltageSegments(output,verbose=False):
     sweepedChannel = ''
     if output['type'] == 'ChimeraNotRaw' or (output['type'] == 'Axopatch' and not output['graphene']):
         ChangePoints = np.where(np.diff(output['v1']))[0]
@@ -601,7 +651,8 @@ def CutDataIntoVoltageSegments(output):
                 return (0,0)
             else:
                 sweepedChannel = 'v2'
-    print('Cutting into Segments...\n{} change points detected in channel {}...'.format(len(ChangePoints), sweepedChannel))
+    if verbose:
+        print('Cutting into Segments...\n{} change points detected in channel {}...'.format(len(ChangePoints), sweepedChannel))
     return (ChangePoints, sweepedChannel)
 
 def CalculatePoreSize(G, L, s):
@@ -1117,17 +1168,16 @@ def SaveToHDF5(inp_file, AnalysisResults, coefficients, outdir):
             else:
                 set1.create_dataset(m, data=l)
 
-def PlotExtractedPart(output, AllData, current = 'i1', unit=1e9, axis = '', axis2 = '', exp='_Exp'):
+def PlotExtractedPart(output, AllData, current = 'i1', unit=1e9, axis = '', axis2 = ''):
     time = np.arange(0, len(output[current])) / output['samplerate']
     axis.plot(time, output[current] * unit, 'b', label=str(os.path.split(output['filename'])[1])[:-4])
     axis.set_ylabel('Current ' + current + ' [nA]')
     axis.set_title('Time Trace')
-    for i in range(0, len(AllData[current+exp]['StartPoint'])):
-        x = time[AllData[current+exp]['StartPoint'][i]:AllData[current+exp]['EndPoint'][i]]
-        axis.plot(x,output[current][AllData[current+exp]['StartPoint'][i]:AllData[current+exp]['EndPoint'][i]] * unit, 'r')
-        axis.plot(x, unit*ExpFunc(x-np.min(x), AllData[current+exp]['ExpValues'][0][i], AllData[current+exp]['ExpValues'][1][i], AllData[current+exp]['ExpValues'][2][i]),'y')
-    axis2.plot(time, output[AllData[current+exp]['SweepedChannel']], 'b', label=str(os.path.split(output['filename'])[1])[:-4])
-    axis2.set_ylabel('Voltage ' + AllData[current+exp]['SweepedChannel'] + ' [V]')
+    for i in range(0, len(AllData[current]['StartPoint'])):
+        axis.plot(time[AllData[current]['StartPoint'][i]:AllData[current]['EndPoint'][i]],
+                 output[current][AllData[current]['StartPoint'][i]:AllData[current]['EndPoint'][i]] * unit, 'r')
+    axis2.plot(time, output[AllData[current]['SweepedChannel']], 'b', label=str(os.path.split(output['filename'])[1])[:-4])
+    axis2.set_ylabel('Voltage ' + AllData[current]['SweepedChannel'] + ' [V]')
     axis2.set_xlabel('Time')
     return (axis, axis2)
 
@@ -1173,10 +1223,11 @@ def xcorr(x, y, k, normalize=True):
 
 
 def CUSUM(input, delta, h):
-    Nd = 0
+
+    #initialization
+    Nd = k0 = 0
     kd = []
     krmv = []
-    k0 = 0
     k = 1
     l = len(input)
     m = np.zeros(l)
@@ -1206,10 +1257,10 @@ def CUSUM(input, delta, h):
             kd.append(k)
             if gp[k] > h:
                 kmin = np.argmin(Sp[k0:k + 1])
-                krmv.append(kmin + k0 - 1)
+                krmv.append(kmin + k0)
             else:
                 kmin=np.argmin(Sn[k0:k+1])
-                krmv.append(kmin + k0 - 1)
+                krmv.append(kmin + k0)
 
             #Re-initialize
             k0 = k
@@ -1222,7 +1273,7 @@ def CUSUM(input, delta, h):
     if Nd == 0:
         mc = np.mean(input) * np.ones(k)
     elif Nd == 1:
-        mc = np.append(m[krmv[0]] * np.ones(krmv[0]), m[k] * np.ones(k - krmv[0]))
+        mc = np.append(m[krmv[0]] * np.ones(krmv[0]), m[k-1] * np.ones(k - krmv[0]))
     else:
         mc = m[krmv[0]] * np.ones(krmv[0])
         for ii in range(1, Nd):
@@ -1329,6 +1380,3 @@ def Selectivity(ConcGradient, V):
 
 def GetRedox(cmax, cmin, T = 295.15):
     return cst.R * T / cst.physical_constants['Faraday constant'][0] * np.log(cmax/cmin)
-
-def KDEandGMM(data):
-    kernel = sta.gaussian_kde(data)

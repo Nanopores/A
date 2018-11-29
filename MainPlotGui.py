@@ -27,6 +27,7 @@ def ChangedFolder():
         os.chdir(folder)
         file_list = glob.glob(folder + os.sep + '*.dat')
         file_list.extend(glob.glob(folder + os.sep + '*.log'))
+        file_list.extend(glob.glob(folder + os.sep + '*.abf'))
         file_list.sort(key=os.path.getmtime)
         for i in file_list:
             ui.listWidget.addItem(os.path.split(i)[1])
