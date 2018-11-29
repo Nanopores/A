@@ -4,6 +4,7 @@ import numpy as np
 import math
 import scipy
 import scipy.signal as sig
+from scipy import stats as sta
 import os
 import pickle as pkl
 from scipy import constants as cst
@@ -41,8 +42,6 @@ def GetTempFromKClConductivity(Conc, Cond):
     if Conc==1.0:
         Conc = np.uint(1)
     return (Cond-p[str(Conc)][1])/p[str(Conc)][0]
-
-
 
 def RecursiveLowPassFast(signal, coeff, samplerate):
     padlen = np.uint64(samplerate)
@@ -154,7 +153,7 @@ def ImportAxopatchData(datafilename):
     graphene=0
     for i in range(0, 10):
         a=str(f.readline())
-        #print(a)
+        print(a)
         if 'Acquisition' in a or 'Sample Rate' in a:
             samplerate=int(''.join(i for i in a if i.isdigit()))/1000
         if 'FEMTO preamp Bandwidth' in a:
@@ -238,7 +237,7 @@ def ImportChimeraData(datafilename):
         output = ImportChimeraRaw(datafilename)
     return output
 
-def OpenFile(filename = '', ChimeraLowPass = 10e3,approxImpulseResponse=False,Split=False):
+def OpenFile(filename = '', ChimeraLowPass = 10e3, approxImpulseResponse=False, Split=False):
     if ChimeraLowPass==None:
         ChimeraLowPass=10e3
     if filename == '':
@@ -247,9 +246,7 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3,approxImpulseResponse=False,Sp
         print(datafilename)
     else:
         datafilename=filename
-
     print('Loading file... ' +filename)
-
     if datafilename[-3::] == 'dat':
         isdat = 1
         output = ImportAxopatchData(datafilename)
@@ -260,8 +257,6 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3,approxImpulseResponse=False,Sp
             print('length: ' + str(len(output['i1raw'])))
             Wn = round(2 * ChimeraLowPass / output['samplerateRaw'], 4)  # [0,1] nyquist frequency
             b, a = signal.bessel(4, Wn, btype='low', analog=False)  # 4-th order digital filter
-
-
             if approxImpulseResponse:
                 z, p, k = signal.tf2zpk(b, a)
                 eps = 1e-9
@@ -271,18 +266,28 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3,approxImpulseResponse=False,Sp
             else:
                 Filt_sig=(signal.filtfilt(b, a, output['i1raw'], method='gust'))
 
-            ds_factor = np.ceil(output['samplerateRaw'] / (5 * ChimeraLowPass))
-            output['i1'] = scipy.signal.resample(Filt_sig, int(len(output['i1raw']) / ds_factor))
+            ds_factor = int(np.ceil(output['samplerateRaw'] / (5 * ChimeraLowPass)))
+            output['i1'] = scipy.signal.decimate(Filt_sig, ds_factor)
+            '''
+            howmanytimes = np.floor(np.log10(ds_factor))
+            output['i1'] = Filt_sig
+
+            for i in np.arange(howmanytimes):
+                print(i)
+                output['i1'] = scipy.signal.decimate(output['i1'], 10)
+                ds_factor = ds_factor/10
+            output['i1'] = scipy.signal.decimate(output['i1'], int(ds_factor))
+            '''
             output['samplerate'] = output['samplerateRaw'] / ds_factor
             output['v1'] = output['v1']*np.ones(len(output['i1']))
             print('Samplerate after filtering:' + str(output['samplerate']))
             print('new length: ' + str(len(output['i1'])))
 
             if Split:
-                splitNr=len(output['i1raw'])/output['blockLength']
+                splitNr = len(output['i1raw'])/output['blockLength']
                 assert(splitNr.is_integer())
-                rawSplit=np.array_split(output['i1raw'], splitNr)
-                Filt_sigSplit=[]
+                rawSplit = np.array_split(output['i1raw'], splitNr)
+                Filt_sigSplit = []
                 for raw in rawSplit:
                     if approxImpulseResponse:
                         z, p, k = signal.tf2zpk(b, a)
@@ -293,12 +298,13 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3,approxImpulseResponse=False,Sp
                     else:
                         signalSplit=signal.filtfilt(b, a, raw, method = 'gust')
                     Filt_sigSplit.append(scipy.signal.resample(signalSplit, int(len(raw) / ds_factor)))
-                output['i1Cut']=Filt_sigSplit
+                output['i1Cut'] = Filt_sigSplit
 
-        if max(abs(output['i1']))>1e-6:
+        if max(abs(output['i1'])) > 1e-6:
             print('converting to SI units')
             output['i1']=1e-9*output['i1']
             output['v1']=1e-3*output['v1']
+
     elif datafilename[-3::] == 'abf':
         output = ImportABF(datafilename)
     st = os.stat(datafilename)
@@ -460,7 +466,6 @@ def MakeIVData(output, approach = 'mean', delay = 0.7, UseVoltageRange=0):
             for i in np.arange(0, NumberOfPieces):
                 trace = output[current][ItemExp['StartPoint'][i]:ItemExp['EndPoint'][i]]
                 popt, pcov = MakeExponentialFit(np.arange(len(trace)) / output['samplerate'], trace)
-
                 ItemExp['Voltage'][i] = output[sweepedChannel][ItemExp['StartPoint'][i]]
                 if popt[0]:
                     ItemExp['ExpValues'][:, i] = popt
@@ -634,49 +639,6 @@ def GetSurfaceChargeFromLeeEquation(s, c, D, G, L, A, B, version=1):
 def ConductivityFromConductanceModel(L, d, G):
     return G * (4 * L / (np.pi * d ** 2) + 1 / d)
 
-def PlotIV(output, AllData, current = 'i1', unit=1e9, axis = '', WithFit = 1, PoreSize = [0,0], title = '', labeltxt = '', Polynomial=0, color='b', RectificationFactor=0, useEXP=0):
-    if useEXP:
-        current=current+'_Exp'
-
-    if labeltxt is '':
-        labeltxt = str(os.path.split(output['filename'])[1])[:-4]
-
-    ind = np.argsort(AllData[current]['Voltage'])
-
-    #Calculate Rectification Factor
-    if RectificationFactor:
-        parts = {'pos': AllData[current]['Voltage'] > 0, 'neg': AllData[current]['Voltage'] < 0}
-        a={}; b={}; sigma_a={}; sigma_b={}; b_save={};x_values={}
-
-        for part in parts:
-            (a[part], b[part], sigma_a[part], sigma_b[part], b_save[part]) = YorkFit(AllData[current]['Voltage'][parts[part]], AllData[current]['Mean'][parts[part]], 1e-12 * np.ones(len(AllData[current]['Voltage'][parts[part]])), AllData[current]['STD'][parts[part]])
-            x_values[part] = np.linspace(min(AllData[current]['Voltage'][parts[part]]), max(AllData[current]['Voltage'][parts[part]]), 1000)
-            axis.plot(x_values[part], scipy.polyval([b[part], a[part]], x_values[part])*unit, color=color, ls='--')
-        factor = b['neg'] / b['pos']
-        labeltxt = labeltxt + ', R:{:4.2f}'.format(factor)
-
-    #Polynomial is guide to the eye
-    if not Polynomial:
-        axis.errorbar(AllData[current]['Voltage'], AllData[current]['Mean']*unit, yerr=AllData[current]['STD']*unit, fmt='o', label=labeltxt, color=color)
-    else:
-        p = np.polyfit(AllData[current]['Voltage'][ind], AllData[current]['Mean'][ind]*unit, Polynomial)
-        axis.errorbar(AllData[current]['Voltage'][ind], AllData[current]['Mean'][ind]*unit, yerr=AllData[current]['STD'][ind]*unit, fmt='o', label=labeltxt, color=color)
-        axis.plot(AllData[current]['Voltage'][ind], np.polyval(p, AllData[current]['Voltage'][ind]), color=color)
-
-    axis.set_ylabel('Current ' + current + ' [nA]')
-    axis.set_xlabel('Voltage ' + AllData[current]['SweepedChannel'] +' [V]')
-
-    if WithFit:
-        axis.set_title(title + '\nG={}S, R={}Ohm'.format(pg.siFormat(AllData[current]['YorkFitValues']['Slope']), pg.siFormat(1/(AllData[current]['YorkFitValues']['Slope']))))
-        axis.plot(AllData[current]['YorkFitValues']['x_fit'], AllData[current]['YorkFitValues']['y_fit']*unit, 'r--', label='Linear Fit of '+labeltxt)
-    else:
-        axis.set_title(title + 'IV Plot')
-
-    if PoreSize[0]:
-        textstr = 'Pore Size\nConductance: {}S/m\nLenght: {}m:\ndiameter: {}m'.format(pg.siFormat(PoreSize[0]), pg.siFormat(PoreSize[1]), pg.siFormat(CalculatePoreSize(AllData[current]['YorkFitValues']['Slope'], PoreSize[1], PoreSize[0])))
-        axis.text(0.05, 0.95, textstr, transform=axis.transAxes, fontsize=12,
-                verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
-    return axis
 
 def RefinedEventDetection(out, AnalysisResults, signals, limit):
     for sig in signals:
@@ -1155,16 +1117,17 @@ def SaveToHDF5(inp_file, AnalysisResults, coefficients, outdir):
             else:
                 set1.create_dataset(m, data=l)
 
-def PlotExtractedPart(output, AllData, current = 'i1', unit=1e9, axis = '', axis2 = ''):
+def PlotExtractedPart(output, AllData, current = 'i1', unit=1e9, axis = '', axis2 = '', exp='_Exp'):
     time = np.arange(0, len(output[current])) / output['samplerate']
     axis.plot(time, output[current] * unit, 'b', label=str(os.path.split(output['filename'])[1])[:-4])
     axis.set_ylabel('Current ' + current + ' [nA]')
     axis.set_title('Time Trace')
-    for i in range(0, len(AllData[current]['StartPoint'])):
-        axis.plot(time[AllData[current]['StartPoint'][i]:AllData[current]['EndPoint'][i]],
-                 output[current][AllData[current]['StartPoint'][i]:AllData[current]['EndPoint'][i]] * unit, 'r')
-    axis2.plot(time, output[AllData[current]['SweepedChannel']], 'b', label=str(os.path.split(output['filename'])[1])[:-4])
-    axis2.set_ylabel('Voltage ' + AllData[current]['SweepedChannel'] + ' [V]')
+    for i in range(0, len(AllData[current+exp]['StartPoint'])):
+        x = time[AllData[current+exp]['StartPoint'][i]:AllData[current+exp]['EndPoint'][i]]
+        axis.plot(x,output[current][AllData[current+exp]['StartPoint'][i]:AllData[current+exp]['EndPoint'][i]] * unit, 'r')
+        axis.plot(x, unit*ExpFunc(x-np.min(x), AllData[current+exp]['ExpValues'][0][i], AllData[current+exp]['ExpValues'][1][i], AllData[current+exp]['ExpValues'][2][i]),'y')
+    axis2.plot(time, output[AllData[current+exp]['SweepedChannel']], 'b', label=str(os.path.split(output['filename'])[1])[:-4])
+    axis2.set_ylabel('Voltage ' + AllData[current+exp]['SweepedChannel'] + ' [V]')
     axis2.set_xlabel('Time')
     return (axis, axis2)
 
@@ -1208,225 +1171,13 @@ def xcorr(x, y, k, normalize=True):
 
     return lags, out
 
-def cusum_detection(data, threshhold, minlength, maxstates):
-    print(threshhold)
-    s = timer()
-    logp = 0  # instantaneous log-likelihood for positive jumps
-    logn = 0  # instantaneous log-likelihood for negative jumps
-    cpos = np.zeros(len(data), dtype='float64')  # cumulative log-likelihood function for positive jumps
-    cneg = np.zeros(len(data), dtype='float64')  # cumulative log-likelihood function for negative jumps
-    gpos = np.zeros(2, dtype='float64')  # decision function for positive jumps
-    gneg = np.zeros(2, dtype='float64')  # decision function for negative jumps
-    edges = np.array([0],
-                     dtype='int64')  # initialize an array with the position of the first subevent - the start of the event
-    real_start = np.array([],
-                          dtype='int64')  # initialize an array with the position of the first subevent - the start of the event
-    real_end = np.array([],
-                        dtype='int64')  # initialize an array with the position of the first subevent - the start of the event
-    real_Depth = np.array([],
-                          dtype='int64')  # initialize an array with the position of the first subevent - the start of the event
 
-    anchor = 0  # the last detected change
-    length = len(data)
-    data_std = np.std(data)
-    h = threshhold / data_std
-    k = 0
-    nStates = np.uint64(0)
-    varM = data[0]
-    varS = 0
-    mean = data[0]
-    print('length data =' + str(length))
-    v = np.zeros(length, dtype='float64')
-    while k < length - 100:
-        k += 1
-        if nStates == 0:
-            variance = np.var(data[anchor:k])  # initial params for pattern region
-        mean = np.mean(data[anchor:k])
-        if variance == 0: break
-        logp = threshhold / variance * (data[
-                                            k] - mean - threshhold / 2.)  # instantaneous log-likelihood for current sample assuming local baseline has jumped in the positive direction
-        logn = -threshhold / variance * (data[
-                                             k] - mean + threshhold / 2.)  # instantaneous log-likelihood for current sample assuming local baseline has jumped in the negative direction
-        cpos[k] = cpos[k - 1] + logp  # accumulate positive log-likelihoods
-        cneg[k] = cneg[k - 1] + logn  # accumulate negative log-likelihoods
-        gpos[1] = max(gpos[0] + logp, 0)  # accumulate or reset positive decision function
-        gneg[1] = max(gneg[0] + logn, 0)  # accumulate or reset negative decision function
-        if (gpos[1] > h or gneg[1] > h):
-
-            if (gpos[1] > h):  # significant positive jump detected
-                jump = np.uint64(anchor + np.argmin(cpos[anchor:k + 1]))  # find the location of the start of the jump
-                if jump - edges[np.uint64(nStates)] > minlength and np.abs(data[np.uint64(jump + minlength)] - data[jump]) > threshhold / 4:
-                    edges = np.append(edges, jump)
-                    nStates += 1
-                    # print('EVENT!!!!! at ='+str(self.t[jump]))
-                    anchor = k  # no data meaning at bad points!
-                    # away from bad point more!
-                    cpos[0:len(cpos)] = 0  # reset all decision arrays
-                    cneg[0:len(cneg)] = 0
-                    gpos[0:len(gpos)] = 0
-                    gneg[0:len(gneg)] = 0
-            if (gneg[1] > h):  # significant negative jump detected
-                jump = anchor + np.argmin(cneg[anchor:k + 1])
-                if jump - edges[np.uint64(nStates)] > minlength and np.abs(data[np.uint64(jump + minlength)] - data[jump]) > threshhold / 4:
-                    edges = np.append(edges, jump)
-                    nStates += 1
-                    # print('EVENT!!!!! at ='+str(self.t[jump] ))
-                    anchor = k  # no data meaning at bad points!
-                    # away from bad point more!
-                    cpos[0:len(cpos)] = 0  # reset all decision arrays
-                    cneg[0:len(cneg)] = 0
-                    gpos[0:len(gpos)] = 0
-                    gneg[0:len(gneg)] = 0
-
-        gpos[0] = gpos[1]
-        gneg[0] = gneg[1]
-        if maxstates > 0:
-            if nStates > maxstates:
-                print('too sensitive')
-                nStates = 0
-                k = 0
-                threshhold = threshhold * 1.1
-                h = h * 1.1
-                logp = 0  # instantaneous log-likelihood for positive jumps
-                logn = 0  # instantaneous log-likelihood for negative jumps
-                cpos = np.zeros(len(data), dtype='float64')  # cumulative log-likelihood function for positive jumps
-                cneg = np.zeros(len(data), dtype='float64')  # cumulative log-likelihood function for negative jumps
-                gpos = np.zeros(2, dtype='float64')  # decision function for positive jumps
-                gneg = np.zeros(2, dtype='float64')  # decision function for negative jumps
-                edges = np.array([0],
-                                 dtype='int64')  # initialize an array with the position of the first subevent - the start of the event
-                anchor = 0  # the last detected change
-                length = len(data)
-                mean = data[0]
-                nStates = 0
-                mean = data[0]
-    edges = np.append(edges, len(data) - 1)  # mark the end of the event as an edge
-    nStates += 1
-
-    cusum = dict()
-    print('Events = ' + str([edges]))
-    for i in range(len(edges) - 1):
-        real_start = np.append(real_start, edges[i])
-        real_end = np.append(real_end, edges[i + 1])
-        real_Depth = np.append(real_Depth, np.mean(data[np.uint64(edges[i]):np.uint64(edges[i + 1])]))
-
-    cusum['Real_Start'] = real_start
-    cusum['Real_End'] = real_end
-    cusum['Real_Depth'] = real_Depth
-    print('Real Start =' + str(cusum['Real_Start']))
-    print('Real End =' + str(cusum['Real_End']))
-    cusum['CurrentLevels'] = [np.average(data[np.uint64(edges[i]) + minlength:np.uint64(edges[i + 1])]) for i in
-                              range(np.uint64(nStates))]  # detect current levels during detected sub-event
-    print('Edges[-1] = ' + str(edges[-1]))
-    cusum['EventDelay'] = edges  # locations of sub-events in the data
-    cusum['Threshold'] = threshhold  # record the threshold used
-    print('Event = ' + str(cusum['EventDelay']))
-    cusum['jumps'] = np.diff(cusum['CurrentLevels'])
-
-    e = timer()
-    print('cusum took = ' + str(e - s) + 's')
-    return cusum
-
-def detect_cusum(data, var, threshhold, minlength, maxstates):
-    logp = 0  # instantaneous log-likelihood for positive jumps
-    logn = 0  # instantaneous log-likelihood for negative jumps
-    cpos = np.zeros(len(data), dtype='float64')  # cumulative log-likelihood function for positive jumps
-    cneg = np.zeros(len(data), dtype='float64')  # cumulative log-likelihood function for negative jumps
-    gpos = np.zeros(len(data), dtype='float64')  # decision function for positive jumps
-    gneg = np.zeros(len(data), dtype='float64')  # decision function for negative jumps
-    edges = np.array([0],
-                     dtype='int64')  # initialize an array with the position of the first subevent - the start of the event
-    anchor = 0  # the last detected change
-    length = len(data)
-    mean = data[0]
-    h = threshhold / var
-    k = self.safety_reg - self.control1
-    nStates = 0
-    varM = data[0]
-    varS = 0
-    mean = data[0]
-    print('length data =' + str(length))
-    v = np.zeros(length, dtype='float64')
-    while k < length - 100:
-        k += 1
-        if nStates == 0: variance = np.var(data[anchor:k])
-        mean = np.mean(data[anchor:k])
-        logp = threshhold / variance * (data[
-                                            k] - mean - threshhold / 2.)  # instantaneous log-likelihood for current sample assuming local baseline has jumped in the positive direction
-        logn = -threshhold / variance * (data[
-                                             k] - mean + threshhold / 2.)  # instantaneous log-likelihood for current sample assuming local baseline has jumped in the negative direction
-        cpos[k] = cpos[k - 1] + logp  # accumulate positive log-likelihoods
-        cneg[k] = cneg[k - 1] + logn  # accumulate negative log-likelihoods
-        gpos[k] = max(gpos[k - 1] + logp, 0)  # accumulate or reset positive decision function
-        gneg[k] = max(gneg[k - 1] + logn, 0)  # accumulate or reset negative decision function
-        if (gpos[k] > h or gneg[k] > h):
-
-            if (gpos[k] > h):  # significant positive jump detected
-                jump = anchor + np.argmin(cpos[anchor:k + 1])  # find the location of the start of the jump
-                if jump - edges[nStates] > minlength and np.abs(data[jump + minlength] - data[jump]) > threshhold / 4:
-                    edges = np.append(edges, jump)
-                    nStates += 1
-                    print('EVENT!!!!! at =' + str((self.control1 + jump) / self.out['samplerate']))
-                    anchor = k  # no data meaning at bad points!
-                    # away from bad point more!
-                    cpos[0:len(cpos)] = 0  # reset all decision arrays
-                    cneg[0:len(cneg)] = 0
-                    gpos[0:len(gpos)] = 0
-                    gneg[0:len(gneg)] = 0
-            if (gneg[k] > h):  # significant negative jump detected
-                jump = anchor + np.argmin(cneg[anchor:k + 1])
-                if jump - edges[nStates] > minlength and np.abs(data[jump + minlength] - data[jump]) > threshhold / 4:
-                    edges = np.append(edges, jump)
-                    nStates += 1
-                    print('EVENT!!!!! at =' + str((self.control1 + jump) / self.out['samplerate']))
-                    anchor = k  # no data meaning at bad points!
-                    # away from bad point more!
-                    cpos[0:len(cpos)] = 0  # reset all decision arrays
-                    cneg[0:len(cneg)] = 0
-                    gpos[0:len(gpos)] = 0
-                    gneg[0:len(gneg)] = 0
-
-        if maxstates > 0:
-            if nStates > 10:
-                print('too sensitive')
-                nStates = 0
-                k = 0
-                threshhold = threshhold * 1.1
-                h = h * 1.1
-                logp = 0  # instantaneous log-likelihood for positive jumps
-                logn = 0  # instantaneous log-likelihood for negative jumps
-                cpos = np.zeros(len(data), dtype='float64')  # cumulative log-likelihood function for positive jumps
-                cneg = np.zeros(len(data), dtype='float64')  # cumulative log-likelihood function for negative jumps
-                gpos = np.zeros(len(data), dtype='float64')  # decision function for positive jumps
-                gneg = np.zeros(len(data), dtype='float64')  # decision function for negative jumps
-                edges = np.array([0],
-                                 dtype='int64')  # initialize an array with the position of the first subevent - the start of the event
-                anchor = 0  # the last detected change
-                length = len(data)
-                mean = data[0]
-                nStates = 0
-                mean = data[0]
-    edges = np.append(edges, len(data))  # mark the end of the event as an edge
-    nStates += 1
-
-    cusum = dict()
-    cusum['CurrentLevels'] = [np.average(data[edges[i] + minlength:edges[i + 1]]) for i in
-                              range(nStates)]  # detect current levels during detected sub-events
-    cusum['EventDelay'] = edges  # locations of sub-events in the data
-    cusum['Threshold'] = threshhold  # record the threshold used
-    cusum['jumps'] = np.diff(cusum['CurrentLevels'])
-    # self.__recordevent(cusum)
-
-    return cusum
-
-def CUSUM(input, delta, h, startp):
+def CUSUM(input, delta, h):
     Nd = 0
     kd = []
     krmv = []
-    krmvdown = []
-    both = []
     k0 = 0
-    k = 0
+    k = 1
     l = len(input)
     m = np.zeros(l)
     m[k0] = input[k0]
@@ -1437,11 +1188,10 @@ def CUSUM(input, delta, h, startp):
     sn = np.zeros(l)
     Sn = np.zeros(l)
     gn = np.zeros(l)
-    mc = []
-    while k < l-1:
-        k += 1
-        m[k] = np.mean(input[k0:k+1])
-        v[k] = np.var(input[k0:k+1])
+
+    while k < l:
+        m[k] = np.mean(input[k0:k + 1])
+        v[k] = np.var(input[k0:k + 1])
 
         sp[k] = delta / v[k] * (input[k] - m[k] - delta / 2)
         sn[k] = -delta / v[k] * (input[k] - m[k] + delta / 2)
@@ -1453,53 +1203,83 @@ def CUSUM(input, delta, h, startp):
         gn[k] = np.max([gn[k - 1] + sn[k], 0])
 
         if gp[k] > h or gn[k] > h:
+            kd.append(k)
             if gp[k] > h:
-                kmin = np.argmin(Sp[k0:k])
+                kmin = np.argmin(Sp[k0:k + 1])
                 krmv.append(kmin + k0 - 1)
-                both.append(kmin + k0 - 1)
             else:
-                kd.append(k)
-                kmin = np.argmin(Sn[k0:k])
-                krmvdown.append(kmin + k0 - 1)
-                both.append(kmin + k0 - 1)
+                kmin=np.argmin(Sn[k0:k+1])
+                krmv.append(kmin + k0 - 1)
+
+            #Re-initialize
             k0 = k
             m[k0] = input[k0]
-            v[k0] = 0
-            sp[k0] = 0
-            Sp[k0] = 0
-            gp[k0] = 0
-            sn[k0] = 0
-            Sn[k0] = 0
-            gn[k0] = 0
+            v[k0] = sp[k0] = Sp[k0] = gp[k0] = sn[k0] = Sn[k0] = gn[k0] = 0
+
             Nd = Nd + 1
-    '''
+        k += 1
+
     if Nd == 0:
         mc = np.mean(input) * np.ones(k)
     elif Nd == 1:
-        mc = [m[krmv[0]] * np.ones(krmv[0]), m[k] * np.ones(k - krmv[0])]
+        mc = np.append(m[krmv[0]] * np.ones(krmv[0]), m[k] * np.ones(k - krmv[0]))
     else:
-        mc.append(m[krmv[0]] * np.ones(krmv[0]))
-        for ii in range(1, Nd-1):
-            mc.append(m[krmv[ii]] * np.ones(krmv[ii] - krmv[ii - 1]))
-        mc.append(m[k] * np.ones(k - krmv[Nd-1]))
-    '''
-    ## Calculate Inner Levels
-    if len(both) >= 2:
-        levels = [np.zeros(len(both)-1), np.zeros(len(both)-1),
-                  np.zeros(len(both)-1), np.zeros(len(both)-1)]
-        # 0: level number, 1: current, 2: length, 3: std
-        fit = np.array([])
-        for ind, g in enumerate(both[:-1]):
-            levels[0][ind] = ind
-            levels[1][ind] = np.mean(input[g:both[ind + 1]])
-            levels[2][ind] = both[ind + 1] - g
-            levels[3][ind] = np.std(input[g:both[ind + 1]])
-            np.append(fit, levels[1][ind] * np.ones(np.uint64(levels[2][ind])))
-    else:
-        levels = []
-        fit = []
-    out = {'up': krmv+startp, 'down': krmvdown+startp, 'both': both+startp, 'levels':levels, 'fit': fit}
-    return out
+        mc = m[krmv[0]] * np.ones(krmv[0])
+        for ii in range(1, Nd):
+            mc=np.append(mc , m[krmv[ii]] * np.ones(krmv[ii] - krmv[ii - 1]))
+        mc=np.append(mc , m[k-1] * np.ones(k - krmv[Nd-1]))
+    return (mc, kd, krmv)
+
+def SetCusum2ARL0(deltax,sigmax,Arl0_2=1000,thresholdlevels=[1000,0.1,10]):
+    h0min=thresholdlevels[0];
+    h0max=thresholdlevels[1]; #detection threshold interval
+
+    ARL0=2*ARL0_2; #for two-sided algo
+    # Optimization on h "hopt"
+    change=0;
+    mu=deltax*(change-deltax/2)/sigmax**2;
+    sigma=abs(deltax)/sigmax;
+    mun=mu/sigma;
+    def f(h):
+        (exp(-2*mun*(h/sigma+1.166))-1+2*mun*(h/sigma+1.166))/(2*mun^2)-ARL0
+
+    if(f(h0min)*f(h0max)<0):
+        print('test')
+        #hopt=fzero(f,[h0min h0max])
+    elif(f(h0min) <0 and f(h0max) <0):
+        hopt=h0max
+    elif(f(h0min) >0 and f(h0max) >0):
+        hopt=h0min
+
+    hbook=sigmax*hopt/deltax;
+    return hbook, hopt
+
+
+def event_detection(RawSignal, CusumParameters, RoughEventLocations, cutoff):
+    for i in range(len(RoughEventLocations)):
+        CusumReferencedEndPoint = RoughEventLocations[i][1] + CusumParameters['BaselineLength'];
+        CusumReferencedStartPoint = RoughEventLocations[i][0] - CusumParameters['BaselineLength'];
+
+        if CusumReferencedEndPoint > len(RawSignal):
+            CusumReferencedEndPoint = len(RawSignal)
+        if CusumReferencedStartPoint < 0:
+            CusumReferencedStartPoint = 0
+
+        if RoughEventLocations[i][2] < CusumParameters['ImpulsionLimit'] * CusumParameters['SamplingFrequency']:
+            trace = RawSignal[CusumReferencedStartPoint:CusumReferencedEndPoint]
+             #[mc,krmv]=ImpulsionFitting(trace,BaselineLength, cutoff, SamplingFrequency);
+             #EventType='Impulsion';
+             #krmv=[BaselineLength, BaselineLength+RoughEventLocations(i,3)];
+             #mc=[ones(1,BaselineLength+1)*mean(trace(1:BaselineLength)), ones(1,krmv(2)-krmv(1)-1)*min(trace), ones(1,BaselineLength-2)*mean(trace(krmv(2):end))];
+        else:
+            mc, kd, krmv = cusum(RawSignal[CusumReferencedStartPoint:CusumReferencedEndPoint],CusumParameters['delta'],CusumParameters['h'])
+            EventType='Standard Event';
+
+        Startpoint = CusumReferencedStartPoint + krmv[0]
+        EndPoint = CusumReferencedStartPoint + krm[-1]
+
+        BaselinePart = RawSignal[CusumReferencedStartPoint:CusumReferencedStartPoint]
+
 
 def CondPoreSizeTick(x, pos):
     formCond = EngFormatter(unit='S')
@@ -1549,3 +1329,6 @@ def Selectivity(ConcGradient, V):
 
 def GetRedox(cmax, cmin, T = 295.15):
     return cst.R * T / cst.physical_constants['Faraday constant'][0] * np.log(cmax/cmin)
+
+def KDEandGMM(data):
+    kernel = sta.gaussian_kde(data)

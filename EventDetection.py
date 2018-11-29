@@ -26,8 +26,12 @@ def batcheventdetection(folder,extension,coefficients, forceRun=False, CutTraces
 
         #Extract filename and generate filename to save located events
         print('analysing '+fullfilename)
-        filename, file_extension = os.path.splitext(fullfilename)
-        savefilename=filename+'data'
+        filename, file_extension = os.path.splitext(os.path.basename(fullfilename))
+        directory=os.path.dirname(fullfilename) + os.sep + 'analysisfiles'
+        if not os.path.exists(directory):
+            os.makedirs(directory,exist_ok=True)
+
+        savefilename=directory + os.sep + filename + 'data'
         shelfFile = shelve.open(savefilename)
         if ~forceRun:
             try: #Check if file can be loaded
@@ -66,10 +70,18 @@ def batcheventdetection(folder,extension,coefficients, forceRun=False, CutTraces
 
 
 def eventdetection(fullfilename, coefficients, CutTraces=False, showFigures = False):
-    loadedData=Functions.OpenFile(fullfilename, None, True, CutTraces)
+    if 'ChimeraLowPass' in coefficients:
+        ChimeraLowPass=coefficients['ChimeraLowPass']
+    else:
+        ChimeraLowPass=None
+    loadedData=Functions.OpenFile(fullfilename, ChimeraLowPass, True, CutTraces)
     minTime=coefficients['minEventLength']
+    IncludedBaseline = int(1e-2 * loadedData['samplerate'])
+    delta=coefficients['delta']
+    hbook=coefficients['hbook']
 
-    print('eventdetection...', end='')
+
+    print('Recursive lowpass...', end='')
     #Call RecursiveLowPassFast to detect events in current trace
     start_time = timeit.default_timer()
     if 'i1Cut' in loadedData:
@@ -80,6 +92,10 @@ def eventdetection(fullfilename, coefficients, CutTraces=False, showFigures = Fa
         events=Functions.RecursiveLowPassFast(loadedData['i1'],coefficients,loadedData['samplerate'])
     print('done. Calculation took {}'.format(timeInSec.format_data(timeit.default_timer() - start_time)))
     print('nr events: {}'.format(len(events)))
+
+    #CusumParameters = [delta sigma Normalize ImpulsionLimit IncludedBaseline TooMuchLevels IncludedBaselinePlots 1
+    #                   SamplingFrequency];
+    #[EventDatabase] = event_detection(RawSignal, CusumParameters, RoughEventLocations, lowpasscutoff);
 
     #Make a new class translocationEventList that contains all the found events in this file
     translocationEventList=NC.AllEvents()
@@ -94,33 +110,50 @@ def eventdetection(fullfilename, coefficients, CutTraces=False, showFigures = Fa
         plt.draw()
         plt.pause(0.001)
 
-    # for i in range(length(events)):
-
-    #print('min ticks:{}'.format(minTime*loadedData['samplerate']))
 
     #Loop over all detected events
-    for i in range((len(events))):
-        beginEvent=events[i][0]
-        endEvent=events[i][1]
-        meanEvent=events[i][2]
-        stdEvent=events[i][3]
+    for event in events:
+        beginEvent = event[0]
+        endEvent = event[1]
+        localBaseline = event[2]
+        stdEvent = event[3]
 
-        # Check if the start of the event is > 100 and eventtime is more then the minimal and less than the maxima;
-        if beginEvent>100 and (endEvent-beginEvent)>=(minTime*loadedData['samplerate']) and (endEvent-beginEvent)<(coefficients['eventlengthLimit']*loadedData['samplerate']):
-            #Make new event class
-            newEvent=NC.TranslocationEvent(fullfilename)
-            #Extract trace and extract baseline
-            Trace=loadedData['i1'][int(beginEvent):int(endEvent)]
-            traceBefore=loadedData['i1'][int(beginEvent)-100:int(beginEvent)+1]
-            traceAfter=loadedData['i1'][int(endEvent)-1:int(endEvent)+100]
+        lengthevent=endEvent-beginEvent
 
-            #Add Trace, mean of the event,the samplerate, coefficients and baseline to the New Event class
-            newEvent.SetEvent(Trace,meanEvent,loadedData['samplerate'])
-            newEvent.SetCoefficients(coefficients)
-            newEvent.SetBaselineTrace(traceBefore,traceAfter)
+        # Check if the start of the event is > IncludedBaseline then compare eventtime to minimal and maxima;
+        if beginEvent > IncludedBaseline:
+            # Extract trace and extract baseline
+            Trace = loadedData['i1'][int(beginEvent):int(endEvent)]
+            traceBefore = loadedData['i1'][int(beginEvent) - IncludedBaseline:int(beginEvent)]
+            traceAfter = loadedData['i1'][int(endEvent):int(endEvent) + IncludedBaseline]
 
-            #Add event to TranslocationList
-            translocationEventList.AddEvent(newEvent)
+            if lengthevent<=(minTime*loadedData['samplerate']) and lengthevent>3:
+                newEvent = NC.TranslocationEvent(fullfilename,'impulse')
+
+                # Add Trace, mean of the event,the samplerate, coefficients and baseline to the New Event class
+                newEvent.SetEvent(Trace, beginEvent,localBaseline, loadedData['samplerate'])
+                newEvent.SetCoefficients(coefficients, loadedData['v1'])
+                newEvent.SetBaselineTrace(traceBefore, traceAfter)
+
+                # Add event to TranslocationList
+                translocationEventList.AddEvent(newEvent)
+            elif lengthevent>(minTime*loadedData['samplerate']) and lengthevent<(coefficients['eventlengthLimit']*loadedData['samplerate']):
+                #Make new event class
+                newEvent=NC.TranslocationEvent(fullfilename,'Real')
+
+                #CUSUM fit
+                sigma = np.sqrt(stdEvent)
+                h = hbook * delta / sigma
+                (mc, kd, krmv)= Functions.CUSUM(loadedData['i1'][int(beginEvent) - IncludedBaseline: int(endEvent) + IncludedBaseline], delta, h)
+                krmv = [krmvVal + int(beginEvent) - IncludedBaseline + 1 for krmvVal in krmv]
+                #Add Trace, mean of the event,the samplerate, coefficients and baseline to the New Event class
+                newEvent.SetEvent(Trace,beginEvent,localBaseline,loadedData['samplerate'])
+                newEvent.SetCoefficients(coefficients,loadedData['v1'])
+                newEvent.SetBaselineTrace(traceBefore,traceAfter)
+                newEvent.SetCUSUMVariables(mc, kd, krmv)
+
+                #Add event to TranslocationList
+                translocationEventList.AddEvent(newEvent)
 
     #Plot events if True
     if showFigures:
@@ -156,6 +189,7 @@ def LoadEvents(loadname):
     shelfFile.close()
     AllEvents=NC.AllEvents()
     AllEvents.AddEvent(TranslocationEvents)
+    AllEvents.SetFolder(loadname)
     return AllEvents
 
 if __name__=='__main__':
@@ -163,7 +197,7 @@ if __name__=='__main__':
     parser.add_argument('-i', '--input', help='Input directory or file')
     parser.add_argument('-e', '--ext', help='Extension for input directory')
     parser.add_argument('-o', '--output', help='Output file for saving')
-    parser.add_argument('-c', '--coeff', help='Coefficients for selecting events [-C filter E standarddev maxlength minlength', type = float, nargs = 5)
+    parser.add_argument('-c', '--coeff', help='Coefficients for selecting events [-C filter E standarddev maxlength minlength', nargs = '+')
     parser.add_argument('-u', '--cut', help='Cut Traces before detecting event, prevent detecting appended chunks as event', action='store_true')
     parser.add_argument('-f', '--force', help='Force analysis to run (don''t load from file', action='store_true')
 
@@ -174,12 +208,18 @@ if __name__=='__main__':
 
     outputData=args.output
     if outputData==None:
-        outputData=os.path.dirname(inputData) + os.sep + 'Data' + os.sep + 'Data' + datetime.date.today().strftime("%Y%m%d")
+        if os.path.isdir(inputData):
+            outputData = inputData + os.sep + 'Data' + os.sep + 'Data' + datetime.date.today().strftime("%Y%m%d")
+        else:
+            outputData=os.path.dirname(inputData) + os.sep + 'Data' + os.sep + 'Data' + datetime.date.today().strftime("%Y%m%d")
 
-    if args.coeff==None:
-        coefficients= {'a': 0.999, 'E': 0, 'S': 5, 'eventlengthLimit': 0.5,'minEventLength': 100e-6}
-    else:
-        coefficients = {'a': args.coeff[0] , 'E': args.coeff[1], 'S': args.coeff[2], 'eventlengthLimit': args.coeff[3], 'minEventLength': args.coeff[4]}
+
+    coefficients = {'a': 0.999, 'E': 0, 'S': 5, 'eventlengthLimit': 200e-3, 'minEventLength': 500e-6, 'hbook':1,'delta':0.2e-9,'ChimeraLowPass':10e3}
+    if args.coeff is not None:
+        if len(args.coeff) % 2 == 0:
+            for i in range(0, len(coefficients.keys()), 2):
+                if i <= len(args.coeff):
+                    coefficients[string(args.coeff[i])]=float(args.coeff[i+1])
 
     extension=args.ext
     if extension==None:
