@@ -3,6 +3,7 @@ import MiscParameters as pm
 import numpy as np
 import Functions as f
 import os
+from scipy import signal
 import matplotlib.pyplot as plt
 from tkinter import Tk
 from tkinter.filedialog import askopenfilenames
@@ -16,17 +17,20 @@ root.withdraw()
 os.system('''/usr/bin/osascript -e 'tell app "Finder" to set frontmost of process "python" to true' ''')
 
 # Load File, empty string prompts a pop.up window for file selection. Else a file-path can be given
-
 root.update()
-#filenames={'/Volumes/lben/lben-commun/2018 User Data/Martina/Axonpatch/20180518_13A/13A_1MKCl_events250mV3.dat'}
 filenames = askopenfilenames()
 root.destroy()
-
-#filenames=['/Volumes/lben/lben-commun/2018 User Data/Mike/mike 27 03 2018/Events 3/Events 3_20180327_195201.log']
 
 for filename in filenames:
     print(filename)
     inp = f.OpenFile(filename, ChimeraLowPass=pm.ChimeraLowPass)
+
+    if pm.AxopatchLowPassForDetection:
+        # Low-Pass and downsample
+        Wn = round(2 * pm.AxopatchLowPassForDetection / inp['samplerate'], 4)  # [0,1] nyquist frequency
+        b, a = signal.bessel(4, Wn, btype='low', analog=False)
+        inp['i1'] = signal.filtfilt(b, a, inp['i1'])
+
     folder = pm.OutputFolder
     file = os.sep + str(os.path.split(filename)[1][:-4])
     print('Number of samples in file: {}'.format(len(inp['i1'])))
@@ -64,7 +68,7 @@ for filename in filenames:
 
     ############Plot the Lowpass Detections
     if pm.PlotTheLowPassDetection:
-        fig = plt.figure(1, figsize=(16,5) )
+        fig = plt.figure(1, figsize=(16,5))
         ax = fig.add_subplot(111)
 
         ax.plot(np.arange(0, len(inp['i1']), 1)/inp['samplerate'], inp['i1'], 'b')

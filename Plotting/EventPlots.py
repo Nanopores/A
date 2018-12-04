@@ -80,6 +80,7 @@ def PlotG_tau(events, savefile = None, showCurrentInstead=False, normalized=Fals
 
     #define axes and link histogram to scatterplot
     axScatter = plt.axes(rect_scatter)
+
     axHistx = plt.axes(rect_histx, sharex=axScatter)
     axHisty = plt.axes(rect_histy, sharey=axScatter)
 
@@ -147,7 +148,7 @@ def PlotG_tau(events, savefile = None, showCurrentInstead=False, normalized=Fals
                 tau,yVals = extractytau(events)
                 scatters[i] = axScatter.scatter(tau, yVals, color=colors[i], marker='o', s=30,
                                              linewidths=0.1,edgecolors=linecolors[i], picker=5,visible=visBool[i])  # added some stuff here to improve aesthetics
-
+                #axScatter.set_xscale('log')
                 axHistx.hist(tau, bins=50, color=colors[i], visible=visBool[i])
                 axHisty.hist(yVals, bins=50, orientation='horizontal', color=colors[i], visible=visBool[i])
 
@@ -375,7 +376,7 @@ if __name__=='__main__':
 
     if inputData:
         shelfFile=shelve.open(inputData)
-        translocationEvents=shelfFile['TranslocationEvents']
+        translocationEvents=shelfFile['translocationEvents']
         shelfFile.close()
 
         PlotG_tau(translocationEvents.events,inputData)
