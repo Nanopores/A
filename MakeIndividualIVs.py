@@ -15,6 +15,7 @@ import platform
 import csv
 import argparse
 from pprint import pprint
+import LoadData
 
 #Set font properties
 fontP = FontProperties()
@@ -68,7 +69,7 @@ def run(filenames,newParameters={},verbose=False):
         os.chdir(os.path.dirname(filename))
         print(filename)
         #Make Dir to save images
-        output = uf.OpenFile(filename, verbose=verbose)
+        output = LoadData.OpenFile(filename, verbose=verbose)
         if Parameters['reversePolarity']:
             print('Polarity Reversed!!!!')
             output['i1']= -output['i1']

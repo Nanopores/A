@@ -13,6 +13,7 @@ import argparse
 import datetime
 from tkinter.filedialog import askopenfilenames,askdirectory
 import timeit
+import LoadData
 
 
 timeInSec= EngFormatter(unit='s', places=2)
@@ -83,16 +84,12 @@ def batcheventdetection(folder,extension,coefficients, verbose=True, forceRun=Fa
 
     return AllEvents
 
-
-
-
-
 def eventdetection(fullfilename, coefficients, verbose=True, CutTraces=False, showFigures = False):
     if 'ChimeraLowPass' in coefficients:
         ChimeraLowPass=coefficients['ChimeraLowPass']
     else:
         ChimeraLowPass=None
-    loadedData=Functions.OpenFile(fullfilename, ChimeraLowPass, True, CutTraces)
+    loadedData=LoadData.OpenFile(fullfilename, ChimeraLowPass, True, CutTraces)
     minTime=coefficients['minEventLength']
     IncludedBaseline = int(1e-2 * loadedData['samplerate'])
     delta=coefficients['delta']
@@ -254,7 +251,7 @@ def run(inputData, newExtension=None, newCoefficients={}, outputFile=None, force
     if outputFile is not None and TranslocationEvents.events:
         if os.path.isdir(inputData):
             outputData = inputData + os.sep + 'Data' + os.sep + 'Data' + datetime.date.today().strftime("%Y%m%d")
-        Functions.SaveVariables(outputFile,TranslocationEvents=TranslocationEvents)
+        LoadData.SaveVariables(outputFile,TranslocationEvents=TranslocationEvents)
         return True
     else:
         return TranslocationEvents
@@ -306,4 +303,4 @@ if __name__=='__main__':
 
     #Check if list is empty
     if TranslocationEvents.events:
-        Functions.SaveVariables(outputData,TranslocationEvents=TranslocationEvents)
+        LoadData.SaveVariables(outputData,TranslocationEvents=TranslocationEvents)

@@ -10,6 +10,7 @@ import h5py
 import pandas as pd
 from matplotlib.ticker import EngFormatter
 from matplotlib import rc
+import LoadData
 #rc('text', usetex=True)
 formCurrent = EngFormatter(unit='A', places=3)
 formA = EngFormatter(unit='A', places=3)
@@ -18,7 +19,7 @@ formB = EngFormatter(unit='s', places=3)
 file = '/Volumes/lben/lben-commun/2018 User Data/Michael/Axopatch/20180706/NorcadaCh1_100mMKCl_1mM_Cis_trans_ph74_640nm_100mW_IV_Later_Trace.dat'
 #file = '/Volumes/lben/lben-commun/2018 User Data/Michael/Axopatch/20180706/NorcadaCh1_100mMKCl_1mM_Cis_trans_ph74_640nm_150mmlens_50mW_IV_Later_Trace.dat'
 
-dat = uf.OpenFile(file)
+dat = LoadData.OpenFile(file)
 
 fig1 = plt.figure(1, figsize=(8, 4))
 ax_part1 = fig1.add_subplot(1, 1, 1)

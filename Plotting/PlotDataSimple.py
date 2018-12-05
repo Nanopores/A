@@ -9,9 +9,10 @@ import numpy as np
 import scipy
 import pyqtgraph as pg
 import Functions as f
+import LoadData
 
 
-inp = f.OpenFile('/Volumes/Michael/Axopatch/20180316/1msSignal_AppliedToModelCellThroughAxopatch_1.dat')
+inp = LoadData.OpenFile('/Volumes/Michael/Axopatch/20180316/1msSignal_AppliedToModelCellThroughAxopatch_1.dat')
 
 #Downsampling Methods
 ds_factor = 10.0

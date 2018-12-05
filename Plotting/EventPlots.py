@@ -9,6 +9,7 @@ import shelve
 import os
 from pprint import pprint
 import Functions
+import LoadData
 
 
 Amp = EngFormatter(unit='A', places=2)
@@ -295,7 +296,7 @@ def PlotEvent(event,ax=None, savefile=os.getcwd(), showCUSUM=False):
 
 def ShowEventInTrace(event):
     filename=event.filename
-    loadedData = Functions.OpenFile(filename,1e3,True) #, ChimeraLowPass, True, CutTraces)
+    loadedData = LoadData.OpenFile(filename,1e3,True) #, ChimeraLowPass, True, CutTraces)
 
     fig, ax = plt.subplots(figsize=(10, 6))
 
