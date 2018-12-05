@@ -301,7 +301,6 @@ def ShowEventInTrace(event):
     fig, ax = plt.subplots(figsize=(10, 6))
 
     FullTrace = loadedData['i1']
-    FullTrace = FullTrace[0:50000]
 
     times=np.linspace(0, len(FullTrace) / event.samplerate, num=len(FullTrace))
     ax.plot(times,FullTrace,zorder=1)
