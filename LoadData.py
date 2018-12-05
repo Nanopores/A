@@ -1,30 +1,15 @@
-
-import matplotlib
-import numpy as np
-import math
-import scipy
-import scipy.signal as sig
 import os
-import pickle as pkl
-from scipy import constants as cst
-from scipy import io
-from scipy import signal
-from PyQt5 import QtGui, QtWidgets
-from numpy import linalg as lin
-import pyqtgraph as pg
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
-import pandas as pd
-import h5py
-from timeit import default_timer as timer
 import platform
-from scipy.optimize import curve_fit
-import pyabf
-from matplotlib.ticker import EngFormatter
-from pprint import pprint
 import shelve
 from tkinter import filedialog
-import functions
+import h5py
+import numpy as np
+import pyabf
+import scipy
+import scipy.signal as sig
+from PyQt5 import QtGui
+from scipy import io
+from scipy import signal
 
 
 def ImportABF(datafilename):
@@ -185,7 +170,7 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3,approxImpulseResponse=False,Sp
         output['ExperimentDuration'] = st.st_mtime - st.st_birthtime
     elif platform.system() == 'Windows':
         if verbose:
-            print('Platform is WinShit')
+            print('Platform is Windows')
         output['TimeFileWritten'] = st.st_ctime
         output['TimeFileLastModified'] = st.st_mtime
         output['ExperimentDuration'] = st.st_mtime - st.st_ctime
