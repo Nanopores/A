@@ -133,6 +133,7 @@ def eventdetection(fullfilename, coefficients, verbose=True, CutTraces=False, sh
         print('CUSUM fitting...', end='')
     #Call RecursiveLowPassFast to detect events in current trace
     start_time = timeit.default_timer()
+    cusumEvents = 0
     #Loop over all detected events
     for event in events:
         beginEvent = event[0]
@@ -185,6 +186,7 @@ def eventdetection(fullfilename, coefficients, verbose=True, CutTraces=False, sh
                 newEvent.SetEvent(Trace,beginEvent,localBaseline,loadedData['samplerate'])
                 newEvent.SetBaselineTrace(traceBefore, traceAfter)
                 newEvent.SetCUSUMVariables(mc, kd, krmv)
+                cusumEvents+=1
 
                 if 'blockLength' in loadedData:
                     voltI = int(beginEvent/loadedData['blockLength'])
@@ -196,6 +198,7 @@ def eventdetection(fullfilename, coefficients, verbose=True, CutTraces=False, sh
                 translocationEventList.AddEvent(newEvent)
     if verbose:
         print('done. Calculation took {}'.format(timeInSec.format_data(timeit.default_timer() - start_time)))
+        print('{} events fitted'.format(cusumEvents))
 
     #Plot events if True
     if showFigures:
@@ -234,7 +237,7 @@ def LoadEvents(loadname):
     AllEvents.SetFolder(loadname)
     return AllEvents
 
-def run(inputData, newExtension=None, newCoefficients={}, outputData=None, force=False, cut=False, verbose=False):
+def run(inputData, newExtension=None, newCoefficients={}, outputFile=None, force=False, cut=False, verbose=False):
 
     if newExtension is None:
         newExtension = extension
@@ -248,10 +251,10 @@ def run(inputData, newExtension=None, newCoefficients={}, outputData=None, force
         TranslocationEvents=eventdetection(inputData,coefficients, verbose, cut)
 
     #Check if list is empty
-    if outputData is not None and TranslocationEvents.events:
+    if outputFile is not None and TranslocationEvents.events:
         if os.path.isdir(inputData):
             outputData = inputData + os.sep + 'Data' + os.sep + 'Data' + datetime.date.today().strftime("%Y%m%d")
-        Functions.SaveVariables(outputData,TranslocationEvents=TranslocationEvents)
+        Functions.SaveVariables(outputFile,TranslocationEvents=TranslocationEvents)
         return True
     else:
         return TranslocationEvents

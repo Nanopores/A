@@ -1,12 +1,10 @@
-import UsefulFunctions as f
+from ObsoleteFunctions import UsefulFunctions as f
 import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
 from peakutils.peak import indexes
 import pyqtgraph as pg
 import os
-from tkinter import Tk
-from tkinter.filedialog import askopenfilenames
 
 plots=1
 lowpass=1000

@@ -1,16 +1,11 @@
-import UsefulFunctions as uf
-import pyqtgraph as pg
 import matplotlib.pyplot as plt
-from timeit import default_timer as timer
-import scipy
 import numpy as np
 import os
 import matplotlib
-from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.font_manager import FontProperties
 from tkinter import Tk
 from matplotlib.ticker import EngFormatter
-from tkinter.filedialog import askopenfilenames
+
 matplotlib.rcParams['agg.path.chunksize'] = 100000
 
 fontP = FontProperties()

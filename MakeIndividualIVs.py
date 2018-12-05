@@ -54,7 +54,8 @@ Parameters = {
   'CurveFit' : 'PolyFit' #PolyFit YorkFit
 }
 
-def run(filenames,newParameters={}):
+
+def run(filenames,newParameters={},verbose=False):
 
 
     for key in newParameters:
@@ -67,7 +68,7 @@ def run(filenames,newParameters={}):
         os.chdir(os.path.dirname(filename))
         print(filename)
         #Make Dir to save images
-        output = uf.OpenFile(filename)
+        output = uf.OpenFile(filename, verbose=verbose)
         if Parameters['reversePolarity']:
             print('Polarity Reversed!!!!')
             output['i1']= -output['i1']
@@ -78,6 +79,7 @@ def run(filenames,newParameters={}):
             os.makedirs(directory)
 
         AllData = uf.MakeIVData(output, approach='mean', delay = Parameters['delay'])#, UseVoltageRange = [-0.4, 0.4])
+        print('uf.MakeIVData')
         if AllData == 0:
             print('!!!! No Sweep in: ' + filename)
             continue
@@ -110,7 +112,7 @@ def run(filenames,newParameters={}):
         #                labeltxt='MeanFit', PoreSize=[10, 1e-9], title=str(os.path.split(filename)[1]))
         Slope=AllData[current][CurveFit]['Slope']
         Yintercept=AllData[current][CurveFit]['Yintercept']
-        
+
         if Type=='Nanopore':
             poreLength=Parameters['poreLength']
             textstr = 'Nanopore Size\n\nSpecific Conductance: {}\nLength: {}\n\nConductance: {}\nDiameter: {}'\

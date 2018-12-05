@@ -1,11 +1,9 @@
-import UsefulFunctions as f
+from ObsoleteFunctions import UsefulFunctions as f
 import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
 import matplotlib
 import os
-from tkinter import Tk
-from tkinter.filedialog import askopenfilenames
 from scipy.optimize import curve_fit
 matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
