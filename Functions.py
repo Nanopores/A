@@ -404,6 +404,7 @@ def MakeIVData(output, approach = 'mean', delay = 0.7, UseVoltageRange=0,verbose
         Item['StartPoint'][0] = 0 + delayinpoints
         Item['EndPoint'][0] = ChangePoints[0]
         Item['Mean'][0] = np.mean(trace)
+
         isProblematic = math.isclose(Values[0], 0, rel_tol=1e-3) or math.isclose(Values[0], np.min(Values), rel_tol=1e-3) or math.isclose(Values[0], np.max(Values), rel_tol=1e-3)
         if sweepedChannel is 'v2' and isProblematic:
             print('In Problematic If for Values: {}, index {}'.format(Values[0],0))
@@ -416,32 +417,44 @@ def MakeIVData(output, approach = 'mean', delay = 0.7, UseVoltageRange=0,verbose
             Item['Voltage'][i] = Values[i]
             Item['StartPoint'][i] = ChangePoints[i - 1]+ delayinpoints
             Item['EndPoint'][i] = ChangePoints[i]
-            Item['Mean'][i] = np.mean(trace)
-            isProblematic = math.isclose(Values[i], 0, rel_tol=1e-3) or math.isclose(Values[i], np.min(Values),
-                                                                                     rel_tol=1e-3) or math.isclose(Values[i], np.max(Values), rel_tol=1e-3)
-            if sweepedChannel is 'v2' and isProblematic:
-                print('In Problematic If for Values: {}, index {}'.format(Values[i], i))
-                Item['STD'][i] = np.std(trace[-np.int64(output['samplerate']):])
+            if len(trace)>0:
+                Item['Mean'][i] = np.mean(trace)
+                isProblematic = math.isclose(Values[i], 0, rel_tol=1e-3) or math.isclose(Values[i], np.min(Values),
+                                                                                         rel_tol=1e-3) or math.isclose(
+                    Values[i], np.max(Values), rel_tol=1e-3)
+                if sweepedChannel is 'v2' and isProblematic:
+                    print('In Problematic If for Values: {}, index {}'.format(Values[i], i))
+                    Item['STD'][i] = np.std(trace[-np.int64(output['samplerate']):])
+                else:
+                    Item['STD'][i] = np.std(trace)
+                Item['SE'][i] = Item['STD'][i] / np.sqrt(len(trace))
+                if verbose:
+                    print('{}, {},{}'.format(i, ChangePoints[i - 1] + delayinpoints, ChangePoints[i]))
+
             else:
-                Item['STD'][i] = np.std(trace)
-            Item['SE'][i] = Item['STD'][i] / np.sqrt(len(trace))
-            if verbose:
-                print('{}, {},{}'.format(i, ChangePoints[i - 1] + delayinpoints, ChangePoints[i]))
+                Item['Mean'][i] = np.NaN
+                Item['STD'][i] = np.NaN
         # Last
         if 1:
             trace = output[current][ChangePoints[len(ChangePoints) - 1] + delayinpoints : len(output[current]) - 1]
             Item['Voltage'][-1:] = Values[len(Values) - 1]
             Item['StartPoint'][-1:] = ChangePoints[len(ChangePoints) - 1]+delayinpoints
             Item['EndPoint'][-1:] = len(output[current]) - 1
-            Item['Mean'][-1:] = np.mean(trace)
-            isProblematic = math.isclose(Values[-1:], 0, rel_tol=1e-3) or math.isclose(Values[-1:], np.min(Values),
-                                                                                     rel_tol=1e-3) or math.isclose(
-                Values[-1:], np.max(Values), rel_tol=1e-3)
-            if sweepedChannel is 'v2' and isProblematic:
-                print('In Problematic If for Values: {}, index {}'.format(Values[-1:], i))
-                Item['STD'][-1:] = np.std(trace[-np.int64(output['samplerate']):])
+            if len(trace)>0:
+                Item['Mean'][-1:] = np.mean(trace)
+                isProblematic = math.isclose(Values[-1:], 0, rel_tol=1e-3) or math.isclose(Values[-1:], np.min(Values),
+                                                                                           rel_tol=1e-3) or math.isclose(
+                    Values[-1:], np.max(Values), rel_tol=1e-3)
+                if sweepedChannel is 'v2' and isProblematic:
+                    print('In Problematic If for Values: {}, index {}'.format(Values[-1:], i))
+                    Item['STD'][-1:] = np.std(trace[-np.int64(output['samplerate']):])
+                else:
+                    Item['STD'][-1:] = np.std(trace)
+
             else:
-                Item['STD'][-1:] = np.std(trace)
+                Item['Mean'][-1:] = np.NaN
+                Item['STD'][-1:] = np.NaN
+
             Item['SE'][-1:] = Item['STD'][-1:] / np.sqrt(len(trace))
 
         ## GET RECTIFICATION FACTOR
@@ -559,7 +572,7 @@ def MakeIVData(output, approach = 'mean', delay = 0.7, UseVoltageRange=0,verbose
         y_fit = scipy.polyval([b, a], x_fit)
         Item['YorkFit'] = {'x_fit': x_fit, 'y_fit': y_fit, 'Yintercept': a, 'Slope': b, 'Sigma_Yintercept': sigma_a,
                          'Sigma_Slope': sigma_b, 'Parameter': b_save}
-        # Yorkfit
+        # Polyfit
         p = np.polyfit(Item['Voltage'].flatten(), Item['Mean'].flatten(), 1)
         x_fit2 = np.linspace(min(Item['Voltage']), max(Item['Voltage']), 1000)
         y_fit2 = scipy.polyval(p, x_fit)
@@ -568,7 +581,6 @@ def MakeIVData(output, approach = 'mean', delay = 0.7, UseVoltageRange=0,verbose
 
         All[current] = Item
         All['Currents'] = currents
-
     return All
 
 def ExpFunc(x, a, b, c):
