@@ -3,6 +3,7 @@
 import math
 import os
 import pickle as pkl
+from scipy import signal
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,11 +16,24 @@ from scipy import constants as cst
 from scipy.optimize import curve_fit
 
 
-# if not 'verbose' in globals():
-#     verbose = False
-#
-# verboseprint = print if verbose else lambda *a, **k: None
-#
+
+
+def LowPass(data, samplerate, lowPass):
+    Wn = round(2 * lowPass / samplerate, 4)  # [0,1] nyquist frequency
+    b, a = signal.bessel(4, Wn, btype='low', analog=False)  # 4-th order digital filter
+
+    z, p, k = signal.tf2zpk(b, a)
+    eps = 1e-9
+    r = np.max(np.abs(p))
+    approx_impulse_len = int(np.ceil(np.log(eps) / np.log(r)))
+    Filt_sig = (signal.filtfilt(b, a, data, method='gust', irlen=approx_impulse_len))
+
+    ds_factor = np.ceil(samplerate / (2 * lowPass))
+    output = {}
+    output['data'] = scipy.signal.resample(Filt_sig, int(len(data) / ds_factor))
+    output['samplerate'] = samplerate / ds_factor
+    return output
+
 
 def GetKClConductivity(Conc, Temp):
     p = pkl.load(open('KCl_ConductivityValues.p', 'rb'))
