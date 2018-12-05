@@ -250,3 +250,13 @@ def SaveVariables(savename, **kwargs):
         shelfFile[arg_name]=kwargs[arg_name]
     shelfFile.close()
     print('saved as: ' + savefile + '.dat')
+
+def LoadVariables(loadname, variableName):
+    if not isinstance(s, str):
+        raise Exception('The second argument must be a string')
+
+    shelfFile = shelve.open(loadname + '.dat')
+    Variable  = shelfFile[variableName]
+    shelfFile.close()
+    print('Loaded  ' + variableName + 'from ' + loadname + '.dat')
+    return Variable
