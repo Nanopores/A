@@ -9,6 +9,7 @@ import shelve
 import os
 from pprint import pprint
 import Functions
+import LoadData
 
 
 Amp = EngFormatter(unit='A', places=2)
@@ -17,9 +18,9 @@ Volt = EngFormatter(unit='V', places=2)
 Cond = EngFormatter(unit='S', places=2)
 
 
-def PlotG_tau(events, savefile, showCurrentInstead=False, normalized=False,showCUSUM=True):
+def PlotG_tau(events, savefile = None, showCurrentInstead=False, normalized=False,showCUSUM=True):
     #Clean up events
-    events = [event for event in events if event.voltage > 0]
+    events = [event for event in events if event.voltage is not 0]
 
     #categorize events in three types
     #CUSUM fitted events
@@ -86,7 +87,7 @@ def PlotG_tau(events, savefile, showCurrentInstead=False, normalized=False,showC
 
     #Checkboxes to turn on or off events
     rax = plt.axes([0.75, 0.73, 0.14, 0.15])
-    visBool=[True,False,False]
+    visBool=[True,True,True]
     labelsCheckBox=('CUSUM-fitted', 'Not fitted', 'impulse')
     check = CheckButtons(rax,labelsCheckBox , visBool)
 
@@ -295,11 +296,11 @@ def PlotEvent(event,ax=None, savefile=os.getcwd(), showCUSUM=False):
 
 def ShowEventInTrace(event):
     filename=event.filename
-    loadedData = Functions.OpenFile(filename,10e3,True) #, ChimeraLowPass, True, CutTraces)
+    loadedData = LoadData.OpenFile(filename,1e3,True) #, ChimeraLowPass, True, CutTraces)
 
     fig, ax = plt.subplots(figsize=(10, 6))
 
-    FullTrace=loadedData['i1']
+    FullTrace = loadedData['i1']
 
     times=np.linspace(0, len(FullTrace) / event.samplerate, num=len(FullTrace))
     ax.plot(times,FullTrace,zorder=1)

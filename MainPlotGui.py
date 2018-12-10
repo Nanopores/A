@@ -8,6 +8,7 @@ import sys
 import numpy as np
 import os
 import glob
+import LoadData
 
 
 #   Draw UI
@@ -42,7 +43,7 @@ def ItemChanged(it):
     ui.label.setText(currentFile)
 
 def UpdatePlots(currentFile):
-    inp = f.OpenFile(folder + os.sep + currentFile,None,True)
+    inp = LoadData.OpenFile(folder + os.sep + currentFile,None,True)
     ui.graphicsView.plotItem.clear()
     ui.graphicsView_2.plotItem.clear()
     ui.graphicsView_3.plotItem.clear()

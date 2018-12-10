@@ -1,10 +1,11 @@
 ## Cross-correlation of two channels
-import AnalysisParameters as pm
+import MiscParameters as pm
 import numpy as np
 import scipy
 import scipy.signal as sig
 import Functions as fu
 import os
+import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.font_manager import FontProperties
@@ -16,15 +17,17 @@ from tkinter.filedialog import askopenfilenames
 from matplotlib import rc
 rc('mathtext', default='regular')
 pm.init(LoadFiles = 0)
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
 
-baselinetime = 10e-3
-fitOn = 1
-percentage = 1
+baselinetime = 100e-3
+fitOn = 0
+percentage = 1#0.05
 plotPoints=0
 AllInOneFile = 0
 
-#filenames = {'/Volumes/lben/lben-commun/2018 User Data/Martina/Axonpatch/20180518_13A/Results/13A_1MKCl_events250mV3_OriginalDB.hdf5'}
-filenames = askopenfilenames()
+filenames = {'/Users/migraf/Desktop/Temporary Analysis/Roche_Pdms53_1MKCl_2kb_1_OriginalDB.hdf5'}
+#filenames = askopenfilenames()
 
 if AllInOneFile:
     pp = PdfPages(pm.OutputFolder + 'All_EventPlots.pdf')

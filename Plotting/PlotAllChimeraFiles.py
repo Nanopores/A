@@ -1,12 +1,7 @@
-import UsefulFunctions as uf
-import pyqtgraph as pg
+from ObsoleteFunctions import UsefulFunctions as uf
 import matplotlib.pyplot as plt
-from timeit import default_timer as timer
-import scipy
 import numpy as np
 import os
-import matplotlib
-from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.font_manager import FontProperties
 from tkinter import Tk
 from tkinter.filedialog import askopenfilenames

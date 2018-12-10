@@ -1,11 +1,6 @@
-import numpy as np
-import scipy
-import scipy.signal as sig
-import UsefulFunctions as uf
-import pyqtgraph as pg
+from ObsoleteFunctions import UsefulFunctions as uf
 import os
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 from tkinter import Tk
 from tkinter.filedialog import askopenfilenames
 from matplotlib.font_manager import FontProperties

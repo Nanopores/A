@@ -1,18 +1,16 @@
-import UsefulFunctions as f
+from ObsoleteFunctions import UsefulFunctions as f
 import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
 from peakutils.peak import indexes
 import pyqtgraph as pg
 import os
-from tkinter import Tk
-from tkinter.filedialog import askopenfilenames
 
 plots=1
-lowpass=5e3
-#filenames = ['/Users/migraf/Desktop/Capacitance Measurements/FgenModelCellSetUp.dat']
+lowpass=1000
+filenames = ['/Volumes/lben/lben-commun/2018 User Data/Martina/Axonpatch/20180920_31A_Michaels/31A_1MKClpH8_30Hz_1kHzLP.dat']
 
-filenames = askopenfilenames()  # show an "Open" dialog box and return the path to the selected file
+#filenames = askopenfilenames()  # show an "Open" dialog box and return the path to the selected file
 
 for file in filenames:
     fi = open(str(os.path.split(file)[0]) + os.sep + 'Capacitances.txt', 'a')
