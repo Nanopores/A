@@ -21,6 +21,7 @@ currentFile = ''
 
 def ChangedFolder():
     global folder
+    ui.listWidget.clear()
     folder = QtGui.QFileDialog.getExistingDirectory(window, 'Select in which Folder to save your data', os.getcwd())
     if folder:
         print('Opening ' + folder)
