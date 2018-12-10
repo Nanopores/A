@@ -10,6 +10,7 @@ import scipy.signal as sig
 from PyQt5 import QtGui
 from scipy import io
 from scipy import signal
+import Functions
 
 
 def ImportABF(datafilename):
@@ -231,7 +232,14 @@ def SaveVariables(savename, **kwargs):
     if os.path.isdir(savename):
         savefile=os.path.join(savename,os.path.basename(savename)+'_Events')
     else:
+        #cut of .dat extension
+        if savename.lower().endswith('.dat'):
+            savename = savename[0:-4]
+
+        #Check if file already exists, otherwise popup dialog
         if os.path.isfile(savename + '.dat'):
+            #root = tkinter.Tk()
+            #root.withdraw()
             savename = filedialog.asksaveasfile(mode='w', defaultextension=".dat")
             if savename is None:  # asksaveasfile return `None` if dialog closed with "cancel".
                 return
@@ -252,11 +260,24 @@ def SaveVariables(savename, **kwargs):
     print('saved as: ' + savefile + '.dat')
 
 def LoadVariables(loadname, variableName):
-    if not isinstance(s, str):
+    if not isinstance(loadname, str):
         raise Exception('The second argument must be a string')
+    #cut of .dat extension
+    if loadname.lower().endswith('.dat'):
+        loadname = loadname[0:-4]
 
-    shelfFile = shelve.open(loadname + '.dat')
-    Variable  = shelfFile[variableName]
-    shelfFile.close()
-    print('Loaded  ' + variableName + 'from ' + loadname + '.dat')
-    return Variable
+    if not os.path.isfile(loadname + '.dat'):
+        raise Exception('File does not exist')
+
+    shelfFile = shelve.open(loadname)
+
+    try:
+        Variable  = shelfFile[variableName]
+    except KeyError as e:
+        message = 'Key ' + variableName + ' does not exist, available Keys: \n' + "\n".join(list(shelfFile.keys()))
+        print(message)
+        raise
+    else:
+        shelfFile.close()
+        print('Loaded  ' + variableName + 'from ' + loadname + '.dat')
+        return Variable
