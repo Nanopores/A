@@ -55,6 +55,12 @@ Parameters = {
   'CurveFit' : 'PolyFit' #PolyFit YorkFit
 }
 
+def GetParameters():
+    print("Usage:")
+    print("run(filenames,newParameters={},verbose=False)")
+    print()
+    print("Default Parameters:")
+    pprint(Parameters)
 
 def run(filenames,newParameters={},verbose=False):
 

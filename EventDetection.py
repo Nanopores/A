@@ -23,11 +23,21 @@ extension = '*.log'
 coefficients = {'a': 0.999,
                 'E': 0,
                 'S': 5,
-                'eventlengthLimit': 200e-3,
+                'maxEventLength': 200e-3,
                 'minEventLength': 500e-6,
                 'hbook': 1,
                 'delta': 0.2e-9,
                 'ChimeraLowPass': 10e3}
+
+def GetParameters():
+    print("Usage:")
+    print("run(inputData, newExtension=None, newCoefficients={}, outputFile=None, force=False, cut=False, verbose=False)")
+    print()
+    print("Default extension:")
+    print(extension)
+    print()
+    print("Default coefficients:")
+    pprint(coefficients)
 
 
 def batcheventdetection(folder,extension,coefficients, verbose=True, forceRun=False, CutTraces=False):
@@ -162,7 +172,7 @@ def eventdetection(fullfilename, coefficients, verbose=True, CutTraces=False, sh
 
                 # Add event to TranslocationList
                 translocationEventList.AddEvent(newEvent)
-            elif lengthevent>(minTime*loadedData['samplerate']) and lengthevent<(coefficients['eventlengthLimit']*loadedData['samplerate']):
+            elif lengthevent>(minTime*loadedData['samplerate']) and lengthevent<(coefficients['maxEventLength']*loadedData['samplerate']):
                 #Make new event class
 
                 #CUSUM fit
@@ -206,7 +216,7 @@ def eventdetection(fullfilename, coefficients, verbose=True, CutTraces=False, sh
             beginEvent=events[i][0]
             endEvent = events[i][1]
             if beginEvent>100 and (endEvent - beginEvent) >= (minTime * loadedData['samplerate']) and (endEvent - beginEvent) < (
-                    coefficients['eventlengthLimit'] * loadedData['samplerate']):
+                    coefficients['maxEventLength'] * loadedData['samplerate']):
                 plt.plot([beginEvent/loadedData['samplerate'], beginEvent/loadedData['samplerate']], [minVal, maxVal], 'y-', lw=1)
 
         #plt.draw()

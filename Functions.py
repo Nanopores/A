@@ -83,10 +83,10 @@ def RecursiveLowPassFast(signal, coeff, samplerate):
         duration = 0
         endp = start
         if (endp + 1) < len(signal):
-            while signal[endp + 1] < El and endp < (Ni - 2):  # and duration < coeff['eventlengthLimit']*samplerate:
+            while signal[endp + 1] < El and endp < (Ni - 2):  # and duration < coeff['maxEventLength']*samplerate:
                 duration += 1
                 endp += 1
-        if duration >= coeff['eventlengthLimit'] * samplerate or endp > (
+        if duration >= coeff['maxEventLength'] * samplerate or endp > (
                 Ni - 10):  # or duration <= coeff['minEventLength'] * samplerate:
             NumberOfEvents -= 1
             continue
@@ -131,10 +131,10 @@ def RecursiveLowPassFastUp(signal, coeff, samplerate):
         El = ml[i] + coeff['E'] * np.sqrt(vl[i])
         Mm = ml[i]
         duration = 0
-        while signal[i + 1] > El and i < (Ni - 2) and duration < coeff['eventlengthLimit'] * samplerate:
+        while signal[i + 1] > El and i < (Ni - 2) and duration < coeff['maxEventLength'] * samplerate:
             duration += 1
             i += 1
-        if duration >= coeff['eventlengthLimit'] * samplerate or i > (Ni - 10):
+        if duration >= coeff['maxEventLength'] * samplerate or i > (Ni - 10):
             NumberOfEvents -= 1
         else:
             k = start

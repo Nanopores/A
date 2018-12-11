@@ -22,7 +22,7 @@ filenames = askopenfilenames(filetypes = (("chimera files", "*.log"), ("all file
 for filename in filenames:
     print(filename)
     out=uf.ImportChimeraRaw(filename, 200*1e3)
-    coefficients = {'a': 0.999, 'E': 0, 'S': 5, 'eventlengthLimit': 10e-3 * out['samplerate']}
+    coefficients = {'a': 0.999, 'E': 0, 'S': 5, 'maxEventLength': 10e-3 * out['samplerate']}
     fig1, ax = plt.subplots(1)
     ax.plot(np.arange(0, len(out['i1']))/out['sampleratelp'], out['i1'] * 1e9, 'r')
     ax.set_xlabel('Time [s]')

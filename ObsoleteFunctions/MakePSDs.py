@@ -25,8 +25,8 @@ foldername='PSD'
 
 # Load File, empty string prompts a pop.up window for file selection. Else a file-path can be given
 root.update()
-filenames = ['/Users/migraf/Desktop/Temp/BigBerta_Noise_2.dat']
-#filenames = askopenfilenames()
+#filenames = ['/Users/migraf/Desktop/Temp/BigBerta_Noise_2.dat']
+filenames = askopenfilenames()
 root.destroy()
 
 # Make Dir to save images

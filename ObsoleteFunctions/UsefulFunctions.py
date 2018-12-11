@@ -728,10 +728,10 @@ def RecursiveLowPass(signal, coeff):
             Mm = ml[i]
             Vv = vl[i]
             duration = 0
-            while signal[i + 1] < El and i < (Ni - 2) and duration < coeff['eventlengthLimit']:
+            while signal[i + 1] < El and i < (Ni - 2) and duration < coeff['maxEventLength']:
                 duration += 1
                 i += 1
-            if duration >= coeff['eventlengthLimit'] or i > (Ni - 10):
+            if duration >= coeff['maxEventLength'] or i > (Ni - 10):
                 NumberOfEvents -= 1
             else:
                 k = start
@@ -772,10 +772,10 @@ def RecursiveLowPassFast(signal, coeff):
         Mm = ml[i]
         Vv = vl[i]
         duration = 0
-        while signal[i + 1] < El and i < (Ni - 2) and duration < coeff['eventlengthLimit']:
+        while signal[i + 1] < El and i < (Ni - 2) and duration < coeff['maxEventLength']:
             duration += 1
             i += 1
-        if duration >= coeff['eventlengthLimit'] or i > (Ni - 10):
+        if duration >= coeff['maxEventLength'] or i > (Ni - 10):
             NumberOfEvents -= 1
         else:
             k = start
@@ -817,10 +817,10 @@ def RecursiveLowPassFastUp(signal, coeff):
         El = ml[i] + coeff['E'] * np.sqrt(vl[i])
         Mm = ml[i]
         duration = 0
-        while signal[i + 1] > El and i < (Ni - 2) and duration < coeff['eventlengthLimit']:
+        while signal[i + 1] > El and i < (Ni - 2) and duration < coeff['maxEventLength']:
             duration += 1
             i += 1
-        if duration >= coeff['eventlengthLimit'] or i > (Ni - 10):
+        if duration >= coeff['maxEventLength'] or i > (Ni - 10):
             NumberOfEvents -= 1
         else:
             k = start
