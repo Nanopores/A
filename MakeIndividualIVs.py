@@ -42,7 +42,7 @@ Parameters = {
   'Type': 'Nanopore', #Nanopore, Nanocapillary, NanocapillaryShrunken
   'reversePolarity':  0,
   'specificConductance': 10.5, #10.5 S/m for 1M KCl
-  'delay':2, #seconds for reading current
+  'delay':3, #seconds for reading current
   #Nanopore
   'poreLength' :  1e-9,
   #Nanocapillary
@@ -52,7 +52,9 @@ Parameters = {
   'innerDiameterShaft' : 514e-9,
 
   #Fit option
-  'CurveFit' : 'PolyFit' #PolyFit YorkFit
+  'CurveFit' : 'PolyFit', #PolyFit YorkFit
+
+   'fittingMethod' : 'mean'  #expFit
 }
 
 def GetParameters():
@@ -85,7 +87,7 @@ def run(filenames,newParameters={},verbose=False):
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-        AllData = uf.MakeIVData(output, approach='mean', delay = Parameters['delay'])#, UseVoltageRange = [-0.4, 0.4])
+        AllData = uf.MakeIVData(output, approach=Parameters['fittingMethod'], delay = Parameters['delay'])#, UseVoltageRange = [-0.4, 0.4])
         print('uf.MakeIVData')
         if AllData == 0:
             print('!!!! No Sweep in: ' + filename)
