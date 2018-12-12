@@ -292,7 +292,8 @@ def MakeIVData(output, approach='mean', delay=0.7, UseVoltageRange=0, verbose=Fa
             ItemExp['StartPoint'] = np.zeros(l, dtype=np.uint64)
             ItemExp['EndPoint'] = np.zeros(l, dtype=np.uint64)
             baselinestd = np.std(output[current][0:np.int64(1 * output['samplerate'])])
-            movingstd = pd.rolling_std(output[current], 10)
+            dataset = pd.Series(output[current])
+            movingstd = dataset.rolling(10).std()
 
             # Extract The Desired Parts
             ind = (np.abs(movingstd - baselinestd) < 1e-9) & (np.abs(output[current]) < np.max(output[current]) / 2)
