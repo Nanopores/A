@@ -11,25 +11,27 @@ import numpy as np
 
 from bokeh.io import push_notebook
 from bokeh.plotting import figure, show, output_notebook
-from bokeh.models import FuncTickFormatter
+from bokeh.models import FuncTickFormatter, NumeralTickFormatter
 
+import math
 
 Amp = EngFormatter(unit='A', places=2)
 Time = EngFormatter(unit='s', places=2)
 Volt = EngFormatter(unit='V', places=2)
 Cond = EngFormatter(unit='S', places=2)
 
+
 def custom_formatterA():
-    units = [
-        ('pA', 1e12),
-        ('nA', 1e9),
-        ('µA', 1e6),
-        ('mA', 1e3),
-        ('A', 1.0),
-    ]
+    units = [('m', 1e-3),
+             ('µ', 1e-6),
+             ('n', 1e-9),
+             ('p', 1e-12)]
+    if tick == 0:
+        return '0'
     for u in units:
-        if np.abs(tick) <= 1000/u[1]:
-            return '{0:.2f}{}'.format(tick * u[1], u[0])
+        if Math.abs(tick) >= u[1]:
+            return '{0:.1f} {}A'.format(tick / u[1], u[0]) #Note, Javascript Math
+    return '{:.2E}'.format(tick)
 
 def custom_formattersec():
     units = [
@@ -59,17 +61,11 @@ def SimpleTracePlot(filename, lowPass = 10e3):
 
     times=np.linspace(0, len(FullTrace) / samplerate, num=len(FullTrace))
     p.line(times,FullTrace)
-    #ax.plot(times,FullTrace,zorder=1)
 
-    #ax.set_xlabel('time (s)')
     p.xaxis.axis_label = 'time (s)'
-    #ax.set_ylabel('current (A)')
     p.yaxis.axis_label = 'current (A)'
-    #ax.xaxis.set_major_formatter(Time)
-    #ax.yaxis.set_major_formatter(Amp)
 
     p.yaxis[0].formatter = FuncTickFormatter.from_py_func(custom_formatterA)
-    #p.xaxis[0].formatter = FuncTickFormatter.from_py_func(custom_formattersec)
 
     p.title.text = os.path.basename(filename)
 
