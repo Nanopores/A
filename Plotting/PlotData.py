@@ -28,7 +28,7 @@ def custom_formatterA():
         ('A', 1.0),
     ]
     for u in units:
-        if tick <= 1000/u[1]:
+        if np.abs(tick) <= 1000/u[1]:
             return '{0:.2f}{}'.format(tick * u[1], u[0])
 
 def custom_formattersec():
