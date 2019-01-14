@@ -4,6 +4,8 @@ import LoadData
 import matplotlib.pyplot as plt
 import matplotlib
 import numpy as np
+from scipy import signal
+
 from matplotlib.ticker import EngFormatter
 
 from ipywidgets import interact
@@ -68,6 +70,23 @@ def SimpleTracePlot(filename, lowPass = 10e3):
     p.yaxis[0].formatter = FuncTickFormatter.from_py_func(custom_formatterA)
 
     p.title.text = os.path.basename(filename)
+
+    show(p)
+
+def PlotPSD(filename):
+    loadedData = LoadData.OpenFile(filename,approxImpulseResponse = True) #, ChimeraLowPass, True, CutTraces)
+    frequencies,P_den = Functions.GetPSD(loadedData)
+
+    output_notebook()
+
+    p = figure(plot_height=300, plot_width=900,y_axis_type="log",tools='pan,box_zoom,xwheel_zoom,reset,save')
+
+    p.line(frequencies,P_den)
+
+    p.xaxis.axis_label = 'Frequencies (Hz)'
+    p.yaxis.axis_label = 'Power'
+
+    p.title.text = 'PSD :' + os.path.basename(filename)
 
     show(p)
 

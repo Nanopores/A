@@ -835,6 +835,11 @@ def CUSUM(input, delta, h):
         mc = np.append(mc, m[k - 1] * np.ones(k - krmv[Nd - 1]))
     return (mc, kd, krmv)
 
+def GetPSD(input):
+    Fulltrace = input['i1']
+    samplerate = input['samplerate']
+    f, Pxx_den = sig.welch(Fulltrace, samplerate)
+    return f, Pxx_den
 
 def CondPoreSizeTick(x, pos):
     formCond = EngFormatter(unit='S')
