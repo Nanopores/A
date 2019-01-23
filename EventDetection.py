@@ -95,6 +95,23 @@ def batcheventdetection(folder,extension,coefficients, verbose=True, forceRun=Fa
     return AllEvents
 
 def eventdetection(fullfilename, coefficients, verbose=True, CutTraces=False, showFigures = False):
+    """ 
+    Function used to find the events of TranslocationEvents class in the raw data in file 'filename'. 
+    It calls the function RecursiveLowPassFast to approximatively locate rough events in the data. 
+    If a short TranslocationEvent object is detected its type attribute will be changed to 'Impulse' and the 
+    meanTrace attribute will take the value of the minimal current value within the event. 
+    
+    Then the CUSUM function will be called  to build the CUSUM-fit and assign values to the different 
+    attributes of the TranslocationEvent objects. 
+    
+    Depending on how the CUSUM was able to fit the trace inside and around the event, the type attribute of the TransocationEvent will be set to 'Real'
+    (if the CUSUM fit went well) or 'Rough' (if the CUSUM was not able to fit the trace).
+   
+    Returns the list of TranslocationEvent objects. 
+    
+    """
+    
+    
     if 'ChimeraLowPass' in coefficients:
         ChimeraLowPass=coefficients['ChimeraLowPass']
     else:
@@ -245,7 +262,14 @@ def LoadEvents(loadname):
     return AllEvents
 
 def run(inputData, newExtension=None, newCoefficients={}, outputFile=None, force=False, cut=False, verbose=False):
-
+    """ 
+    Function used to call all the other functions in the module 
+    needed to find the events in raw nanopore experiment data.  
+    
+    Returns an object of class AllEvents with a list of TranslocationEvents as an argument.
+    
+    """
+    
     if newExtension is None:
         newExtension = extension
 

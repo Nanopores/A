@@ -19,6 +19,15 @@ from scipy.optimize import curve_fit
 
 
 def LowPass(data, samplerate, lowPass):
+    """
+    Function used to filter data with a digital Bessel filter of the 4th order.
+    
+    Specially useful for high bandwidth recordings.
+    
+    Returns the filtered data.
+    
+    """
+    
     Wn = round(2 * lowPass / samplerate, 4)  # [0,1] nyquist frequency
     b, a = signal.bessel(4, Wn, btype='low', analog=False)  # 4-th order digital filter
 
@@ -50,6 +59,16 @@ def GetTempFromKClConductivity(Conc, Cond):
 
 
 def RecursiveLowPassFast(signal, coeff, samplerate):
+    """
+    Function used to find where roughly where event are in a noisy signal using a first order recursive 
+    low pass filter defined as : 
+        u[k] = au[k-1]+(1-a)i[k] 
+        with u the mean value at sample k, i the input signal and a < 1, a parameter.
+    
+    Returns a numpy array with the rough event locations in the input signal. 
+    
+    """
+    
     padlen = np.uint64(samplerate)
     prepadded = np.ones(padlen) * np.mean(signal[0:1000])
     signaltofilter = np.concatenate((prepadded, signal))
@@ -107,6 +126,14 @@ def RecursiveLowPassFast(signal, coeff, samplerate):
 
 
 def RecursiveLowPassFastUp(signal, coeff, samplerate):
+    """
+    RecursiveLowPassFast function specially written for the detection of events characterized 
+    not by a current drop, but by a current increase.
+    
+    Returns a numpy array with the rough event locations in the input signal. 
+    
+    """
+    
     ml = scipy.signal.lfilter([1 - coeff['a'], 0], [1, -coeff['a']], signal)
     vl = scipy.signal.lfilter([1 - coeff['a'], 0], [1, -coeff['a']], np.square(signal - ml))
     sl = ml + coeff['S'] * np.sqrt(vl)
@@ -175,6 +202,15 @@ def Reshape1DTo2D(inputarray, buffersize):
 
 
 def MakeIVData(output, approach='mean', delay=0.7, UseVoltageRange=0, verbose=False):
+    """
+    Function used to build and analyse a dataset containing the applied voltages 
+    and measured currents during a voltage sweep experiment. 
+    Used to assess the linearity and drift of the resulting signal through a Nanopore.  
+    
+    Returns All a dictionary with all the values necessary to build an IV plot for nanopore calibration.
+    
+    """
+    
     (ChangePoints, sweepedChannel) = CutDataIntoVoltageSegments(output, verbose)
     if ChangePoints is 0:
         return 0
@@ -397,10 +433,28 @@ def MakeIVData(output, approach='mean', delay=0.7, UseVoltageRange=0, verbose=Fa
 
 
 def ExpFunc(x, a, b, c):
+    """
+    Function used to create an exponential function used MakeIVData to fit the signal around the capacitive drift and therefore 
+    predict the stabilised current signal at each voltage jump in the MakeIV function. 
+        
+    Returns y=a*exp(-b*x)+c  
+    
+    """
+    
     return a * np.exp(-b * x) + c
 
 
 def YorkFit(X, Y, sigma_X, sigma_Y, r=0):
+    """
+    Function used to do the linear regression taking the error into account as the standard deviation. 
+    
+    It is used in MakeIV, for the estimation of the linear regression curve of voltage versus current, 
+    estimated by a voltage sweep experiment.
+    
+    Returns a tuple with the coefficients of the linear regression y=ax+b and their variances. 
+    
+    """
+    
     N_itermax = 10  # maximum number of interations
     tol = 1e-15  # relative tolerance to stop at
     N = len(X)
@@ -629,6 +683,12 @@ def RefinedEventDetection(out, AnalysisResults, signals, limit):
 
 
 def MakeIV(filenames, directory, conductance=10, title=''):
+    """ 
+    Function used to make the IV plot for the voltage sweep experiment. 
+    To do so, it calls the MakeIVData function seen earlier and plots its output.
+    
+    """
+    
     if len(conductance) is 1:
         conductance = np.ones(len(filenames)) * conductance
     for idx, filename in enumerate(filenames):
@@ -676,6 +736,18 @@ def MakeIV(filenames, directory, conductance=10, title=''):
 
 
 def TwoChannelAnalysis(filenames, outdir, UpwardsOn=0):
+    """
+    Function used to analyse two channel recordings with in one channel the current and voltage values across the nanopore and 
+    in the other of the transverse current and voltage values just before the nanopore.
+    
+    Calls the RecursiveLowPassFast function to detect the events (and if needed the RecursiveLowPassFastUp for the argument UpwardsOn = 1)
+    to detect the events. Then calls RefinedEventDetection to get more precise informations on the events. 
+    It correlates the 2 channels to seek the common and uncommon events. 
+    
+    Finally the TranslocationEvents detection will be plotted. 
+    
+    """
+    
     for filename in filenames:
         print(filename)
         inp = LoadData.OpenFile(filename)
@@ -778,6 +850,17 @@ def xcorr(x, y, k, normalize=True):
 
 
 def CUSUM(input, delta, h):
+    """
+    Function used in the detection of abrupt changes in mean current; optimal for Gaussian signals.
+    CUSUM is based on the cummulative sum algorithm (ADD CITATION.)
+    This function will define new start and end points more precisely than just
+    the RecursiveLowPassFast and will fit levels inside the TransolocationEvent objects.
+        
+    Returns mc the piecewise constant segmented signal, kd a list of detection times (in samples)
+    krmv a list of estimated change times (in samples). 
+    
+    """
+    
     # initialization
     Nd = k0 = 0
     kd = []
