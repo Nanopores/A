@@ -90,8 +90,50 @@ def ImportChimeraData(datafilename):
         output = ImportChimeraRaw(datafilename)
     return output
 
+def ImportCSV(datafilename):
+    """ 
+     Function used to import files in other classic formats than .abf, .dat, .log, have here new simple
+    functions ImportCSV to deal with .txt and .csv data files if OpenFile is called.
+    Here the functions read the txt and csv files from the 7th row. We surrpose that the 6 first ones
+    contain the settings and as the first column in the file being the current measured and the second column
+    being the voltage measured (Supposedly constant).
+    
+    Returns a dictionary output with in kews: 
+        'type' : string with the type of file read, here a text file
+        'graphene' : boolean indicating if the recording was made with a transverse current measurement (1 or True) or not (0 or False)
+        'i1' a list of the currents
+        'v1' a list of the voltages
+        'samplerate' float of sampling frequency
+        'filename' : string with the input filename
+    """
+    x=np.loadtxt(datafilename, np.dtype('>f4'), skiprows=1)
+#    f=open(datafilename, encoding='utf-8')
+#    for i in range(0, ): 
+#        #The 7 first lines in the file contain informations on the parameters, change here 
+#        a=str(f.readline())
+#        print(a)
+#        if 'Acquisition' in a or 'Sample Rate' in a:
+#            samplerate=int(''.join(i for i in a if i.isdigit()))/1000
+#        if 'FEMTO preamp Bandwidth' in a:
+#            femtoLP=int(''.join(i for i in a if i.isdigit())) 
+    i1 = np.array(x[:,1])#reads the current values in the first column of the txt file
+    v1 = np.array(x[:,3]) #reads the voltage values in the second column of the txt file
+    output={'type': 'TextFile', 'graphene': 0, 'samplerate': 100e3, 'i1': i1, 'v1': v1, 'filename': datafilename}
+    return output 
+
 
 def OpenFile(filename = '', ChimeraLowPass = 10e3,approxImpulseResponse=False,Split=False,verbose=False):
+    """ 
+    Function used to read data. It extracts the currents and voltage signals from the file in input
+    by calling the import function corresponding to the file format.
+    
+    Returns a dictionary output with in keys:
+        'i1' a list of the currents
+        'v1' a list of the voltages
+        'samplerate' float of sampling frequency
+        
+    """
+    
     if ChimeraLowPass==None:
         ChimeraLowPass=10e3
     if filename == '':
@@ -156,11 +198,16 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3,approxImpulseResponse=False,Sp
                 print('converting to SI units')
             output['i1']=1e-9*output['i1']
             output['v1']=1e-3*output['v1']
+            
     elif datafilename[-3::] == 'abf':
         output = ImportABF(datafilename)
-
         if verbose:
             print('length: ' + str(len(output['i1'])))
+            
+    elif datafilename[-3::] == 'csv' or datafilename[-3::] == 'txt':
+        output = ImportCSV(datafilename)
+        if verbose:
+            print('lenght: ' + str(len(output['i1'])))
 
     st = os.stat(datafilename)
     if platform.system() == 'Darwin':

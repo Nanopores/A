@@ -4,6 +4,7 @@ import math
 import os
 import pickle as pkl
 from scipy import signal
+import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -976,3 +977,129 @@ def Selectivity(ConcGradient, V):
 
 def GetRedox(cmax, cmin, T=295.15):
     return cst.R * T / cst.physical_constants['Faraday constant'][0] * np.log(cmax / cmin)
+
+def FilterEvents(events, levelfilter = 0, GlobalInfos = True): 
+    #STILL HAVE TO FIX SOME STUFF
+    """
+    Function that is able to filter events depending on the number of levels within the event, 
+    when the argument levelfilter (target number of events) passed in argument is a positive integer then it return a list of events with 
+    the filtered events. 
+    
+    By default levelfilter = 0 and therefore will not return anything. If the argument levelfilter is passed as an integer n > 0, the function will
+    find the events with n number of levels and store them in a list.
+    
+    If GlobalInfos is True, FilterEvents also generates a General Informations .txt file with some default parameters, 
+    and a summary of the number of multi-level events in the recording. 
+    
+    Returns a list of Translocation events with n-levels. 
+    
+    """
+    
+    if levelfilter == 0 and not GlobalInfos:
+            print ('GlobalInfos = False and levelfilter = 0 : no operation required.')
+            return 
+        
+    def NumberOfLevels(events): 
+        #has to be done in the CUSUM directly as in the MATLAB program
+        n_levels = []
+        for event in events: 
+            if hasattr(event, 'changeTimes'):
+                n_levels.append(len(event.changeTimes)-1)
+                #print('True' + str(event.changeTimes))
+            else: 
+                n_levels.append(1) #means that this is either a'Rough' event or an 'Impulsion'
+                #print('False')
+        return n_levels
+    
+    def AnalysisInfos(NumberOfLevels):
+        s = ""
+        from collections import Counter
+        cnt = Counter(NumberOfLevels)
+        for key in sorted(cnt.keys()):
+            s = s + '   {:d} ({:0.2f}%)   {:d} - level events \n'.format(cnt[key], float(cnt[key]) / float(length_db) * 100.0, key)
+        return s
+    
+    n_levels = NumberOfLevels(events)
+    
+    if GlobalInfos:
+        from EventDetection import GetParameters 
+        newfilename = events[0].filename[:-4] + '_Global_Informations.txt'
+        temp = sys.stdout #store the original output stream
+        sys.stdout = open(newfilename, 'w', encoding = 'utf8') #change the output stream to re-direct print into the Global_Informations.txt file
+        GetParameters()
+        print('')
+    
+        length_db=len(events)
+
+        strAnalysisInfos=AnalysisInfos(n_levels)
+    
+        strFullText='\n'.join(('The signal has a total of {} events:\n'.format(str(length_db)), strAnalysisInfos))
+        sys.stdout = open(newfilename, 'a', encoding = 'utf8')
+        sys.stdout.write(strFullText)
+        sys.stdout.close()
+        sys.stdout = temp #restore the original output stream (Console)
+         
+    if levelfilter > 0 : 
+        #returns a list of events with the target number of levels
+        filteredEventsIndex = []
+        filteredEvents=[]
+        filteredEventsIndex = [i for i in range(len(n_levels)) if n_levels[i]==levelfilter]
+        for i in filteredEventsIndex:
+            filteredEvents.append(events[i])
+            return filteredEvents
+        
+        
+def AdaptLevels(event, loadedData) :
+    #STILL HAVE TO FIX SOME STUFF
+    """
+    Function used as a security mechanism if called on a specific event and with the
+    raw signal in loadedData. In some nanopore current recordings, the event detection seemed to
+    interpret small changes in baseline as parts of events (usually around real events). 
+    
+    To avoid this behaviour, we can call the AdaptLevels function with a specific TranslocationEvent
+    passed in argument to correct the levels and delete bad levels from the event trace.
+    LoadedData passed in argument is just the raw signal used here to set new traces from raw data.
+    the baseline near events (inside 1 time the standard deviation fixed as a threshold).
+    
+    """
+    IncludedBaseline = int(1e-2 * loadedData['samplerate'])
+    if hasattr (event, 'changeTimes') and event.type == 'Real':
+        i=0
+        while i <= len(event.changeTimes):
+            if abs(np.mean(event.eventTrace[0:event.changeTimes[1]-event.beginEvent])-np.mean(event.before)) < np.std(event.before):
+                #print('Weird shit going on before the event')
+                eventTrace = event.eventTrace[event.changeTimes[1]-event.beginEvent:]
+                baseline = np.mean(event.eventTrace[0:event.changeTimes[1]-event.beginEvent])
+                beginEvent = event.changeTimes[1]
+                samplerate = event.samplerate
+                event.SetEvent(eventTrace, beginEvent, baseline, samplerate)
+                
+                traceBefore = loadedData['i1'][int(event.beginEvent) - IncludedBaseline:int(beginEvent)]
+                traceAfter = event.after
+                event.SetBaselineTrace(traceBefore,traceAfter)
+                
+                #Find something better for the segmented signal
+                segmentedSignal = event.segmentedSignal
+                kd = event.kd[1:]
+                changeTimes = event.changeTimes[1:]
+            event.SetCUSUMVariables(segmentedSignal, kd, changeTimes)
+                
+            if abs(np.mean(event.eventTrace[event.changeTimes[-2]-event.beginEvent:])-np.mean(event.after)) < np.std(event.after):
+                #print('Weird shit going on after the event')
+                eventTrace = event.eventTrace[:event.changeTimes[-2]-event.beginEvent]
+                baseline = np.mean(event.eventTrace[event.changeTimes[-2]-event.beginEvent:])
+                beginEvent = event.changeTimes[-1]
+                samplerate = event.samplerate
+                event.SetEvent(eventTrace, beginEvent, baseline, samplerate)
+                
+                traceBefore = event.before
+                traceAfter = loadedData['i1'][int(event.endEvent):int(event.endEvent) + IncludedBaseline]
+                event.SetBaselineTrace(traceBefore,traceAfter)
+            
+                #Find something better for the segmented signal
+                segmentedSignal = event.segmentedSignal
+                kd = event.kd[:-1]
+                changeTimes = event.changeTimes[:-1]
+                event.SetCUSUMVariables(segmentedSignal, kd, changeTimes)
+                
+            i= i+1
