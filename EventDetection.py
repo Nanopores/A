@@ -106,11 +106,25 @@ def eventdetection(fullfilename, coefficients, verbose=True, CutTraces=False, sh
     
     Depending on how the CUSUM was able to fit the trace inside and around the event, the type attribute of the TransocationEvent will be set to 'Real'
     (if the CUSUM fit went well) or 'Rough' (if the CUSUM was not able to fit the trace).
-   
-    Returns the list of TranslocationEvent objects. 
+    
+    Parameters
+    ----------
+        fullfilename : str
+            Full path to data file.
+        coefficients : dict
+            Contains the default parameters for the analysis.
+        verbose : bool, optional
+            True by default. It will allow to print strings indicating the progress of the function in the console. 
+        CutTraces : bool, optional
+            False by default. If True, will cut the signal traces around the events to avoid having appended chunks detected as events.
+        showFigures : bool , optional
+            False by default. If True, it will display a simple figure with the shape of the signal.
+    Returns
+    -------
+    list of TranslocationEvent
+        All the events in the signal. 
     
     """
-    
     
     if 'ChimeraLowPass' in coefficients:
         ChimeraLowPass=coefficients['ChimeraLowPass']
@@ -266,7 +280,27 @@ def run(inputData, newExtension=None, newCoefficients={}, outputFile=None, force
     Function used to call all the other functions in the module 
     needed to find the events in raw nanopore experiment data.  
     
-    Returns an object of class AllEvents with a list of TranslocationEvents as an argument.
+    Parameters
+    -----------
+    inputData : str
+        Full path to data file.
+    newExtension : str, optional
+        None by default. NewExtension for input directory.
+    newCoefficients : dict
+        Contains the default parameters for the analysis.
+    outputFile : str, optional
+        None by default. Full path to output file.
+    force : bool, optional
+        False by default.
+    cut : bool, optional
+        False by default. False by default. If True, will cut the signal traces around the events to avoid having appended chunks detected as events.
+    verbose : bool, optional
+        False by default. False by default. If True, it will display a simple figure with the shape of the signal.
+
+    Returns
+    -------
+    AllEvents object
+        All the events.
     
     """
     

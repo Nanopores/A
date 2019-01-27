@@ -24,7 +24,21 @@ def LowPass(data, samplerate, lowPass):
     
     Specially useful for high bandwidth recordings.
     
-    Returns the filtered data.
+    Parameters
+    ----------
+    data : 
+        Data to be filtered.
+    samplerate : float
+        Sampling frequency of the data aquisition.
+    lowPass : float
+        Cutoff frequency of the filter.
+    
+    Returns
+    -------
+    dict
+        Dictionary output of the filtered data with in keys:
+        'i1' : a list of the currents filtered
+        'samplerate' : float of new sampling frequency corresponding to 2*Cutoff frequency (Nyquist-Shannon sampling theorem).
     
     """
     
@@ -65,7 +79,18 @@ def RecursiveLowPassFast(signal, coeff, samplerate):
         u[k] = au[k-1]+(1-a)i[k] 
         with u the mean value at sample k, i the input signal and a < 1, a parameter.
     
-    Returns a numpy array with the rough event locations in the input signal. 
+    Parameters
+    ----------
+    signal : numpy array of float
+        Input signal.
+    coeff: dict
+        Coefficients used in the recursive low pass detection of rough events.
+    samplerate : float
+        Sampling frequency of the data aquisition.
+    Returns
+    -------
+    numpy array of float
+            Array with the rough event locations in the input signal. 
     
     """
     
@@ -130,7 +155,18 @@ def RecursiveLowPassFastUp(signal, coeff, samplerate):
     RecursiveLowPassFast function specially written for the detection of events characterized 
     not by a current drop, but by a current increase.
     
-    Returns a numpy array with the rough event locations in the input signal. 
+    Parameters
+    ----------
+    signal : numpy array of float
+        Input signal.
+    coeff: dict
+        Coefficients used in the recursive low pass detection of rough events.
+    samplerate : float
+        Sampling frequency of the data aquisition.
+    Returns
+    -------
+    numpy array of float
+            Array with the rough event locations in the input signal. 
     
     """
     
@@ -205,9 +241,31 @@ def MakeIVData(output, approach='mean', delay=0.7, UseVoltageRange=0, verbose=Fa
     """
     Function used to build and analyse a dataset containing the applied voltages 
     and measured currents during a voltage sweep experiment. 
-    Used to assess the linearity and drift of the resulting signal through a Nanopore.  
+    Used to assess the linearity and drift of the resulting signal through a Nanopore.
     
-    Returns All a dictionary with all the values necessary to build an IV plot for nanopore calibration.
+    MakeIVData can use 2 types of approaches to find the right current-voltage points: 
+        approach = 'mean': the default argument, will use the Mean method. Its better to 
+            use it for flat signals (low capacitance nanopore substrates for example).
+        approach = 'exponential': is to be used if there is a decay in the signal usually 
+            due to a capacitive effet of the membrane. 
+            
+    Parameters
+    ----------
+    output : dict
+        Output format of the OpenFile function of the LoadData module with the signal to use for the I-V characteristic curve points calculations. 
+    approach : str, optional
+        'mean' by default. Specifies the method to extimate current-voltage data points for the I-V curve 'mean' or 'exponential'.
+    delay : float, optional
+        0.7 by default. Time delay in seconds before the first change of applied voltage.
+    UseVoltageRange : float, optional
+        0 by default.
+    verbose : bool, optional
+        False by default. If True, it will allow to print strings indicating the progress of the function in the console. 
+       
+    Returns 
+    -------
+    dict
+        all the values and parameters necessary to draw an I-V characteristic plot.
     
     """
     
@@ -435,9 +493,20 @@ def MakeIVData(output, approach='mean', delay=0.7, UseVoltageRange=0, verbose=Fa
 def ExpFunc(x, a, b, c):
     """
     Function used to create an exponential function used MakeIVData to fit the signal around the capacitive drift and therefore 
-    predict the stabilised current signal at each voltage jump in the MakeIV function. 
-        
-    Returns y=a*exp(-b*x)+c  
+    predict the stabilised current signal at each voltage jump in the MakeIV function.     
+    
+    Parameters
+    ----------
+    x : numpy array
+        Input values.
+    a : float
+    b : float
+    c : flaot
+    
+    Returns
+    -------
+    numpy array 
+        a*exp(-b*x)+c function.
     
     """
     
@@ -451,7 +520,18 @@ def YorkFit(X, Y, sigma_X, sigma_Y, r=0):
     It is used in MakeIV, for the estimation of the linear regression curve of voltage versus current, 
     estimated by a voltage sweep experiment.
     
-    Returns a tuple with the coefficients of the linear regression y=ax+b and their variances. 
+    Parameters
+    ----------
+    X : numpy array
+    Y : numpy array
+    sigma_X : numpy array
+    signma_Y : numpy array
+    r : float, optional
+    
+    Returns 
+    -------
+    tuple 
+        coefficients a and b of the linear regression y=ax+b and their variances. 
     
     """
     
@@ -518,6 +598,25 @@ def MakeExponentialFit(xdata, ydata):
 
 
 def CutDataIntoVoltageSegments(output, verbose=False):
+    """
+    Function used to make the I-V curve (in MakeIVData). It cuts the data in segments 
+    where a constant voltage was applied. 
+    
+    Parameters
+    ----------
+    output : dict
+        Output format of the OpenFile function of the LoadData module with the signal to use for the I-V characteristic curve points calculations. 
+   verbose : bool, optional
+        False by default. If True, it will allow to print strings indicating the progress of the function in the console. 
+     
+    Returns
+    -------
+    tuple 
+        ChangePoints: ndarray with data points where the voltage applied changed 
+        sweepedChannel: string with the key giving acess to the stored the voltage values applied. 
+    
+    """
+    
     sweepedChannel = ''
     if output['type'] == 'ChimeraNotRaw' or (output['type'] == 'Axopatch' and not output['graphene']):
         ChangePoints = np.where(np.diff(output['v1']))[0]
@@ -684,9 +783,19 @@ def RefinedEventDetection(out, AnalysisResults, signals, limit):
 
 def MakeIV(filenames, directory, conductance=10, title=''):
     """ 
-    Function used to make the IV plot for the voltage sweep experiment. 
+    Function used to make IV plots for a voltage sweep. 
     To do so, it calls the MakeIVData function seen earlier and plots its output.
     
+    Parameters
+    ----------
+    filenames : list of strings
+        Full paths to data files.
+    directory : string
+        Full path to directory used to save I-V curve images.
+    conductance : list of float, optional
+    title : str, optional
+        Plot title.
+
     """
     
     if len(conductance) is 1:
@@ -745,6 +854,15 @@ def TwoChannelAnalysis(filenames, outdir, UpwardsOn=0):
     It correlates the 2 channels to seek the common and uncommon events. 
     
     Finally the TranslocationEvents detection will be plotted. 
+    
+    Parameters
+    ----------
+    filenames : list of strings
+        Full paths to data files.
+    outdir : 
+        Full path to output directory.
+    UpwardsOn : bool, optional
+        False by default. If True, we will run a RecursiveLowPassFastUp to detect events with current increases instead of current drops.
     
     """
     
@@ -852,12 +970,24 @@ def xcorr(x, y, k, normalize=True):
 def CUSUM(input, delta, h):
     """
     Function used in the detection of abrupt changes in mean current; optimal for Gaussian signals.
-    CUSUM is based on the cummulative sum algorithm (ADD CITATION.)
+    CUSUM is based on the cummulative sum algorithm.
     This function will define new start and end points more precisely than just
     the RecursiveLowPassFast and will fit levels inside the TransolocationEvent objects.
-        
-    Returns mc the piecewise constant segmented signal, kd a list of detection times (in samples)
-    krmv a list of estimated change times (in samples). 
+    
+    Parameters
+    ----------
+    input : numpy array
+        Input signal.
+    delat : float 
+        Most likely jump to be detected in the signal.
+    h : float
+        Threshold for the detection test.
+    
+    Returns
+    -------
+    mc : the piecewise constant segmented signal
+    kd : a list of float detection times (in samples)
+    krmv : a list of float estimated change times (in samples). 
     
     """
     
