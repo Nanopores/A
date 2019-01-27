@@ -38,7 +38,7 @@ def GetParameters():
     print()
     print("Default coefficients:")
     pprint(coefficients)
-
+    
 
 def batcheventdetection(folder,extension,coefficients, verbose=True, forceRun=False, CutTraces=False):
     #Create new class that contains all events
@@ -106,11 +106,25 @@ def eventdetection(fullfilename, coefficients, verbose=True, CutTraces=False, sh
     
     Depending on how the CUSUM was able to fit the trace inside and around the event, the type attribute of the TransocationEvent will be set to 'Real'
     (if the CUSUM fit went well) or 'Rough' (if the CUSUM was not able to fit the trace).
-   
-    Returns the list of TranslocationEvent objects. 
+    
+    Parameters
+    ----------
+        fullfilename : str
+            Full path to data file.
+        coefficients : dict
+            Contains the default parameters for the analysis.
+        verbose : bool, optional
+            True by default. It will allow to print strings indicating the progress of the function in the console. 
+        CutTraces : bool, optional
+            False by default. If True, will cut the signal traces around the events to avoid having appended chunks detected as events.
+        showFigures : bool , optional
+            False by default. If True, it will display a simple figure with the shape of the signal.
+    Returns
+    -------
+    list of TranslocationEvent
+        All the events in the signal. 
     
     """
-    
     
     if 'ChimeraLowPass' in coefficients:
         ChimeraLowPass=coefficients['ChimeraLowPass']
@@ -178,7 +192,7 @@ def eventdetection(fullfilename, coefficients, verbose=True, CutTraces=False, sh
 
                 newEvent = NC.TranslocationEvent(fullfilename,'Impulse')
 
-                # Add Trace, mean of the event,the samplerate, coefficients and baseline to the New Event class
+                # Add Trace, mean of the event,the coefficients and baseline to the New Event class
                 newEvent.SetEvent(Trace, beginEvent,localBaseline, loadedData['samplerate'])
                 if 'blockLength' in loadedData:
                     voltI = int(beginEvent/loadedData['blockLength'])
@@ -220,6 +234,7 @@ def eventdetection(fullfilename, coefficients, verbose=True, CutTraces=False, sh
 
                 #Add event to TranslocationList
                 translocationEventList.AddEvent(newEvent)
+        
     if verbose:
         print('done. Calculation took {}'.format(timeInSec.format_data(timeit.default_timer() - start_time)))
         print('{} events fitted'.format(cusumEvents))
@@ -239,9 +254,8 @@ def eventdetection(fullfilename, coefficients, verbose=True, CutTraces=False, sh
         #plt.draw()
         plt.show()
         #plt.pause(1)
+      
     return translocationEventList
-
-
 
 
 def LoadEvents(loadname):
@@ -261,12 +275,33 @@ def LoadEvents(loadname):
     AllEvents.SetFolder(loadname)
     return AllEvents
 
+
 def run(inputData, newExtension=None, newCoefficients={}, outputFile=None, force=False, cut=False, verbose=False):
     """ 
     Function used to call all the other functions in the module 
     needed to find the events in raw nanopore experiment data.  
     
-    Returns an object of class AllEvents with a list of TranslocationEvents as an argument.
+    Parameters
+    -----------
+    inputData : str
+        Full path to data file.
+    newExtension : str, optional
+        None by default. NewExtension for input directory.
+    newCoefficients : dict
+        Contains the default parameters for the analysis.
+    outputFile : str, optional
+        None by default. Full path to output file.
+    force : bool, optional
+        False by default.
+    cut : bool, optional
+        False by default. False by default. If True, will cut the signal traces around the events to avoid having appended chunks detected as events.
+    verbose : bool, optional
+        False by default. False by default. If True, it will display a simple figure with the shape of the signal.
+
+    Returns
+    -------
+    AllEvents object
+        All the events.
     
     """
     
@@ -280,7 +315,6 @@ def run(inputData, newExtension=None, newCoefficients={}, outputFile=None, force
         TranslocationEvents=batcheventdetection(inputData, newExtension, coefficients, verbose, force, cut)
     else:
         TranslocationEvents=eventdetection(inputData,coefficients, verbose, cut)
-
     #Check if list is empty
     if outputFile is not None and TranslocationEvents.events:
         if os.path.isdir(inputData):

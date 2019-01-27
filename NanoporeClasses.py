@@ -22,7 +22,8 @@ class TranslocationEvent:
     filename : str
         directory of the source file from which the event was extracted
     type: str
-        classification of the event 'Real' (CUSUM-fitted), 'Rough' (non-CUSUM fitted), 'Impulse' (short events)
+        classification of the eventReal (CUSUM-fitted), Rough (non-CUSUM fitted), Impulse (short events)
+    
     evenTrace: lst(int)
         list of data points within the event
     baseline:float
@@ -58,7 +59,7 @@ class TranslocationEvent:
         coefficients used in the CUSUM algorithm
     voltage:
         voltage applied across the nanopore during the data recording
-  
+   
     """
     
     def __init__(self, filename,type='roughEvent'):
@@ -128,7 +129,6 @@ class AllEvents:
         list of events containing all the events detected by the eventdetection function
     
     """
-    
     def __init__(self):
         self.events=[]
 
@@ -141,7 +141,7 @@ class AllEvents:
             self.events.append(translocationEvent)
 
     def GetAllLengths(self):
-        Lengths=[event.lengthEvents for event in self.events]
+        Lengths=[event.eventLength for event in self.events] 
         return Lengths
 
     def GetAllIdrops(self):
@@ -156,6 +156,7 @@ class AllEvents:
         self.savefile=loadname
 
     def GetEventsMinCondition(self,minCurrent=-math.inf,maxCurrent=math.inf,minLength=0,maxLength=math.inf):
+        """FIX THIS FUNCTION, 'AllEvents' object has no attribute 'savefile' """
         minCurrent = -math.inf if not minCurrent else minCurrent
         maxCurrent = math.inf if not maxCurrent else maxCurrent
         minLength = 0 if not minLength else minLength
@@ -163,9 +164,9 @@ class AllEvents:
 
         newEvents=AllEvents()
         for event in self.events:
-            if minCurrent<event.currentDrop<maxCurrent and minLength<event.lengthEvents<maxLength:
+            if minCurrent<event.currentDrop<maxCurrent and minLength<event.eventLength<maxLength:
                 newEvents.AddEvent(event)
-        newEvents.SetFolder(self.savefile)
+                newEvents.SetFolder(self.savefile)
         print('selected {} events from {}'.format(len(newEvents.events), len(self.events)))
         return newEvents
 

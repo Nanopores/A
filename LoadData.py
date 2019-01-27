@@ -4,14 +4,13 @@ import shelve
 from tkinter import filedialog
 import h5py
 import numpy as np
-import pyabf
+#from Pyabf import setup
 import scipy
 import scipy.signal as sig
 from PyQt5 import QtGui
 from scipy import io
 from scipy import signal
 import Functions
-
 
 def ImportABF(datafilename):
     abf = pyabf.ABF(datafilename)
@@ -21,10 +20,10 @@ def ImportABF(datafilename):
               'v1': abf.data[1], 'filename': datafilename}
     return output
 
-
 def ImportAxopatchData(datafilename):
     x=np.fromfile(datafilename, np.dtype('>f4'))
     f=open(datafilename, 'rb')
+    samplerate=100e3
     graphene=0
     for i in range(0, 10):
         a=str(f.readline())
@@ -51,6 +50,7 @@ def ImportAxopatchData(datafilename):
     else:
         i1 = np.array(x[250:end-1:2])
         v1 = np.array(x[251:end:2])
+        #change samplrate to samplerate
         output={'type': 'Axopatch', 'graphene': 0, 'samplerate': samplerate, 'i1': i1, 'v1': v1, 'filename': datafilename}
     return output
 
@@ -90,23 +90,33 @@ def ImportChimeraData(datafilename):
         output = ImportChimeraRaw(datafilename)
     return output
 
-def ImportCSV(datafilename):
+def ImportTXT(datafilename):
     """ 
-     Function used to import files in other classic formats than .abf, .dat, .log, have here new simple
+    Function used to import files in other classic formats than .abf, .dat, .log, have here new simple
     functions ImportCSV to deal with .txt and .csv data files if OpenFile is called.
     Here the functions read the txt and csv files from the 7th row. We surrpose that the 6 first ones
     contain the settings and as the first column in the file being the current measured and the second column
     being the voltage measured (Supposedly constant).
     
-    Returns a dictionary output with in kews: 
-        'type' : string with the type of file read, here a text file
+    Parameters
+    ----------
+    datafilename : str
+        Full path to data file.
+    
+    Returns 
+    -------
+    dict
+        Dictionary output with: 
+        'type' : string with the type of file read, here 'TextFile'
         'graphene' : boolean indicating if the recording was made with a transverse current measurement (1 or True) or not (0 or False)
-        'i1' a list of the currents
-        'v1' a list of the voltages
+        'i1' : numpy array of float with the currents
+        'v1' : numpy array of float with the voltages
         'samplerate' float of sampling frequency
-        'filename' : string with the input filename
+        'filename' : string with full path to the data file.   
+        
     """
-    x=np.loadtxt(datafilename, np.dtype('>f4'), skiprows=1)
+    
+    x=np.genfromtxt(datafilename, np.dtype('>f4'), delimiter = '\t', skip_header=1, skip_footer=1, usecols = (1, 3))
 #    f=open(datafilename, encoding='utf-8')
 #    for i in range(0, ): 
 #        #The 7 first lines in the file contain informations on the parameters, change here 
@@ -116,24 +126,45 @@ def ImportCSV(datafilename):
 #            samplerate=int(''.join(i for i in a if i.isdigit()))/1000
 #        if 'FEMTO preamp Bandwidth' in a:
 #            femtoLP=int(''.join(i for i in a if i.isdigit())) 
-    i1 = np.array(x[:,1])#reads the current values in the first column of the txt file
-    v1 = np.array(x[:,3]) #reads the voltage values in the second column of the txt file
+    i1 = np.array(x[:,0])#reads the current values in the first column of the txt file
+    v1 = np.array(x[:,1]) #reads the voltage values in the second column of the txt file
     output={'type': 'TextFile', 'graphene': 0, 'samplerate': 100e3, 'i1': i1, 'v1': v1, 'filename': datafilename}
     return output 
-
 
 def OpenFile(filename = '', ChimeraLowPass = 10e3,approxImpulseResponse=False,Split=False,verbose=False):
     """ 
     Function used to read data. It extracts the currents and voltage signals from the file in input
     by calling the import function corresponding to the file format.
     
-    Returns a dictionary output with in keys:
-        'i1' a list of the currents
-        'v1' a list of the voltages
+    Parameters
+    ----------
+    filename : str
+        Full path to the data file.
+    ChimeraLowPass : float
+        Cutoff frequency of the digital low pass used after high bandwidth recordings.
+    approxImpulseResponse : bool, optional
+        False by default.
+    Split : bool, optional
+        False by default.
+    verbose : bool, optional
+        False by default. False by default. If True, it will display a simple figure with the shape of the signal.
+
+    Returns
+    -------
+    dict
+        Dictionary output with: 
+        'type' : string with the type of file read
+        'graphene' : boolean indicating if the recording was made with a transverse current measurement (1 or True) or not (0 or False)
+        'i1' : numpy array of float with the currents
+        'v1' : numpy array of float with the voltages
         'samplerate' float of sampling frequency
+        'filename' : string with full path to the data file
+        'ExperimentDuration' : float difference of file modify time and change time
+        'TimeFileLastModified' : float with file modify time
+        'TimeFileWritten' : float  with inode or file change time.
+        
         
     """
-    
     if ChimeraLowPass==None:
         ChimeraLowPass=10e3
     if filename == '':
@@ -201,11 +232,12 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3,approxImpulseResponse=False,Sp
             
     elif datafilename[-3::] == 'abf':
         output = ImportABF(datafilename)
+
         if verbose:
             print('length: ' + str(len(output['i1'])))
-            
+   
     elif datafilename[-3::] == 'csv' or datafilename[-3::] == 'txt':
-        output = ImportCSV(datafilename)
+        output = ImportTXT(datafilename)
         if verbose:
             print('lenght: ' + str(len(output['i1'])))
 
