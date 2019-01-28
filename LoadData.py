@@ -92,6 +92,39 @@ def ImportChimeraData(datafilename):
 
 
 def OpenFile(filename = '', ChimeraLowPass = 10e3,approxImpulseResponse=False,Split=False,verbose=False):
+    """ 
+    Function used to read data. It extracts the currents and voltage signals from the file in input
+    by calling the import function corresponding to the file format.
+    
+    Parameters
+    ----------
+    filename : str
+        Full path to the data file.
+    ChimeraLowPass : float
+        Cutoff frequency of the digital low pass used after high bandwidth recordings.
+    approxImpulseResponse : bool, optional
+        False by default.
+    Split : bool, optional
+        False by default.
+    verbose : bool, optional
+        False by default. False by default. If True, it will display a simple figure with the shape of the signal.
+
+    Returns
+    -------
+    dict
+        Dictionary output with: 
+        'type' : string with the type of file read
+        'graphene' : boolean indicating if the recording was made with a transverse current measurement (1 or True) or not (0 or False)
+        'i1' : numpy array of float with the currents
+        'v1' : numpy array of float with the voltages
+        'samplerate' float of sampling frequency
+        'filename' : string with full path to the data file
+        'ExperimentDuration' : float difference of file modify time and change time
+        'TimeFileLastModified' : float with file modify time
+        'TimeFileWritten' : float  with inode or file change time.
+           
+    """
+    
     if ChimeraLowPass==None:
         ChimeraLowPass=10e3
     if filename == '':

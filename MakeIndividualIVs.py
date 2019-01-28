@@ -65,7 +65,24 @@ def GetParameters():
     pprint(Parameters)
 
 def run(filenames,newParameters={},verbose=False):
+    """
+    Function used to call all the necessary other functions to make I-V curves.
+    It takes a list of filenames as necessary argument. For each data file, a corresponding
+    I-V curve will be generated. 
+    
+    It iterates on the filenames in the list and calls the corresponding MakeIVData from
+    Functions module. 
+    
+    Parameters
+    ----------
+    filenames : list of strings
+        Full paths to data files.
+    newParameters : dict 
+        Contains the default parameters for the analysis.
+    verbose : bool, optional
+        False by default. If True, it will display a simple figure with the shape of the signal.
 
+    """
 
     for key in newParameters:
         Parameters[key]=newParameters[key]

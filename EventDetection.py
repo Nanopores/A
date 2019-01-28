@@ -95,6 +95,37 @@ def batcheventdetection(folder,extension,coefficients, verbose=True, forceRun=Fa
     return AllEvents
 
 def eventdetection(fullfilename, coefficients, verbose=True, CutTraces=False, showFigures = False):
+    """ 
+    Function used to find the events of TranslocationEvents class in the raw data in file 'filename'. 
+    It calls the function RecursiveLowPassFast to approximatively locate rough events in the data. 
+    If a short TranslocationEvent object is detected its type attribute will be changed to 'Impulse' and the 
+    meanTrace attribute will take the value of the minimal current value within the event. 
+    
+    Then the CUSUM function will be called  to build the CUSUM-fit and assign values to the different 
+    attributes of the TranslocationEvent objects. 
+    
+    Depending on how the CUSUM was able to fit the trace inside and around the event, the type attribute of the TransocationEvent will be set to 'Real'
+    (if the CUSUM fit went well) or 'Rough' (if the CUSUM was not able to fit the trace).
+    
+    Parameters
+    ----------
+        fullfilename : str
+            Full path to data file.
+        coefficients : dict
+            Contains the default parameters for the analysis.
+        verbose : bool, optional
+            True by default. It will allow to print strings indicating the progress of the function in the console. 
+        CutTraces : bool, optional
+            False by default. If True, will cut the signal traces around the events to avoid having appended chunks detected as events.
+        showFigures : bool , optional
+            False by default. If True, it will display a simple figure with the shape of the signal.
+    Returns
+    -------
+    list of TranslocationEvent
+        All the events in the signal. 
+    
+    """
+    
     if 'ChimeraLowPass' in coefficients:
         ChimeraLowPass=coefficients['ChimeraLowPass']
     else:
@@ -245,7 +276,34 @@ def LoadEvents(loadname):
     return AllEvents
 
 def run(inputData, newExtension=None, newCoefficients={}, outputFile=None, force=False, cut=False, verbose=False):
+    """ 
+    Function used to call all the other functions in the module 
+    needed to find the events in raw nanopore experiment data.  
+    
+    Parameters
+    -----------
+    inputData : str
+        Full path to data file.
+    newExtension : str, optional
+        None by default. NewExtension for input directory.
+    newCoefficients : dict
+        Contains the default parameters for the analysis.
+    outputFile : str, optional
+        None by default. Full path to output file.
+    force : bool, optional
+        False by default.
+    cut : bool, optional
+        False by default. False by default. If True, will cut the signal traces around the events to avoid having appended chunks detected as events.
+    verbose : bool, optional
+        False by default. False by default. If True, it will display a simple figure with the shape of the signal.
 
+    Returns
+    -------
+    AllEvents object
+        All the events.
+    
+    """
+    
     if newExtension is None:
         newExtension = extension
 

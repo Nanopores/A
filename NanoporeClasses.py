@@ -14,6 +14,53 @@ Cond = EngFormatter(unit='S', places=2)
 
 
 class TranslocationEvent:
+    """ 
+    Class used to represent an event.
+    
+    Attributes
+    ----------
+    filename : str
+        directory of the source file from which the event was extracted
+    type: str
+        classification of the event 'Real' (CUSUM-fitted), 'Rough' (non-CUSUM fitted), 'Impulse' (short events)
+    evenTrace: lst(int)
+        list of data points within the event
+    baseline:float
+        mean current value in the basline around the event
+    samplerate:float
+        sampling frequency 
+    beginEvent: int
+        start coordinate of the event in the signal
+    endEvent: int
+        end coordinate of the event in the signal
+    meanTrace: float
+        mean current in the event
+    minTrace: float
+        minimum current in the event
+    eventLength: float
+        lenght of the event in seconds
+    currentDrop: float
+        current drop defined as the difference of the baseline and meanTrace or minTrace dependeng on the event type
+    before: lst(float)
+        list of data points before the event, used for plotting 
+    after: lst(float)
+        list of data points after the event, used for plotting
+    changeTimes: lst(int)
+        list of coordinates where the current level changes in the event, only for multilevel events
+    kd: ****
+    segmentedSignal: lst(float)
+        CUSUM fit
+    beginEventCUSUM:
+        more precise start coordinate of the event detected with the CUSUM algorithm
+    currentDropCUSUM:
+        more precise start coordinate of the event detected with the CUSUM algorithm
+    coefficients:
+        coefficients used in the CUSUM algorithm
+    voltage:
+        voltage applied across the nanopore during the data recording
+  
+    """
+    
     def __init__(self, filename,type='roughEvent'):
         self.filename = filename
         self.type=type
@@ -71,6 +118,17 @@ class TranslocationEvent:
 
 
 class AllEvents:
+    """"
+    Class used to represent all the events in a nanopore experiment output as a list of events. 
+    
+    Attributes
+    ----------
+    
+    events : lst(events)
+        list of events containing all the events detected by the eventdetection function
+    
+    """
+    
     def __init__(self):
         self.events=[]
 
