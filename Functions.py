@@ -17,7 +17,7 @@ from scipy import constants as cst
 from scipy.optimize import curve_fit
 
 import LoadData #for MakeIv
-
+import pywt #for WaveletDenoising
 
 def LowPass(data, samplerate, lowPass):
     """
@@ -27,7 +27,7 @@ def LowPass(data, samplerate, lowPass):
     
     Parameters
     ----------
-    data : 
+    data : numpy array
         Data to be filtered.
     samplerate : float
         Sampling frequency of the data aquisition.
@@ -56,6 +56,51 @@ def LowPass(data, samplerate, lowPass):
     output = {}
     output['data'] = scipy.signal.resample(Filt_sig, int(len(data) / ds_factor))
     output['samplerate'] = samplerate / ds_factor
+    return output
+
+def WaveletDenoising(data, decompositionLevel = 5):
+    """
+    Function used to remove noise from a signal using wavelet denoising with a bio-orthogonal wavelet implemented in the
+    PyWavelets package.PyWavelets is open source wavelet transform software for Python.
+    It uses Stationary Wavelet Transforms and a hard detail coefficients thresholding.
+    
+    See Shekar, Siddharth, et al. "Wavelet denoising of high-bandwidth nanopore and Ion channel signals".
+    Nano letters (2019). DOI: 10.1021/acs.nanolett.8b04388
+    
+    Parameters
+    ----------
+    data : numpy array
+        Data to be filtered.
+    decompositionLevel : int
+        Maximum decomposition level for the wavelet transform.
+     
+    Returns
+    -------
+    dict
+        Dictionary output of the filtered data with in keys:
+        'data' : a list of the current signal filtered
+        
+    """
+        
+    #choose a wavelet basis - Here bio-orthogonal 
+    wavelet = pywt.Wavelet('bior1.5')
+    N = len(data)
+    #choose a maximum decomposition level -> function parameter
+    #compute the wavelet transform for the signal x[n] to obtain detail coefficients wj,k (cD) and approximation coefficients aJ,k (cA) where j=1, ..., J and k = 1, ..., N
+    coeffs = pywt.swt(data, wavelet, level = decompositionLevel) #multilevel reconstruction in the paper they used 5, 7 and 8 levels
+    #calculate the noise threshold lambdaj for wj,k
+    newcoeffs=[]
+    j=0
+    while j < decompositionLevel:
+        sigma=np.median(abs(coeffs[j][1]-np.mean(coeffs[j][1])))/0.6745
+        l = sigma*np.sqrt(2*np.log(N))
+        #choose thresholding scheme T and threshold wj,k to obtain w'j,k = T(wj,k)
+        newcoeffs.append(tuple((np.array(coeffs[j][0]) , np.array(pywt.threshold(coeffs[j][1], value = l, mode='hard')))))
+        j=j+1
+    #perform the inerse wavelet transform using aj,k and w'j,k
+    output = {}
+    output['data'] = pywt.iswt(newcoeffs, wavelet) #multilevel reconstruction
+
     return output
 
 

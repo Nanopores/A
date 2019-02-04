@@ -77,7 +77,6 @@ def ImportChimeraRaw(datafilename):
     output = {'matfilename': str(os.path.splitext(datafilename)[0]),'i1raw': data, 'v1': np.float64(matfile['SETUP_biasvoltage']), 'samplerateRaw': np.int64(samplerate), 'type': 'ChimeraRaw', 'filename': datafilename, 'graphene': 0, 'blockLength':blockLength}
     return output
 
-
 def ImportChimeraData(datafilename):
     matfile = io.loadmat(str(os.path.splitext(datafilename)[0]))
     samplerate = matfile['ADCSAMPLERATE']
@@ -116,16 +115,17 @@ def ImportTXT(datafilename):
         
     """
     
-    x=np.genfromtxt(datafilename, np.dtype('>f4'), delimiter = '\t', skip_header=1, skip_footer=1, usecols = (1, 3))
-#    f=open(datafilename, encoding='utf-8')
-#    for i in range(0, ): 
-#        #The 7 first lines in the file contain informations on the parameters, change here 
-#        a=str(f.readline())
-#        print(a)
-#        if 'Acquisition' in a or 'Sample Rate' in a:
-#            samplerate=int(''.join(i for i in a if i.isdigit()))/1000
-#        if 'FEMTO preamp Bandwidth' in a:
-#            femtoLP=int(''.join(i for i in a if i.isdigit())) 
+    x=np.genfromtxt(datafilename, np.dtype('>f4'), delimiter = ',', skip_header=3, skip_footer=1, usecols = (0, 1))
+
+    #   for file in os.listdir('.'):
+    #       x=np.genfromtxt(file, np.dtype('>f4'), delimiter = ',', skip_header=3, skip_footer=1, usecols=(0,1))
+    #       i1.append(x[:,0])
+    #       v1.append(x[:,1])
+    #       print(file)
+    #   return i1,v1
+    
+    #   ivJy6_1= {'i1': i1, 'v1' : v1}
+    
     i1 = np.array(x[:,0])#reads the current values in the first column of the txt file
     v1 = np.array(x[:,1]) #reads the voltage values in the second column of the txt file
     output={'type': 'TextFile', 'graphene': 0, 'samplerate': 100e3, 'i1': i1, 'v1': v1, 'filename': datafilename}
