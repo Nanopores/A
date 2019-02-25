@@ -417,8 +417,6 @@ def PlotEvent(event,ax=None, savefile=os.getcwd(), showCUSUM=False):
         ShowEventInTrace(event)
 
 
-
-
     if showCUSUM and hasattr(event, 'changeTimes') and len(event.changeTimes)>2:
         eventLength = event.eventLengthCUSUM
         currentDrop = event.currentDropCUSUM
@@ -613,7 +611,7 @@ if __name__=='__main__':
     args = parser.parse_args()
     inputData=args.input
     if inputData==None:
-        inputData=askopenfilenames(filetypes=[('data files', 'Data*.dat')])
+        inputData=askopenfilenames(filetypes=[('data files', 'Data*.dat')])  #for Mac systems, replace 'Data*.dat' with >> '*.dat'
         if inputData:
             inputData=os.path.splitext(inputData[0])[0]
 
@@ -622,4 +620,4 @@ if __name__=='__main__':
         translocationEvents=shelfFile['translocationEvents']
         shelfFile.close()
 
-        PlotG_tau(translocationEvents.events,inputData)
+        PlotG_tau(translocationEvents.events, inputData)
