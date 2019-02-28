@@ -18,6 +18,40 @@ from scipy.optimize import curve_fit
 import LoadData #for MakeIv
 import pywt #for WaveletDenoising
 
+def GetSmallMoS2PoreSize(Conductance, Sigma_Bulk=11.18):
+    """
+    Function used to calculate pore size of small MoS2 pore:
+    ﻿1. Pérez M.D.B., Nicolaï A., Delarue P., Meunier V., Drndić M., Senet P. (2019). Improved model of ionic transport in 2-D MoS 2 membranes with sub-5 nm pores. Appl. Phys. Lett. 114, 023107.
+    doi: 10.1063/1.5061825
+    Parameters
+    ----------
+    Conductance : float
+        Measured conductance.
+    Sigma_Bulk : float
+        conductivity of the buffer (bulk).
+
+    Returns
+    -------
+    scalar. Pore size in nm
+
+    """
+    def SmallMoS2PoreConductance(d, sigma_bulk):
+        # All in nanometers
+        l = 0.96
+        phi_Cl = 0.793
+        phi_K = 0.832
+        delta_Cl = 0.41
+        delta_K = 0.38
+        epsilon_K = 1.03
+        epsilon_Cl = 0.97
+        A = sigma_bulk / 2 * 1 / ((4 * l + np.pi * d) / (np.pi * d ** 2))
+        B_Cl = np.exp((-4 * phi_Cl) / (np.pi * d ** 2)) * (d) / (delta_Cl + epsilon_Cl * d)
+        B_K = np.exp((-4 * phi_K) / (np.pi * d ** 2)) * (d) / (delta_K + epsilon_K * d)
+        return A * (B_Cl + B_K)
+
+    def DrndicModelRootEquation(d, G, sigma_bulk):
+        return SmallMoS2PoreConductance(d, sigma_bulk) - G
+    return scipy.optimize.fsolve(DrndicModelRootEquation, 10, (Conductance, Sigma_Bulk))
 
 def LowPass(data, samplerate, lowPass):
     """
