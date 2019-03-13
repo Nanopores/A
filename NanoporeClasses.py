@@ -155,6 +155,10 @@ class AllEvents:
         currentDrops = [event.currentDrop/ event.baseline for event in self.events]
         return currentDrops
 
+    def GetEventTypes(self,eventType):
+        events = [event for event in self.events if event.type == eventType]
+        return events
+
     def SetFolder(self,loadname):
         self.savefile=loadname
 
