@@ -232,13 +232,13 @@ def PlotGTau(eventClass, showCurrentInstead = False):
 
     #categorize events in three types
     #CUSUM fitted events
-    CUSUMIndices, CUSUMEvents = eventClass.GetEventTypes('CUSUM')
+    CUSUMEvents = eventClass.GetEventTypes('CUSUM')
 
     #Non-fitted events
-    nonFittedIndices, nonFittedEvents = eventClass.GetEventTypes('Rough')
+    nonFittedEvents = eventClass.GetEventTypes('Rough')
 
     #Impulse events
-    impulseIndices, impulseEvents = eventClass.GetEventTypes('Impulse')
+    impulseEvents = eventClass.GetEventTypes('Impulse')
 
     #Extract y and tau out of events
     def extractytau(filteredevents):
