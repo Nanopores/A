@@ -15,8 +15,43 @@ from numpy import linalg as lin
 from scipy import constants as cst
 from scipy.optimize import curve_fit
 
+import LoadData #for MakeIv
+import pywt #for WaveletDenoising
 
+def GetSmallMoS2PoreSize(Conductance, Sigma_Bulk=11.18):
+    """
+    Function used to calculate pore size of small MoS2 pore:
+    ﻿1. Pérez M.D.B., Nicolaï A., Delarue P., Meunier V., Drndić M., Senet P. (2019). Improved model of ionic transport in 2-D MoS 2 membranes with sub-5 nm pores. Appl. Phys. Lett. 114, 023107.
+    doi: 10.1063/1.5061825
+    Parameters
+    ----------
+    Conductance : float
+        Measured conductance.
+    Sigma_Bulk : float
+        conductivity of the buffer (bulk).
 
+    Returns
+    -------
+    scalar. Pore size in nm
+
+    """
+    def SmallMoS2PoreConductance(d, sigma_bulk):
+        # All in nanometers
+        l = 0.96
+        phi_Cl = 0.793
+        phi_K = 0.832
+        delta_Cl = 0.41
+        delta_K = 0.38
+        epsilon_K = 1.03
+        epsilon_Cl = 0.97
+        A = sigma_bulk / 2 * 1 / ((4 * l + np.pi * d) / (np.pi * d ** 2))
+        B_Cl = np.exp((-4 * phi_Cl) / (np.pi * d ** 2)) * (d) / (delta_Cl + epsilon_Cl * d)
+        B_K = np.exp((-4 * phi_K) / (np.pi * d ** 2)) * (d) / (delta_K + epsilon_K * d)
+        return A * (B_Cl + B_K)
+
+    def DrndicModelRootEquation(d, G, sigma_bulk):
+        return SmallMoS2PoreConductance(d, sigma_bulk) - G
+    return scipy.optimize.fsolve(DrndicModelRootEquation, 10, (Conductance, Sigma_Bulk))
 
 def LowPass(data, samplerate, lowPass):
     """
@@ -55,6 +90,52 @@ def LowPass(data, samplerate, lowPass):
     output = {}
     output['data'] = scipy.signal.resample(Filt_sig, int(len(data) / ds_factor))
     output['samplerate'] = samplerate / ds_factor
+    return output
+
+
+def WaveletDenoising(data, decompositionLevel = 5):
+    """
+    Function used to remove noise from a signal using wavelet denoising with a bio-orthogonal wavelet implemented in the
+    PyWavelets package.PyWavelets is open source wavelet transform software for Python.
+    It uses Stationary Wavelet Transforms and a hard detail coefficients thresholding.
+    
+    See Shekar, Siddharth, et al. "Wavelet denoising of high-bandwidth nanopore and Ion channel signals".
+    Nano letters (2019). DOI: 10.1021/acs.nanolett.8b04388
+    
+    Parameters
+    ----------
+    data : numpy array
+        Data to be filtered.
+    decompositionLevel : int
+        Maximum decomposition level for the wavelet transform.
+     
+    Returns
+    -------
+    dict
+        Dictionary output of the filtered data with in keys:
+        'data' : a list of the current signal filtered
+        
+    """
+        
+    #choose a wavelet basis - Here bio-orthogonal 
+    wavelet = pywt.Wavelet('bior1.5')
+    N = len(data)
+    #choose a maximum decomposition level -> function parameter
+    #compute the wavelet transform for the signal x[n] to obtain detail coefficients wj,k (cD) and approximation coefficients aJ,k (cA) where j=1, ..., J and k = 1, ..., N
+    coeffs = pywt.swt(data, wavelet, level = decompositionLevel) #multilevel reconstruction in the paper they used 5, 7 and 8 levels
+    #calculate the noise threshold lambdaj for wj,k
+    newcoeffs=[]
+    j=0
+    while j < decompositionLevel:
+        sigma=np.median(abs(coeffs[j][1]-np.mean(coeffs[j][1])))/0.6745
+        l = sigma*np.sqrt(2*np.log(N))
+        #choose thresholding scheme T and threshold wj,k to obtain w'j,k = T(wj,k)
+        newcoeffs.append(tuple((np.array(coeffs[j][0]) , np.array(pywt.threshold(coeffs[j][1], value = l, mode='hard')))))
+        j=j+1
+    #perform the inerse wavelet transform using aj,k and w'j,k
+    output = {}
+    output['data'] = pywt.iswt(newcoeffs, wavelet) #multilevel reconstruction
+
     return output
 
 
