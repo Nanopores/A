@@ -134,7 +134,10 @@ class AllEvents:
 
     def AddEvent(self, translocationEvent):
         if isinstance(translocationEvent,AllEvents):
-            self.events.extend(translocationEvent.events)
+            if len(self.events) == 0:
+                self.events = translocationEvent.events
+            else:
+                self.events.extend(translocationEvent.events)
         elif isinstance(translocationEvent,list):
             self.events.extend(translocationEvent)
         else:

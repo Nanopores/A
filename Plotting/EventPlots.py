@@ -10,6 +10,7 @@ import os
 from pprint import pprint
 import Functions
 import LoadData
+import NanoporeClasses as NC
 
 from bokeh.models import Legend,LegendItem
 from bokeh.palettes import Spectral4
@@ -24,7 +25,7 @@ Volt = EngFormatter(unit='V', places=2)
 Cond = EngFormatter(unit='S', places=2)
 
 
-def PlotG_tau(events, savefile = None, showCurrentInstead=False, normalized=False,showCUSUM=True):
+def PlotG_tau(events, savefile = None, showCurrentInstead=False, normalized=False, showCUSUM=True):
     """ 
     Function used to produce scatter plots and histograms of the events.
     The figure produced has 3 subplots: 
@@ -184,8 +185,8 @@ def PlotG_tau(events, savefile = None, showCurrentInstead=False, normalized=Fals
                 tau,yVals = extractytau(events)
                 scatters[i] = axScatter.scatter(tau, yVals, color=colors[i], marker='o', s=30,
                                              linewidths=0.1,edgecolors=linecolors[i], picker=5,visible=visBool[i])  # added some stuff here to improve aesthetics
-                #axScatter.set_xscale('log')
-                axHistx.hist(tau, bins=50, color=colors[i], visible=visBool[i])
+                axScatter.set_xscale('log')
+                axHistx.hist(tau, bins=100, color=colors[i], visible=visBool[i])
                 axHisty.hist(yVals, bins=50, orientation='horizontal', color=colors[i], visible=visBool[i])
 
                 alltau.extend(tau)
@@ -547,7 +548,7 @@ def PlotCurrentTrace(currentTrace, samplerate):
     currentTrace : list of float
         Data points in current to be plotted.
     samplerate : float
-        Sampling frequency of the data aquisition.
+        Sampling frequency of the data acquisition.
     
     """
     
@@ -612,12 +613,15 @@ if __name__=='__main__':
     inputData=args.input
     if inputData==None:
         inputData=askopenfilenames(filetypes=[('data files', 'Data*.dat')])  #for Mac systems, replace 'Data*.dat' with >> '*.dat'
-        if inputData:
-            inputData=os.path.splitext(inputData[0])[0]
+        #if inputData:
+        #    inputData=os.path.splitext(inputData[0])[0]
 
+    translocationEvents = NC.AllEvents()
     if inputData:
-        shelfFile=shelve.open(inputData)
-        translocationEvents=shelfFile['translocationEvents']
-        shelfFile.close()
+        for filename in inputData:
+            shelfFile = shelve.open(os.path.splitext(filename)[0])
+            translocationEventstemp = shelfFile['translocationEvents']
+            shelfFile.close()
+            translocationEvents.AddEvent(translocationEventstemp)
 
         PlotG_tau(translocationEvents.events, inputData)
