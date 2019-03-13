@@ -156,6 +156,7 @@ class AllEvents:
         return currentDrops
 
     def GetEventTypes(self,eventType):
+        events = []
         events = [event for event in self.events if event.type == eventType]
         return events
 
