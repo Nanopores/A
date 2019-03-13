@@ -23,7 +23,7 @@ extension = '*.log'
 coefficients = {'a': 0.999,
                 'E': 0,
                 'S': 5,
-                'maxEventLength': 200e-3,
+                'maxEventLength': 200e-3, #200e-3
                 'minEventLength': 500e-6,
                 'hbook': 1,
                 'delta': 0.2e-9,
@@ -82,7 +82,7 @@ def batcheventdetection(folder,extension,coefficients, verbose=True, forceRun=Fa
                 print('Saved {} events'.format(len(tEL.events)))
 
             #Open savefile and save events for this file
-            shelfFile['translocationEvents']=tEL
+            shelfFile['TranslocationEvents']=tEL
             shelfFile['coefficients']=coefficients
             if verbose:
                 print('saved to file')
