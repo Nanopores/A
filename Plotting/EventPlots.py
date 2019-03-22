@@ -26,35 +26,35 @@ Cond = EngFormatter(unit='S', places=2)
 
 
 def PlotG_tau(events, savefile = None, showCurrentInstead=False, normalized=False, showCUSUM=True):
-    """ 
+    """
     Function used to produce scatter plots and histograms of the events.
-    The figure produced has 3 subplots: 
+    The figure produced has 3 subplots:
         Up: Histogram with the number of events per event length
         Right: Histogram with the number of events per conductance drop [nS]
         Center: Scatter-plot of all the events wiht in on x-coordinates the event length [s]
             and in y-coordinates the conductance drop [nS].
-    
-    In the plots, the events were distributed into the 3 types of events: 
-        CUSUM-fitted in red ('Real' type) 
+
+    In the plots, the events were distributed into the 3 types of events:
+        CUSUM-fitted in red ('Real' type)
         Non-fitted in blue ('Rough' type)
         Impulse in green ('Impulse' type)
-        
+
     Parameters
     ----------
     events : AllEvents object
         All the events to be plotted.
     savefile : str, optional
         Full path to file where the plots will be saved.
-    showCurrentInstead : bool, optional 
+    showCurrentInstead : bool, optional
         False by default. If True, it will change the SI unit in the y-axis from siemens [S] to ampers [A].
         So instead of units in conductance drop, it will have current drop.
     normalized : bool, optional
         False by default. If True, it will change in the y-axis the unit from siemens [S] to normalized current drop without unit.
-    showCUSUM : bool, optional 
-        True by default. 
-        
+    showCUSUM : bool, optional
+        True by default.
+
     """
-    
+
     #Clean up events
     events = [event for event in events if event.voltage is not 0]
 
@@ -228,7 +228,7 @@ def PlotG_tau(events, savefile = None, showCurrentInstead=False, normalized=Fals
 
     plt.show()
 
-def PlotGTau(eventClass, showCurrentInstead = False):
+def PlotGTau(eventClass, xLim = None, yLim = None, showCurrentInstead = False):
 
     #categorize events in three types
     #CUSUM fitted events
@@ -267,8 +267,17 @@ def PlotGTau(eventClass, showCurrentInstead = False):
     events = [event for event in eventClass.events if showCurrentInstead or event.voltage is not 0]
 
     allTau, allYVals = extractytau(events)
-    taurange = np.linspace(min(allTau), max(allTau), num=bins)
-    yValsrange = np.linspace(min(allYVals), max(allYVals), num=bins)
+
+    if xLim is None:
+        taurange = np.linspace(min(allTau), max(allTau), num=bins)
+    else:
+        assert(len(xLim) is 2)
+        taurange = np.linspace(xLim[0], xLim[1], num=bins)
+
+    if yLim is None:
+        yValsrange = np.linspace(min(allYVals), max(allYVals), num=bins)
+    else:
+        yValsrange = np.linspace(yLim[0], yLim[1], num=bins)
 
     #initialize values
     zerostau = np.zeros(len(taurange) - 1)
@@ -387,13 +396,13 @@ def PlotEvent(event,ax=None, savefile=os.getcwd(), showCUSUM=False):
         Event to be plotted.
     ax :axes.Axes object or array of Axes object
         Axes of the plot.
-    savefile : str, optional 
+    savefile : str, optional
         By default, the current working directory. Full path to the directory to save the plot.
     showCUSUM : bool, optional
         False by default. If True, it will plot the CUSUM-fit overlayed in yellow.
-        
+
     """
-    
+
     #Link event to axes to keep it around
 
     if ax is None:
@@ -495,14 +504,14 @@ def PlotEvent(event,ax=None, savefile=os.getcwd(), showCUSUM=False):
 def ShowEventInTrace(event):
     """
     Function used to show the event with it's location framed in red in the original full signal trace in blue.
-    
+
     Parameters
     ----------
     event : TranslocationEvent object
         Event to be plotted.
-    
+
     """
-    
+
     filename=event.filename
     loadedData = LoadData.OpenFile(filename,1e3,True) #, ChimeraLowPass, True, CutTraces)
 
@@ -540,18 +549,18 @@ def ShowEventInTrace(event):
 
 def PlotCurrentTrace(currentTrace, samplerate):
     """
-    Function used in TranslocationEvent class methods in the NanoporeClasses module to plot events. 
+    Function used in TranslocationEvent class methods in the NanoporeClasses module to plot events.
     It will plot the TranslocationEvent's currrentTrace passed in argument.
-    
+
     Parameters
     ----------
     currentTrace : list of float
         Data points in current to be plotted.
     samplerate : float
         Sampling frequency of the data acquisition.
-    
+
     """
-    
+
     timeVals = np.linspace(0, len(currentTrace) / samplerate, num=len(currentTrace))
     fig,ax=plt.subplots(figsize=(10, 6))
 
@@ -566,10 +575,10 @@ def PlotCurrentTrace(currentTrace, samplerate):
 
 def PlotCurrentTraceBaseline(before, currentTrace, after, samplerate, plotTitle=''):
     """
-    Function used in TranslocationEvent class methods in the NanoporeClasses module to plot events. 
-    It will plot TranslocationEvent's currentTrace and the surrounding baseline (after and before) 
-    passed in argument. 
-    
+    Function used in TranslocationEvent class methods in the NanoporeClasses module to plot events.
+    It will plot TranslocationEvent's currentTrace and the surrounding baseline (after and before)
+    passed in argument.
+
     Parameters
     ----------
     before : list of float
@@ -582,9 +591,9 @@ def PlotCurrentTraceBaseline(before, currentTrace, after, samplerate, plotTitle=
         Sampling frequency of the data aquisition.
     plotTitle : str, optional
         Plot title.
-    
+
     """
-    
+
     timeVals1 = np.linspace(0, len(before) / samplerate, num=len(before))
     timeVals2 = np.linspace(0 + max(timeVals1), len(currentTrace) / samplerate + max(timeVals1), num=len(currentTrace))
     timeVals3 = np.linspace(0 + max(timeVals2), len(after) / samplerate + max(timeVals2), num=len(after))
