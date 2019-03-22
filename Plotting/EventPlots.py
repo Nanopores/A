@@ -268,15 +268,19 @@ def PlotGTau(eventClass, xLim = None, yLim = None, showCurrentInstead = False):
 
     allTau, allYVals = extractytau(events)
 
+    #Set limits
     if xLim is None:
         taurange = np.linspace(min(allTau), max(allTau), num=bins)
     else:
         assert(len(xLim) is 2)
+        p.x_range=Range1d(xLim[0], xLim[1])
         taurange = np.linspace(xLim[0], xLim[1], num=bins)
 
     if yLim is None:
         yValsrange = np.linspace(min(allYVals), max(allYVals), num=bins)
     else:
+        assert(len(yLim) is 2)
+        p.y_range=Range1d(yLim[0], yLim[1])
         yValsrange = np.linspace(yLim[0], yLim[1], num=bins)
 
     #initialize values
