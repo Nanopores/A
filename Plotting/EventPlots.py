@@ -12,11 +12,10 @@ import Functions
 import LoadData
 import NanoporeClasses as NC
 
-from bokeh.models import Legend,LegendItem
+from bokeh.models import Legend,LegendItem,Range1d
 from bokeh.palettes import Spectral4
 from bokeh.plotting import figure, output_file, show, output_notebook
 from bokeh.layouts import row, column, gridplot
-
 
 
 Amp = EngFormatter(unit='A', places=2)
