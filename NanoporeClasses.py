@@ -3,7 +3,6 @@ from pprint import pprint
 import shelve
 import os
 import math
-from Plotting.EventPlots import PlotCurrentTrace,PlotCurrentTraceBaseline
 import matplotlib.pyplot as plt
 from matplotlib.ticker import EngFormatter
 
