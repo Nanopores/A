@@ -13,9 +13,9 @@ Cond = EngFormatter(unit='S', places=2)
 
 
 class TranslocationEvent:
-    """ 
+    """
     Class used to represent an event.
-    
+
     Attributes
     ----------
     filename : str
@@ -27,7 +27,7 @@ class TranslocationEvent:
     baseline:float
         mean current value in the basline around the event
     samplerate:float
-        sampling frequency 
+        sampling frequency
     beginEvent: int
         start coordinate of the event in the signal
     endEvent: int
@@ -41,7 +41,7 @@ class TranslocationEvent:
     currentDrop: float
         current drop defined as the difference of the baseline and meanTrace or minTrace dependeng on the event type
     before: lst(float)
-        list of data points before the event, used for plotting 
+        list of data points before the event, used for plotting
     after: lst(float)
         list of data points after the event, used for plotting
     changeTimes: lst(int)
@@ -57,28 +57,28 @@ class TranslocationEvent:
         coefficients used in the CUSUM algorithm
     voltage:
         voltage applied across the nanopore during the data recording
-  
+
     """
-    
+
     def __init__(self, filename,type='roughEvent'):
         self.filename = filename
         self.type=type
 
     def SetEvent(self,eventTrace,beginEvent,baseline,samplerate):
-        self.eventTrace=eventTrace
-        self.baseline=baseline
-        self.samplerate=samplerate
-        self.beginEvent=beginEvent
-        self.endEvent=beginEvent+len(eventTrace)
+        self.eventTrace = eventTrace
+        self.baseline = baseline
+        self.samplerate = samplerate
+        self.beginEvent = beginEvent
+        self.endEvent = beginEvent+len(eventTrace)
 
-        self.meanTrace=np.mean(eventTrace)
+        self.meanTrace = np.mean(eventTrace)
         self.minTrace = np.min(eventTrace)
-        self.eventLength=len(eventTrace)/samplerate
+        self.eventLength = len(eventTrace)/samplerate
 
-        if self.type=='Rough':
-            self.currentDrop=baseline-self.meanTrace
-        else:
-            self.currentDrop = baseline - self.minTrace
+        #if self.type=='Rough':
+        self.currentDrop = baseline - self.meanTrace
+        #else:
+        #    self.currentDrop = baseline - self.minTrace
 
     def SetCoefficients(self,coefficients,voltage):
         self.coefficients=coefficients
@@ -118,16 +118,16 @@ class TranslocationEvent:
 
 class AllEvents:
     """"
-    Class used to represent all the events in a nanopore experiment output as a list of events. 
-    
+    Class used to represent all the events in a nanopore experiment output as a list of events.
+
     Attributes
     ----------
-    
+
     events : lst(events)
         list of events containing all the events detected by the eventdetection function
-    
+
     """
-    
+
     def __init__(self):
         self.events=[]
 
@@ -200,4 +200,3 @@ class AllEvents:
         directory = os.path.dirname(savefile)
         fig.savefig(directory + os.sep + 'Histogram.pdf', transparent=True)
         plt.show()
-
