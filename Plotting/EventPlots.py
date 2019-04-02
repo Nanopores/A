@@ -1,9 +1,13 @@
 ﻿import numpy as np
+import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.ticker import EngFormatter
 from matplotlib.widgets import CheckButtons, Button
 import argparse
+from tkinter import Tk
+import platform
 from tkinter.filedialog import askopenfilenames,askdirectory
 import shelve
 import os
@@ -17,6 +21,12 @@ from bokeh.palettes import Spectral4
 from bokeh.plotting import figure, output_file, show, output_notebook
 from bokeh.layouts import row, column, gridplot
 
+if (platform.system()=='Darwin'):
+    root = Tk()
+    root.withdraw()
+
+if (platform.system()=='Darwin'):
+    os.system('''/usr/bin/osascript -e 'tell app "Finder" to set frontmost of process "python" to true' ''')
 
 Amp = EngFormatter(unit='A', places=2)
 Time = EngFormatter(unit='s', places=2)
@@ -125,10 +135,16 @@ def PlotG_tau(events, savefile = None, showCurrentInstead=False, normalized=Fals
     visBool=[True,True,True]
     labelsCheckBox=('CUSUM-fitted', 'Not fitted', 'impulse')
     check = CheckButtons(rax,labelsCheckBox , visBool)
+    # Link button to axes to preserve function
+    rax._check = check
+
 
     bax = plt.axes([0.77, 0.9, 0.1, 0.03])
     bnext = Button(bax, 'Save figure')
     bnext.on_clicked(SavePlot)
+    # Link button to axes to preserve function
+    bax._bnext = bnext
+
 
     #Show labels
     def setlabels():
@@ -199,7 +215,7 @@ def PlotG_tau(events, savefile = None, showCurrentInstead=False, normalized=Fals
 
     PlotEvents(visBool)
 
-    #If click on checkbox, switch Boolean and replot events
+    # If click on checkbox, switch Boolean and replot events
     def func(label):
         for i in range(len(labelsCheckBox)):
             if label == labelsCheckBox[i]:
@@ -208,7 +224,7 @@ def PlotG_tau(events, savefile = None, showCurrentInstead=False, normalized=Fals
         plt.draw()
 
 
-    #WHen clicking on event
+    # WHen clicking on event
     def onpick(event):
         for i in range(len(catEvents)):
             if event.artist == scatters[i]:
@@ -622,18 +638,19 @@ if __name__=='__main__':
     parser.add_argument('-i', '--input', help='Input file')
 
     args = parser.parse_args()
-    inputData=args.input
-    if inputData==None:
-        inputData=askopenfilenames(filetypes=[('data files', 'Data*.dat')])  #for Mac systems, replace 'Data*.dat' with >> '*.dat'
+    inputData = args.input
+    if inputData == None:
+        inputData = askopenfilenames(filetypes=[('data files', '*.dat')])  #for Mac systems, replace 'Data*.dat' with >> '*.dat'
         #if inputData:
         #    inputData=os.path.splitext(inputData[0])[0]
+        if (platform.system() == 'Darwin'):
+            root.update()
 
     translocationEvents = NC.AllEvents()
     if inputData:
         for filename in inputData:
             shelfFile = shelve.open(os.path.splitext(filename)[0])
-            translocationEventstemp = shelfFile['translocationEvents']
+            translocationEventstemp = shelfFile['TranslocationEvents']
             shelfFile.close()
             translocationEvents.AddEvent(translocationEventstemp)
-
         PlotG_tau(translocationEvents.events, inputData)
