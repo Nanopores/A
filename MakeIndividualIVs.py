@@ -54,7 +54,7 @@ Parameters = {
   #Fit option
   'CurveFit' : 'PolyFit', #PolyFit YorkFit
 
-   'fittingMethod' : 'mean'  #expFit
+   'fittingMethod' : 'expFit'  #expFit
 }
 
 def GetParameters():
