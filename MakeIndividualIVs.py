@@ -31,9 +31,9 @@ Cond = EngFormatter(unit='S', places=2)
 SpesCond = EngFormatter(unit='S/m', places=2)
 size = EngFormatter(unit='m', places=2)
 
-Tk().withdraw()
 
 if (platform.system()=='Darwin'):
+    Tk().withdraw()
     os.system('''/usr/bin/osascript -e 'tell app "Finder" to set frontmost of process "python" to true' ''')
 
 #Define default parameters for size fitting
@@ -221,6 +221,8 @@ if __name__=='__main__':
 
 
     run(inputData,newParameters)
-Tk().withdraw()
-root=Tk()
-root.update()
+
+if (platform.system()=='Darwin'):
+    Tk().withdraw()
+    root=Tk()
+    root.update()
