@@ -136,7 +136,7 @@ def run(filenames,newParameters={},verbose=False):
 
         #ax1IV = uf.PlotIV(output, AllData, current='i1', unit=1, axis = ax1IV, WithFit = 1, useEXP = 0, color ='y',
         #                labeltxt='MeanFit', PoreSize=[10, 1e-9], title=str(os.path.split(filename)[1]))
-        Slope=AllData[current][CurveFit]['Slope']
+        Slope=np.abs(AllData[current][CurveFit]['Slope'])
         Yintercept=AllData[current][CurveFit]['Yintercept']
 
         if Type=='Nanopore':
