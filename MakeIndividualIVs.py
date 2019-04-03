@@ -54,7 +54,7 @@ Parameters = {
   #Fit option
   'CurveFit' : 'PolyFit', #PolyFit YorkFit
 
-   'fittingMethod' : 'expFit'  #expFit
+   'fittingMethod' : 'expFit'  #expFit,mean
 }
 
 def GetParameters():
@@ -136,26 +136,26 @@ def run(filenames,newParameters={},verbose=False):
 
         #ax1IV = uf.PlotIV(output, AllData, current='i1', unit=1, axis = ax1IV, WithFit = 1, useEXP = 0, color ='y',
         #                labeltxt='MeanFit', PoreSize=[10, 1e-9], title=str(os.path.split(filename)[1]))
-        Slope=np.abs(AllData[current][CurveFit]['Slope'])
+        Slope=AllData[current][CurveFit]['Slope']
         Yintercept=AllData[current][CurveFit]['Yintercept']
 
         if Type=='Nanopore':
             poreLength=Parameters['poreLength']
             textstr = 'Nanopore Size\n\nSpecific Conductance: {}\nLength: {}\n\nConductance: {}\nDiameter: {}'\
                 .format(SpesCond.format_data(specificConductance),size.format_data(poreLength), Cond.format_data(Slope),
-                        size.format_data(uf.CalculatePoreSize(Slope, poreLength, specificConductance)))
+                        size.format_data(uf.CalculatePoreSize(np.abs(Slope), poreLength, specificConductance)))
         elif Type=='Nanocapillary':
             taperLength=Parameters['taperLength']
             innerDiameter=Parameters['innerDiameter']
             textstr = 'Nanocapillary Size\n\nSpecific Conductance: {}\nTaper lenghth {}:\nInner diameter: {}:\n\nConductance: {}\nDiameter: {}'.\
                 format(SpesCond.format_data(specificConductance),size.format_data(taperLength),size.format_data(innerDiameter),Cond.format_data(Slope),
-                       size.format_data(uf.CalculateCapillarySize(Slope, innerDiameter, taperLength, specificConductance)))
+                       size.format_data(uf.CalculateCapillarySize(np.abs(Slope), innerDiameter, taperLength, specificConductance)))
         elif Type=='NanocapillaryShrunken':
             taperLength=Parameters['taperLength']
             innerDiameter=Parameters['innerDiameter']
             taperLengthShaft=Parameters['taperLengthShaft']
             innerDiameterShaft=Parameters['innerDiameterShaft']
-            NCSize=uf.CalculateShrunkenCapillarySize(Slope,innerDiameter, taperLength,specificConductance,taperLengthShaft,innerDiameterShaft)
+            NCSize=uf.CalculateShrunkenCapillarySize(np.abs(Slope),innerDiameter, taperLength,specificConductance,taperLengthShaft,innerDiameterShaft)
             textstr = 'Shrunken Nanocapillary Size\n\nSpecific Conductance: {}\nTaper length: {}\nInner diameter: {}\nTaper length at shaft: {}' \
                       '\nInner Diameter at shaft: {}:\n\nConductance: {}\nDiameter: {}'.\
                 format(SpesCond.format_data(specificConductance),size.format_data(taperLength),size.format_data(innerDiameter),
