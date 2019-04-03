@@ -221,3 +221,6 @@ if __name__=='__main__':
 
 
     run(inputData,newParameters)
+Tk().withdraw()
+root=Tk()
+root.update()
