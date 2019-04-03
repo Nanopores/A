@@ -105,7 +105,6 @@ def run(filenames,newParameters={},verbose=False):
             os.makedirs(directory)
 
         AllData = uf.MakeIVData(output, approach=Parameters['fittingMethod'], delay = Parameters['delay'])#, UseVoltageRange = [-0.4, 0.4])
-        print('uf.MakeIVData')
         if AllData == 0:
             print('!!!! No Sweep in: ' + filename)
             continue
