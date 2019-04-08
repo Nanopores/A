@@ -64,7 +64,7 @@ def GetParameters():
     print("Default Parameters:")
     pprint(Parameters)
 
-def run(filenames,newParameters={},verbose=False):
+def run(filenames,newParameters={},verbose=False, noPlot=False):
     """
     Function used to call all the necessary other functions to make I-V curves.
     It takes a list of filenames as necessary argument. For each data file, a corresponding
@@ -120,7 +120,7 @@ def run(filenames,newParameters={},verbose=False):
 
 
         # Plot IV
-        if output['graphene']:
+        if output['graphene'] and not noPlot:
             figIV2 = plt.figure(3, figsize=(10, 10))
             figIV2.clear()
             ax2IV = figIV2.add_subplot(111)
@@ -129,71 +129,83 @@ def run(filenames,newParameters={},verbose=False):
             figIV2.savefig(directory + os.sep + str(os.path.split(filename)[1]) + '_IV_i2.png', dpi=300)
             figIV2.savefig(directory + os.sep + str(os.path.split(filename)[1]) + '_IV_i2.eps')
 
-        figIV = plt.figure(2, figsize=(10, 7))
-        ax1IV = figIV.add_subplot(111)
-        current = 'i1'
-
-        #ax1IV = uf.PlotIV(output, AllData, current='i1', unit=1, axis = ax1IV, WithFit = 1, useEXP = 0, color ='y',
-        #                labeltxt='MeanFit', PoreSize=[10, 1e-9], title=str(os.path.split(filename)[1]))
-        Slope=AllData[current][CurveFit]['Slope']
-        Yintercept=AllData[current][CurveFit]['Yintercept']
-
-        if Type=='Nanopore':
-            poreLength=Parameters['poreLength']
-            textstr = 'Nanopore Size\n\nSpecific Conductance: {}\nLength: {}\n\nConductance: {}\nDiameter: {}'\
-                .format(SpesCond.format_data(specificConductance),size.format_data(poreLength), Cond.format_data(Slope),
-                        size.format_data(uf.CalculatePoreSize(np.abs(Slope), poreLength, specificConductance)))
-        elif Type=='Nanocapillary':
-            taperLength=Parameters['taperLength']
-            innerDiameter=Parameters['innerDiameter']
-            textstr = 'Nanocapillary Size\n\nSpecific Conductance: {}\nTaper lenghth {}:\nInner diameter: {}:\n\nConductance: {}\nDiameter: {}'.\
-                format(SpesCond.format_data(specificConductance),size.format_data(taperLength),size.format_data(innerDiameter),Cond.format_data(Slope),
-                       size.format_data(uf.CalculateCapillarySize(np.abs(Slope), innerDiameter, taperLength, specificConductance)))
-        elif Type=='NanocapillaryShrunken':
-            taperLength=Parameters['taperLength']
-            innerDiameter=Parameters['innerDiameter']
-            taperLengthShaft=Parameters['taperLengthShaft']
-            innerDiameterShaft=Parameters['innerDiameterShaft']
-            NCSize=uf.CalculateShrunkenCapillarySize(np.abs(Slope),innerDiameter, taperLength,specificConductance,taperLengthShaft,innerDiameterShaft)
+        if Type == 'Nanopore':
+            poreLength = Parameters['poreLength']
+            poresize = uf.CalculatePoreSize(np.abs(Slope), poreLength, specificConductance)
+            textstr = 'Nanopore Size\n\nSpecific Conductance: {}\nLength: {}\n\nConductance: {}\nDiameter: {}' \
+                .format(SpesCond.format_data(specificConductance), size.format_data(poreLength),
+                        Cond.format_data(Slope),
+                        size.format_data(poresize))
+        elif Type == 'Nanocapillary':
+            taperLength = Parameters['taperLength']
+            innerDiameter = Parameters['innerDiameter']
+            poresize = uf.CalculateCapillarySize(np.abs(Slope), innerDiameter, taperLength, specificConductance)
+            textstr = 'Nanocapillary Size\n\nSpecific Conductance: {}\nTaper lenghth {}:\nInner diameter: {}:\n\nConductance: {}\nDiameter: {}'. \
+                format(SpesCond.format_data(specificConductance), size.format_data(taperLength),
+                       size.format_data(innerDiameter), Cond.format_data(Slope),
+                       size.format_data(poresize))
+        elif Type == 'NanocapillaryShrunken':
+            taperLength = Parameters['taperLength']
+            innerDiameter = Parameters['innerDiameter']
+            taperLengthShaft = Parameters['taperLengthShaft']
+            innerDiameterShaft = Parameters['innerDiameterShaft']
+            poresize = uf.CalculateShrunkenCapillarySize(np.abs(Slope), innerDiameter, taperLength, specificConductance,
+                                                       taperLengthShaft, innerDiameterShaft)
             textstr = 'Shrunken Nanocapillary Size\n\nSpecific Conductance: {}\nTaper length: {}\nInner diameter: {}\nTaper length at shaft: {}' \
-                      '\nInner Diameter at shaft: {}:\n\nConductance: {}\nDiameter: {}'.\
-                format(SpesCond.format_data(specificConductance),size.format_data(taperLength),size.format_data(innerDiameter),
-                       size.format_data(taperLengthShaft),size.format_data(innerDiameterShaft), Cond.format_data(Slope),
-                       size.format_data(NCSize))
+                      '\nInner Diameter at shaft: {}:\n\nConductance: {}\nDiameter: {}'. \
+                format(SpesCond.format_data(specificConductance), size.format_data(taperLength),
+                       size.format_data(innerDiameter),
+                       size.format_data(taperLengthShaft), size.format_data(innerDiameterShaft),
+                       Cond.format_data(Slope),
+                       size.format_data(poresize))
 
+        if not noPlot:
+            figIV = plt.figure(2, figsize=(10, 7))
+            ax1IV = figIV.add_subplot(111)
+            current = 'i1'
 
-        ax1IV.text(0.05, 0.95, textstr, transform=ax1IV.transAxes, fontsize=12,
-                  verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
-
-
-        ind = np.argsort(AllData[current]['Voltage'])
-
-        ax1IV.errorbar(AllData[current]['Voltage'][ind], AllData[current]['Mean'][ind],
-                      yerr=AllData[current]['SE'][ind], fmt='o', color='b')
-        ax1IV.plot(AllData[current]['Voltage'][ind], np.polyval([Slope,Yintercept], AllData[current]['Voltage'][ind]), color='r')
-        ax1IV.set_title(str(os.path.split(filename)[1])+ '\nR=' + Res.format_data(1/Slope) + ', G=' + Cond.format_data(Slope))
-        ax1IV.set_ylabel('Current')
-        ax1IV.set_xlabel('Voltage')
-        ax1IV.xaxis.set_major_formatter(EngFormatter(unit='V'))
-        ax1IV.yaxis.set_major_formatter(EngFormatter(unit='A'))
+            #ax1IV = uf.PlotIV(output, AllData, current='i1', unit=1, axis = ax1IV, WithFit = 1, useEXP = 0, color ='y',
+            #                labeltxt='MeanFit', PoreSize=[10, 1e-9], title=str(os.path.split(filename)[1]))
+            Slope=AllData[current][CurveFit]['Slope']
+            Yintercept=AllData[current][CurveFit]['Yintercept']
 
 
 
-        figIV.savefig(directory + os.sep + str(os.path.split(filename)[1]) + Type+'IV_i1.pdf', transparent=True)
+            ax1IV.text(0.05, 0.95, textstr, transform=ax1IV.transAxes, fontsize=12,
+                      verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+
+
+            ind = np.argsort(AllData[current]['Voltage'])
+
+            ax1IV.errorbar(AllData[current]['Voltage'][ind], AllData[current]['Mean'][ind],
+                          yerr=AllData[current]['SE'][ind], fmt='o', color='b')
+            ax1IV.plot(AllData[current]['Voltage'][ind], np.polyval([Slope,Yintercept], AllData[current]['Voltage'][ind]), color='r')
+            ax1IV.set_title(str(os.path.split(filename)[1])+ '\nR=' + Res.format_data(1/Slope) + ', G=' + Cond.format_data(Slope))
+            ax1IV.set_ylabel('Current')
+            ax1IV.set_xlabel('Voltage')
+            ax1IV.xaxis.set_major_formatter(EngFormatter(unit='V'))
+            ax1IV.yaxis.set_major_formatter(EngFormatter(unit='A'))
 
 
 
-        x=AllData[current]['Voltage'][ind]
-        y=AllData[current]['Mean'][ind]
+            figIV.savefig(directory + os.sep + str(os.path.split(filename)[1]) + Type+'IV_i1.pdf', transparent=True)
 
-        csvfile=directory + os.sep + str(os.path.split(filename)[1]) + Type+'IV_i1.csv'
-        with open(csvfile, 'w') as output:
-            writer=csv.writer(output, lineterminator='\n')
-            for i in range(len(x)):
-                writer.writerow([x[i] , y[i]])
 
-        plt.show()
-        figIV.clear()
+
+            x=AllData[current]['Voltage'][ind]
+            y=AllData[current]['Mean'][ind]
+
+            csvfile=directory + os.sep + str(os.path.split(filename)[1]) + Type+'IV_i1.csv'
+            with open(csvfile, 'w') as output:
+                writer=csv.writer(output, lineterminator='\n')
+                for i in range(len(x)):
+                    writer.writerow([x[i] , y[i]])
+
+            plt.show()
+            figIV.clear()
+            return poresize
+        else:
+            return poresize
 
 
 if __name__=='__main__':
