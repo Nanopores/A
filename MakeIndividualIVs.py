@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-import scipy
-import scipy.signal as sig
 import Functions as uf
-import pyqtgraph as pg
 import os
 import matplotlib.pyplot as plt
 import matplotlib
@@ -36,26 +33,27 @@ if (platform.system()=='Darwin'):
     Tk().withdraw()
     os.system('''/usr/bin/osascript -e 'tell app "Finder" to set frontmost of process "python" to true' ''')
 
-#Define default parameters for size fitting
+# Define default parameters for size fitting
+
 expname = 'All'
 Parameters = {
-  'Type': 'Nanopore', #Nanopore, Nanocapillary, NanocapillaryShrunken
+  'Type': 'Nanopore',  # Nanopore, Nanocapillary, NanocapillaryShrunken
   'reversePolarity':  0,
-  'specificConductance': 10.5, #10.5 S/m for 1M KCl
-  'delay':3, #seconds for reading current
-  #Nanopore
-  'poreLength' :  1e-9,
-  #Nanocapillary
-  'taperLength' :  3.3e-3,
-  'innerDiameter' : 0.2e-3,
-  'taperLengthShaft' : 543e-9,
-  'innerDiameterShaft' : 514e-9,
+  'specificConductance': 10.5,  # 10.5 S/m for 1M KCl
+  'delay': 3,  # seconds for reading current
+  # Nanopore
+  'poreLength':  1e-9,
+  # Nanocapillary
+  'taperLength':  3.3e-3,
+  'innerDiameter': 0.2e-3,
+  'taperLengthShaft': 543e-9,
+  'innerDiameterShaft': 514e-9,
 
-  #Fit option
-  'CurveFit' : 'PolyFit', #PolyFit YorkFit
-
-   'fittingMethod' : 'expFit'  #expFit,mean
+  # Fit option
+  'CurveFit': 'PolyFit', # PolyFit YorkFit
+  'fittingMethod': 'expFit'  # expFit, mean
 }
+
 
 def GetParameters():
     print("Usage:")
@@ -64,7 +62,8 @@ def GetParameters():
     print("Default Parameters:")
     pprint(Parameters)
 
-def run(filenames,newParameters={},verbose=False, noPlot=False):
+
+def run(filenames, newParameters={}, verbose=False, noPlot=False):
     """
     Function used to call all the necessary other functions to make I-V curves.
     It takes a list of filenames as necessary argument. For each data file, a corresponding
@@ -93,7 +92,7 @@ def run(filenames,newParameters={},verbose=False, noPlot=False):
     for filename in filenames:
         os.chdir(os.path.dirname(filename))
         print(filename)
-        #Make Dir to save images
+        # Make Dir to save images
         output = LoadData.OpenFile(filename, verbose=verbose)
         if Parameters['reversePolarity']:
             print('Polarity Reversed!!!!')
@@ -109,15 +108,10 @@ def run(filenames,newParameters={},verbose=False, noPlot=False):
             print('!!!! No Sweep in: ' + filename)
             continue
 
-        #Plot Considered Part
-        #figExtracteParts = plt.figure(1)
-        #ax1 = figExtracteParts.add_subplot(211)
-        #ax2 = figExtracteParts.add_subplot(212, sharex=ax1)
-        #(ax1, ax2) = uf.PlotExtractedPart(output, AllData, current = 'i1', unit=1e9, axis = ax1, axis2=ax2)
-        #plt.show()
-        #figExtracteParts.savefig(directory + os.sep + 'PlotExtracted_' + str(os.path.split(filename)[1])[:-4] + '.eps')
-        #figExtracteParts.savefig(directory + os.sep + 'PlotExtracted_' + str(os.path.split(filename)[1])[:-4] + '.png', dpi=150)
+        current = 'i1'
 
+        Slope = AllData[current][CurveFit]['Slope']
+        Yintercept = AllData[current][CurveFit]['Yintercept']
 
         # Plot IV
         if output['graphene'] and not noPlot:
@@ -162,14 +156,6 @@ def run(filenames,newParameters={},verbose=False, noPlot=False):
         if not noPlot:
             figIV = plt.figure(2, figsize=(10, 7))
             ax1IV = figIV.add_subplot(111)
-            current = 'i1'
-
-            #ax1IV = uf.PlotIV(output, AllData, current='i1', unit=1, axis = ax1IV, WithFit = 1, useEXP = 0, color ='y',
-            #                labeltxt='MeanFit', PoreSize=[10, 1e-9], title=str(os.path.split(filename)[1]))
-            Slope=AllData[current][CurveFit]['Slope']
-            Yintercept=AllData[current][CurveFit]['Yintercept']
-
-
 
             ax1IV.text(0.05, 0.95, textstr, transform=ax1IV.transAxes, fontsize=12,
                       verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
