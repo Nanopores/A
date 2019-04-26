@@ -654,3 +654,127 @@ if __name__=='__main__':
             shelfFile.close()
             translocationEvents.AddEvent(translocationEventstemp)
         PlotG_tau(translocationEvents.events, inputData)
+
+
+def PlotGTauVoltage (eventClass, xLim = None, yLim = None, showCurrentInstead = False):
+
+
+    #sort the voltages
+    # categorize events in three types
+    # CUSUM fitted events
+    voltageLimits = [0.01, 0.91]
+    voltagesList = eventClass.GetAllVoltages()
+
+    #Extract y and tau out of events
+    def extractytau(filteredevents):
+        if showCurrentInstead:
+            yVals = [event.currentDrop for event in filteredevents]
+            tau = [event.eventLength for event in filteredevents]
+        else:
+            yVals = [event.currentDrop / event.voltage for event in filteredevents if event.voltage > 0]
+            tau = [event.eventLength for event in filteredevents if event.voltage > 0]
+        return tau,yVals
+
+    #define of variables
+    TOOLS = "box_zoom,pan,wheel_zoom,reset"
+    colors = ['tomato', 'lightgreen','skyblue', 'magenta','black']
+    linecolors = ['red', 'green', 'blue', 'magenta', 'black']
+
+    assert(len(voltagesList)<=len(colors))
+    backgroundColor = "#fafafa"
+    bins = 50
+
+    output_notebook()
+    p = figure(plot_width=500, plot_height=500, min_border=10, min_border_left=50, tools=TOOLS,
+               x_axis_location=None, y_axis_location=None,title="Linked Histograms")
+
+    p.background_fill_color = "#fafafa"
+
+    #select min max
+    events = [event for event in eventClass.events if showCurrentInstead or event.voltage is not 0]
+
+    allTau, allYVals = extractytau(events)
+
+    #Set limits
+    if xLim is None:
+        taurange = np.linspace(min(allTau), max(allTau), num=bins)
+    else:
+        assert(len(xLim) is 2)
+        p.x_range=Range1d(xLim[0], xLim[1])
+        taurange = np.linspace(xLim[0], xLim[1], num=bins)
+
+    if yLim is None:
+        yValsrange = np.linspace(min(allYVals), max(allYVals), num=bins)
+    else:
+        assert(len(yLim) is 2)
+        p.y_range=Range1d(yLim[0], yLim[1])
+        yValsrange = np.linspace(yLim[0], yLim[1], num=bins)
+
+    #initialize values
+    zerostau = np.zeros(len(taurange) - 1)
+    previoustau = np.zeros(len(taurange) - 1)
+    zerosy = np.zeros(len(yValsrange)-1)
+    previousy = np.zeros(len(yValsrange) - 1)
+
+
+    #Define histogram bottom
+    ph = figure(plot_width=p.plot_width, plot_height=100, x_range=p.x_range,
+                y_range=(0, 1), min_border=10, min_border_left=50, y_axis_location="right")
+
+    ph.background_fill_color = backgroundColor
+    ph.xgrid.grid_line_color = None
+    ph.yaxis.major_label_orientation = np.pi / 4
+
+    #Define the second histogram
+    pv = figure(plot_width=300, plot_height=p.plot_height, x_range=(0, 1),
+                y_range=p.y_range, min_border=10, y_axis_location="right")
+
+    pv.ygrid.grid_line_color = None
+    pv.xaxis.major_label_orientation = np.pi / 4
+    pv.background_fill_color = backgroundColor
+
+    legend_it = []
+
+    i = 0
+    #for i in range(len(voltagesList)):
+    for voltage in voltagesList:
+        color = colors[i]
+        linecolor = linecolors[i]
+        i+=1
+        #for voltage, color, linecolor in zip(voltagesList, colors, linecolors):
+        selectEvents = eventClass.GetEventsforVoltages(voltage)
+        tau, yVals = extractytau(selectEvents)
+
+        c = p.scatter(tau, yVals, size=3, line_width=2, color=color, alpha=0.8)
+
+        hhist, hedges = np.histogram(tau, bins=taurange)
+
+        hh = ph.quad(bottom=zerostau +previoustau, left=hedges[:-1], right=hedges[1:], top=hhist+previoustau,
+                fill_color = color,line_color =  linecolor)
+
+        previoustau +=hhist
+
+        vhist, vedges = np.histogram(yVals, bins=yValsrange)
+        vh = pv.quad(left=zerosy + previousy, bottom=vedges[:-1], top=vedges[1:], right=vhist+previousy,
+                color=color, line_color= linecolor)
+        previousy +=vhist
+
+        #Sharing legend is broke
+        #legend_it.append((name, [c, hh, vh]))
+        name = str(Volt.format_data(voltage))
+        legend_it.append(LegendItem(label=name, renderers=[vh]))
+
+    #p.legend.location =  "top_right"
+    #legend = Legend(items=legend_it, location=(0, -30))
+    legend = Legend(items=legend_it)
+    pv.add_layout(legend, 'right')
+
+    #pv.legend.click_policy = "hide"
+
+    ph.y_range.end = max(previoustau)*1.1
+    pv.x_range.end = max(previousy) * 1.1
+
+    fig = gridplot([[p, pv],[ph, None]], toolbar_location="left")
+
+    # show the results
+    show(fig)

@@ -159,6 +159,15 @@ class AllEvents:
         events = [event for event in self.events if event.type == eventType]
         return events
 
+    def GetEventsforVoltages(self,voltage):
+        events = [event for event in self.events if event.voltage == voltage]
+        return events
+
+    def GetAllVoltages(self):
+        voltages = [event.voltage for event in self.events]
+        voltages = set(voltages)
+        return voltages
+
     def SetFolder(self,loadname):
         self.savefile=loadname
 
