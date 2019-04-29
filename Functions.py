@@ -313,8 +313,8 @@ def Reshape1DTo2D(inputarray, buffersize):
     i1[:] = currents
 
     out = {'v1': v1, 'i1': i1}
-    print('Currents:' + str(v1.shape))
-    print('Voltages:' + str(i1.shape))
+    #print('Currents:' + str(v1.shape))
+    #print('Voltages:' + str(i1.shape))
     return out
 
 
