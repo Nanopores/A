@@ -4,6 +4,9 @@ import math
 import os
 import pickle as pkl
 from scipy import signal
+from scipy.optimize import curve_fit, OptimizeWarning
+from scipy.signal import find_peaks
+
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -317,6 +320,8 @@ def Reshape1DTo2D(inputarray, buffersize):
     #print('Voltages:' + str(i1.shape))
     return out
 
+#def PoreFromIVFile(file)
+
 
 def MakeIVData(output, approach='mean', delay=0.7, UseVoltageRange=0, verbose=False):
     """
@@ -592,6 +597,77 @@ def ExpFunc(x, a, b, c):
     """
     
     return a * np.exp(-b * x) + c
+
+
+def fourier(x, a0, w, *a):
+    n = int(len(a) / 2)
+
+    ret = a0
+    for i in range(0, n):
+        ret += a[i] * np.cos((i + 1) * w * x)
+        ret += a[i + n] * np.sin((i + 1) * w * x)
+    return ret
+
+def gaussian(x,b,a,mu,sigma):
+    ret = b - a * np.exp(-0.5 * ((x - mu) / sigma) **2)
+    return ret
+
+def ImpulseFitting(trace, baseline, samplerate,verbose=False):
+    baseline = baseline * 1e9
+    trace = trace * 1e9
+    time = np.linspace(0, len(trace) / samplerate, num=len(trace))
+
+    # Gaussian fitting
+    b = baseline
+    a = baseline - np.min(trace)  # shortEvent.currentDrop*1e9
+    mu = np.argmin(trace) / samplerate  # len(time)/(2*samplerate)
+    sigma_g = (len(time) - 50) / (8 * samplerate)
+    p0 = [b, a, mu, sigma_g]
+    try:
+        popt, pcov = curve_fit(gaussian, time, trace, p0, method='trf')
+        perr = np.sqrt(np.diag(pcov))
+        if verbose:
+            print('error in fitting parameters:')
+            print(perr)
+    except RuntimeError or OptimizeWarning:
+        return -1
+
+    fitTrace = gaussian(time, *popt)
+
+    if verbose:
+        ss_res = sum((trace - fitTrace) ** 2)
+        ss_tot = sum((np.mean(trace) - trace) ** 2)
+
+        r2 = 1 - ss_res / ss_tot
+        print('RSquared of fit: {r:1.3f}'.format(r=r2))
+
+    # Calculate differential
+    diffTrace = np.diff(np.diff(fitTrace))
+    peaks, _ = find_peaks(diffTrace)
+    peaks = np.array([i for i in peaks if trace[i]])
+    maxdata = peaks[np.argsort(diffTrace[peaks])] if len(peaks) > 0 else [-3]
+
+    peaks2, _ = find_peaks(-1 * diffTrace)
+
+    # find starting and end points
+    pe1 = maxdata[-1] + 2
+    peaks2_ = [i for i in peaks2 if i < pe1]
+    ps1 = max(peaks2_) if len(peaks2_) > 0 else -1
+    peaks2_ = [i for i in peaks2 if i > pe1]
+    pe2 = min(peaks2_) + 2 if len(peaks2_) > 0 else -1
+
+    if ps1 > -1 and pe2 > -1 and pe1 > -1:
+        ss_res = sum((trace[ps1:pe2] - fitTrace[ps1:pe2])**2)
+        # ss_reg = sum((np.mean(trace[ps1:pe2]) - fitTrace[ps1:pe2])**2)
+        ss_tot = sum((np.mean(trace[ps1:pe2]) - trace[ps1:pe2])**2)
+        r2drop = 1 - ss_res / ss_tot
+
+        # area = baseline * (pe2-ps1) - sum(trace[ps1:pe2])
+        area = baseline * (pe2 - ps1) - sum(fitTrace[ps1:pe2])
+        Idrop = (area / (pe1 - ps1)) * 1e-9
+    else:
+        return -2
+    return ps1, pe1, pe2, r2drop, Idrop
 
 
 def YorkFit(X, Y, sigma_X, sigma_Y, r=0):
@@ -1048,7 +1124,7 @@ def xcorr(x, y, k, normalize=True):
     return lags, out
 
 
-def CUSUM(input, delta, h):
+def CUSUM(input, delta, h,verbose=False):
     """
     Function used in the detection of abrupt changes in mean current; optimal for Gaussian signals.
     CUSUM is based on the cummulative sum algorithm.
@@ -1117,6 +1193,11 @@ def CUSUM(input, delta, h):
 
             Nd = Nd + 1
         k += 1
+    if verbose:
+        print('delta:' + str(delta))
+        print('h:' + str(h))
+        print('Nd: '+ str(Nd))
+        print('krmv: ' + str(krmv))
 
     if Nd == 0:
         mc = np.mean(input) * np.ones(k)
@@ -1129,11 +1210,13 @@ def CUSUM(input, delta, h):
         mc = np.append(mc, m[k - 1] * np.ones(k - krmv[Nd - 1]))
     return (mc, kd, krmv)
 
+
 def GetPSD(input):
     Fulltrace = input['i1']
     samplerate = input['samplerate']
     f, Pxx_den = sig.welch(Fulltrace, samplerate,nperseg=2**18)
     return f, Pxx_den
+
 
 def CondPoreSizeTick(x, pos):
     formCond = EngFormatter(unit='S')

@@ -16,15 +16,17 @@ import timeit
 import LoadData
 
 
-timeInSec= EngFormatter(unit='s', places=2)
+timeInSec = EngFormatter(unit='s', places=2)
 
 #Default parameters
 extension = '*.log'
 coefficients = {'a': 0.999,
                 'E': 0,
                 'S': 5,
-                'maxEventLength': 200e-3, #200e-3
-                'minEventLength': 500e-6,
+                'maxEventLength': 200e-3,  # maximal event length to be considered an event
+                'minEventLength': 600e-6,  # maximal event length to be considered an impulse
+                'fitLength': 3e-3,  # minimal event length to be fitted for impulses
+                'dt': 25,  # go back dt points for fitting of impulses
                 'hbook': 1,
                 'delta': 0.2e-9,
                 'ChimeraLowPass': 10e3}
@@ -40,61 +42,62 @@ def GetParameters():
     pprint(coefficients)
 
 
-def batcheventdetection(folder,extension,coefficients, verbose=True, forceRun=False, CutTraces=False):
-    #Create new class that contains all events
-    AllEvents=NC.AllEvents()
+def batcheventdetection(folder, extension, newcoefficients={}, verbose=True, forceRun=False, CutTraces=False):
+    # Create new class that contains all events
+    AllEvents = NC.AllEvents()
 
     print('found ' + str(len(glob.glob(os.path.join(folder,extension)))) + ' files.')
 
-    #Loop over all files in folder
+    # Loop over all files in folder
     for fullfilename in glob.glob(os.path.join(folder,extension)):
 
-        #Extract filename and generate filename to save located events
+        # Extract filename and generate filename to save located events
         if verbose:
             print('analysing '+fullfilename)
         filename, file_extension = os.path.splitext(os.path.basename(fullfilename))
-        directory=os.path.dirname(fullfilename) + os.sep + 'analysisfiles'
+        directory = os.path.dirname(fullfilename) + os.sep + 'analysisfiles'
         if not os.path.exists(directory):
             os.makedirs(directory,exist_ok=True)
 
-        savefilename=directory + os.sep + filename + 'data'
+        savefilename = directory + os.sep + filename + 'data'
         shelfFile = shelve.open(savefilename)
         if ~forceRun:
             try: #Check if file can be loaded
                 coefficientsloaded=shelfFile['coefficients']
-                tEL=shelfFile['translocationEvents']
+                tEL = shelfFile['TranslocationEvents']
 
                 # If coefficients before are not identical, analysis needs to run again
-                if (coefficientsloaded==coefficients):
+                if (coefficientsloaded == coefficients):
                     if verbose:
                         print('loaded from file')
                 else:
                     forceRun = True
             except:
-                #Except if cannot be loaded, analysis needs to run
+                # Except if cannot be loaded, analysis needs to run
                 forceRun=True
                 pass
 
         if forceRun:
-            #Extract list of events for this file
-            tEL=eventdetection(fullfilename,coefficients,verbose, CutTraces)
+            # Extract list of events for this file
+            tEL = eventdetection(fullfilename,newcoefficients, verbose, CutTraces)
             if verbose:
                 print('Saved {} events'.format(len(tEL.events)))
 
-            #Open savefile and save events for this file
-            shelfFile['TranslocationEvents']=tEL
-            shelfFile['coefficients']=coefficients
+            # Open savefile and save events for this file
+            shelfFile['TranslocationEvents'] = tEL
+            shelfFile['coefficients'] = newcoefficients
             if verbose:
                 print('saved to file')
 
         shelfFile.close()
 
-        #Add events to the initially created class that contains all events
+        # Add events to the initially created class that contains all events
         AllEvents.AddEvent(tEL)
 
     return AllEvents
 
-def eventdetection(fullfilename, coefficients, verbose=True, CutTraces=False, showFigures = False):
+
+def eventdetection(fullfilename, newcoefficients={}, verboseLevel=1, CutTraces=False, showFigures=False):
     """ 
     Function used to find the events of TranslocationEvents class in the raw data in file 'filename'. 
     It calls the function RecursiveLowPassFast to approximatively locate rough events in the data. 
@@ -111,10 +114,10 @@ def eventdetection(fullfilename, coefficients, verbose=True, CutTraces=False, sh
     ----------
         fullfilename : str
             Full path to data file.
-        coefficients : dict
-            Contains the default parameters for the analysis.
-        verbose : bool, optional
-            True by default. It will allow to print strings indicating the progress of the function in the console. 
+        newcoefficients : dict
+            Contains the parameters for the analysis that deviate from the default.
+        verboseLevel : bool, optional
+            1 by default. It will print strings indicating the progress of the function in the console with different levels of depth.
         CutTraces : bool, optional
             False by default. If True, will cut the signal traces around the events to avoid having appended chunks detected as events.
         showFigures : bool , optional
@@ -125,39 +128,44 @@ def eventdetection(fullfilename, coefficients, verbose=True, CutTraces=False, sh
         All the events in the signal. 
     
     """
-    
-    if 'ChimeraLowPass' in coefficients:
-        ChimeraLowPass=coefficients['ChimeraLowPass']
-    else:
-        ChimeraLowPass=None
-    loadedData=LoadData.OpenFile(fullfilename, ChimeraLowPass, True, CutTraces)
-    minTime=coefficients['minEventLength']
-    IncludedBaseline = int(1e-2 * loadedData['samplerate'])
-    delta=coefficients['delta']
-    hbook=coefficients['hbook']
 
-    if verbose:
+    for key in newcoefficients:
+        coefficients[key]=newcoefficients[key]
+
+    if 'ChimeraLowPass' in coefficients:
+        ChimeraLowPass = coefficients['ChimeraLowPass']
+    else:
+        ChimeraLowPass = None
+
+    loadedData = LoadData.OpenFile(fullfilename, ChimeraLowPass, True, CutTraces)
+    maxTime = coefficients['maxEventLength']
+    minTime = coefficients['minEventLength']
+    fitTime = coefficients['fitLength']
+    IncludedBaseline = int(1e-2 * loadedData['samplerate'])
+    delta = coefficients['delta']
+    hbook = coefficients['hbook']
+    dt = coefficients['dt']
+    samplerate = loadedData['samplerate']
+
+    if verboseLevel>=1:
         print('Recursive lowpass...', end='')
-    #Call RecursiveLowPassFast to detect events in current trace
+
+    # Call RecursiveLowPassFast to detect events in current trace
     start_time = timeit.default_timer()
     if 'i1Cut' in loadedData:
-        events=[]
+        events = []
         for cutTrace in loadedData['i1Cut']:
-            events.extend(Functions.RecursiveLowPassFast(cutTrace,coefficients,loadedData['samplerate']))
+            events.extend(Functions.RecursiveLowPassFast(cutTrace, coefficients, loadedData['samplerate']))
     else:
-        events=Functions.RecursiveLowPassFast(loadedData['i1'],coefficients,loadedData['samplerate'])
-    if verbose:
+        events = Functions.RecursiveLowPassFast(loadedData['i1'], coefficients, loadedData['samplerate'])
+    if verboseLevel>=1:
         print('done. Calculation took {}'.format(timeInSec.format_data(timeit.default_timer() - start_time)))
-        print('nr events: {}'.format(len(events)))
+        print('Roughly detected events: {}'.format(len(events)))
 
-    #CusumParameters = [delta sigma Normalize ImpulsionLimit IncludedBaseline TooMuchLevels IncludedBaselinePlots 1
-    #                   SamplingFrequency];
-    #[EventDatabase] = event_detection(RawSignal, CusumParameters, RoughEventLocations, lowpasscutoff);
+    # Make a new class translocationEventList that contains all the found events in this file
+    translocationEventList = NC.AllEvents()
 
-    #Make a new class translocationEventList that contains all the found events in this file
-    translocationEventList=NC.AllEvents()
-
-    #Plot current file
+    # Plot current file
     if showFigures:
         plt.figure(1)
         plt.cla()
@@ -167,81 +175,119 @@ def eventdetection(fullfilename, coefficients, verbose=True, CutTraces=False, sh
         plt.draw()
         plt.pause(0.001)
 
-    if verbose:
-        print('CUSUM fitting...', end='')
-    #Call RecursiveLowPassFast to detect events in current trace
+    if verboseLevel >= 1:
+        print('Fine tuning...', end='')
+
+    # Call RecursiveLowPassFast to detect events in current trace
     start_time = timeit.default_timer()
     cusumEvents = 0
-    #Loop over all detected events
+
+    # Loop over all roughly detected events
     for event in events:
         beginEvent = event[0]
         endEvent = event[1]
         localBaseline = event[2]
         stdEvent = event[3]
 
-        lengthevent=endEvent-beginEvent
+        if 'blockLength' in loadedData:
+            voltI = int(beginEvent / loadedData['blockLength'])
+        else:
+            voltI = int(0)
 
-        # Check if the start of the event is > IncludedBaseline then compare eventtime to minimal and maxima;
+        # Check if the start of the event is later than the first few ms in IncludedBaseline
         if beginEvent > IncludedBaseline:
+
             # Extract trace and extract baseline
-            Trace = loadedData['i1'][int(beginEvent):int(endEvent)]
-            traceBefore = loadedData['i1'][int(beginEvent) - IncludedBaseline:int(beginEvent)]
-            traceAfter = loadedData['i1'][int(endEvent):int(endEvent) + IncludedBaseline]
+            traceforfitting = loadedData['i1'][int(beginEvent - dt):int(endEvent + dt)]
 
-            if lengthevent<=(minTime*loadedData['samplerate']) and lengthevent>3:
+            # If event is shorter than fitTime
+            if 3 < (endEvent-beginEvent) <= (fitTime * samplerate):
+                # Try to fit and estimate real
+                output = Functions.ImpulseFitting(traceforfitting, localBaseline, samplerate,
+                                                  verbose=(verboseLevel >= 3))
 
-                newEvent = NC.TranslocationEvent(fullfilename,'Impulse')
+            elif (endEvent-beginEvent) < (maxTime * samplerate):
+                output = 2
+            else:
+                if verboseLevel >= 2:
+                    print('Too long event {t:4.0f} ms'.format(t=1000*(endEvent-beginEvent)/samplerate))
+                output = -1  # Don't include in rest of analysis
 
-                # Add Trace, mean of the event,the samplerate, coefficients and baseline to the New Event class
-                newEvent.SetEvent(Trace, beginEvent,localBaseline, loadedData['samplerate'])
-                if 'blockLength' in loadedData:
-                    voltI = int(beginEvent/loadedData['blockLength'])
+            # if output -1 fit failed, if output -2 differential failed
+            if len(output) > 1:
+                (ps1, pe1, pe2, rsquared_event, Idrop) = output
+
+                # length small enough and r squared big enough
+                if (pe2-ps1)/samplerate < minTime and rsquared_event > 0.7:
+                    newEvent = NC.TranslocationEvent(fullfilename, 'Impulse')
+                    trace = traceforfitting[ps1:pe2]
+
+                    ps1c = beginEvent - 25 + ps1
+                    pe2c = beginEvent - 25 + pe2
+                    traceBefore = loadedData['i1'][int(ps1c) - IncludedBaseline:int(ps1c)]
+                    traceAfter = loadedData['i1'][int(pe2c):int(pe2c) + pe2c]
+                    newEvent.SetEvent(trace, ps1c, localBaseline, samplerate, currentDrop=Idrop)
+                    newEvent.SetCoefficients(coefficients, loadedData['v1'][voltI])
+                    newEvent.SetBaselineTrace(traceBefore, traceAfter)
+                    newEvent.eventLength = (pe1-ps1)/samplerate
+
+                    if verboseLevel >= 2:
+                        print('Fitted impulse of {t:1.3f} ms and {i:2.2f} nA and {r:1.2f} R-squared'.format(
+                            t=newEvent.eventLength*1e3, i=Idrop*1e9, r=rsquared_event))
+                elif (pe2-ps1)/samplerate < 3 * minTime and rsquared_event < 0.5:
+                    if verboseLevel >= 2:
+                        print('Bad fit {r:1.2f} R-squared'.format(r=rsquared_event))
+                    output = -1  # Don't include in rest of analysis
                 else:
-                    voltI = int(0)
-                newEvent.SetCoefficients(coefficients, loadedData['v1'][voltI])
-                newEvent.SetBaselineTrace(traceBefore, traceAfter)
+                    output = 2
 
-                # Add event to TranslocationList
-                translocationEventList.AddEvent(newEvent)
-            elif lengthevent>(minTime*loadedData['samplerate']) and lengthevent<(coefficients['maxEventLength']*loadedData['samplerate']):
-                #Make new event class
-
-                #CUSUM fit
+            # Good enough for CUSUM fitting
+            if abs(output) == 2:
+                # CUSUM fit
                 sigma = np.sqrt(stdEvent)
                 h = hbook * delta / sigma
-                (mc, kd, krmv)= Functions.CUSUM(loadedData['i1'][int(beginEvent) - IncludedBaseline: int(endEvent) + IncludedBaseline], delta, h)
-                krmv = [krmvVal + int(beginEvent) - IncludedBaseline + 1 for krmvVal in krmv]
-                #Add Trace, mean of the event,the samplerate, coefficients and baseline to the New Event class
-                if len(krmv)>2:
+                (mc, kd, krmv) = Functions.CUSUM(traceforfitting, delta, h, verbose=(verboseLevel >= 3))
+                krmv = [krmvVal + int(beginEvent) - dt + 1 for krmvVal in krmv]
+
+                if len(krmv) > 2:
                     newEvent = NC.TranslocationEvent(fullfilename, 'Real')
-                    Trace=loadedData['i1'][int(krmv[0]):int(krmv[-1])]
+                    trace = loadedData['i1'][int(krmv[0]):int(krmv[-1])]
                     traceBefore = loadedData['i1'][int(krmv[0]) - IncludedBaseline:int(krmv[0])]
                     traceAfter = loadedData['i1'][int(krmv[-1]):int(krmv[-1]) + IncludedBaseline]
-                    beginEvent=krmv[0]
+                    beginEvent = krmv[0]
+                    newEvent.SetCUSUMVariables(mc, kd, krmv)
+
+                    cusumEvents += 1
+                    if verboseLevel >= 2:
+                        print('Fitted CUSUM of {t:1.3f} ms and {i:2.2f} nA'.format(
+                            t=newEvent.eventLengthCUSUM * 1e3, i=newEvent.currentDropCUSUM * 1e9))
                 else:
                     newEvent = NC.TranslocationEvent(fullfilename, 'Rough')
 
-                newEvent.SetEvent(Trace,beginEvent,localBaseline,loadedData['samplerate'])
+                    trace = loadedData['i1'][int(beginEvent):int(endEvent)]
+                    traceBefore = loadedData['i1'][int(beginEvent) - IncludedBaseline:int(beginEvent)]
+                    traceAfter = loadedData['i1'][int(endEvent):int(endEvent) + IncludedBaseline]
+
+                    if verboseLevel >= 2:
+                        print('CUSUM failed. Adding only roughly located event of {t:1.3f} ms and {i:2.2f} nA'.format(
+                            t=len(trace) * 1e3/samplerate, i=np.mean(trace) * 1e9))
+
+                newEvent.SetEvent(trace, beginEvent, localBaseline, samplerate)
                 newEvent.SetBaselineTrace(traceBefore, traceAfter)
-                newEvent.SetCUSUMVariables(mc, kd, krmv)
-                cusumEvents+=1
+                newEvent.SetCoefficients(coefficients, loadedData['v1'][voltI])
 
-                if 'blockLength' in loadedData:
-                    voltI = int(beginEvent/loadedData['blockLength'])
-                else:
-                    voltI = int(0)
-                newEvent.SetCoefficients(coefficients,loadedData['v1'][voltI])
-
-                #Add event to TranslocationList
+            if output != -1:
+                # Add event to TranslocationList
                 translocationEventList.AddEvent(newEvent)
-    if verbose:
-        print('done. Calculation took {}'.format(timeInSec.format_data(timeit.default_timer() - start_time)))
+
+    if verboseLevel >= 1:
+        print('done. Total fitting took {}'.format(timeInSec.format_data(timeit.default_timer() - start_time)))
         print('{} events fitted'.format(cusumEvents))
 
     #Plot events if True
     if showFigures:
-        minVal=np.max(loadedData['i1'])#-1.05e-9 #np.min(loadedData['i1'])
-        maxVal=np.max(loadedData['i1'])+0.05e-9#-1.05e-9 #np.min(loadedData['i1'])
+        minVal = np.max(loadedData['i1'])#-1.05e-9 #np.min(loadedData['i1'])
+        maxVal = np.max(loadedData['i1'])+0.05e-9#-1.05e-9 #np.min(loadedData['i1'])
 
         for i in range(len(events)):
             beginEvent=events[i][0]
@@ -250,9 +296,7 @@ def eventdetection(fullfilename, coefficients, verbose=True, CutTraces=False, sh
                     coefficients['maxEventLength'] * loadedData['samplerate']):
                 plt.plot([beginEvent/loadedData['samplerate'], beginEvent/loadedData['samplerate']], [minVal, maxVal], 'y-', lw=1)
 
-        #plt.draw()
         plt.show()
-        #plt.pause(1)
     return translocationEventList
 
 
@@ -319,7 +363,7 @@ def run(inputData, newExtension=None, newCoefficients={}, outputFile=None, force
     if outputFile is not None and TranslocationEvents.events:
         if os.path.isdir(inputData):
             outputData = inputData + os.sep + 'Data' + os.sep + 'Data' + datetime.date.today().strftime("%Y%m%d")
-        LoadData.SaveVariables(outputFile,TranslocationEvents=TranslocationEvents)
+        LoadData.SaveVariables(outputFile, TranslocationEvents=TranslocationEvents)
         return True
     else:
         return TranslocationEvents
@@ -343,7 +387,7 @@ if __name__=='__main__':
         if os.path.isdir(inputData):
             outputData = inputData + os.sep + 'Data' + os.sep + 'Data' + datetime.date.today().strftime("%Y%m%d")
         else:
-            outputData=os.path.dirname(inputData) + os.sep + 'Data' + os.sep + 'Data' + datetime.date.today().strftime("%Y%m%d")
+            outputData = os.path.dirname(inputData) + os.sep + 'Data' + os.sep + 'Data' + datetime.date.today().strftime("%Y%m%d")
 
 
     if args.coeff is not None:
@@ -364,11 +408,11 @@ if __name__=='__main__':
 
     if os.path.isdir(inputData):
         print('extension is: ' + extension +'\nStarting.... \n')
-        TranslocationEvents=batcheventdetection(inputData, extension, coefficients, args.force, args.cut)
+        TranslocationEvents = batcheventdetection(inputData, extension, newcoefficients=coefficients, force=args.force, cut=args.cut)
     else:
         print('Starting.... \n')
-        TranslocationEvents=eventdetection(inputData,coefficients, args.cut)
+        TranslocationEvents = eventdetection(inputData,coefficients, args.cut)
 
     #Check if list is empty
     if TranslocationEvents.events:
-        LoadData.SaveVariables(outputData,TranslocationEvents=TranslocationEvents)
+        LoadData.SaveVariables(outputData, TranslocationEvents=TranslocationEvents)

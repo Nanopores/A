@@ -60,11 +60,11 @@ class TranslocationEvent:
 
     """
 
-    def __init__(self, filename,type='roughEvent'):
+    def __init__(self, filename, type='roughEvent'):
         self.filename = filename
-        self.type=type
+        self.type = type
 
-    def SetEvent(self,eventTrace,beginEvent,baseline,samplerate):
+    def SetEvent(self, eventTrace, beginEvent, baseline, samplerate, currentDrop=None):
         self.eventTrace = eventTrace
         self.baseline = baseline
         self.samplerate = samplerate
@@ -75,38 +75,32 @@ class TranslocationEvent:
         self.minTrace = np.min(eventTrace)
         self.eventLength = len(eventTrace)/samplerate
 
-        #if self.type=='Rough':
-        self.currentDrop = baseline - self.meanTrace
-        #else:
-        #    self.currentDrop = baseline - self.minTrace
+        if currentDrop is None:
+            self.currentDrop = baseline - self.meanTrace
 
     def SetCoefficients(self,coefficients,voltage):
-        self.coefficients=coefficients
-        self.voltage=voltage
+        self.coefficients = coefficients
+        self.voltage = voltage
 
     def SetBaselineTrace(self, before,after):
-        self.before=before
-        self.after=after
+        self.before = before
+        self.after = after
 
         self.baseline=np.mean(np.append(before,after))
-        if self.type=='Rough':
-            self.currentDrop = self.baseline - self.meanTrace
-        else:
-            self.currentDrop = self.baseline - self.minTrace
 
 
     def SetCUSUMVariables(self, segmentedSignal, kd, changeTimes):
-        self.changeTimes=changeTimes
-        self.kd=kd
-        self.segmentedSignal=segmentedSignal
-        self.changeTimes=changeTimes
+        self.changeTimes = changeTimes
+        self.kd = kd
+        self.segmentedSignal = segmentedSignal
+        self.changeTimes = changeTimes
         if len(changeTimes)>1:
-            self.beginEventCUSUM=changeTimes[0]
-            self.currentDropCUSUM=max(segmentedSignal)-min(segmentedSignal)
+            self.beginEventCUSUM = changeTimes[0]
+            self.currentDropCUSUM = max(segmentedSignal)-min(segmentedSignal)
 
         if len(changeTimes)>2:
             self.endEventCUSUM = changeTimes[-1]
-            self.eventLengthCUSUM=(changeTimes[-1]-changeTimes[0])/self.samplerate
+            self.eventLengthCUSUM = (changeTimes[-1]-changeTimes[0])/self.samplerate
             if hasattr(self,'before') and hasattr(self,'after') and hasattr(self,'eventTrace'):
                 self.mcbefore=np.mean(self.before)*np.ones(len(self.before))
                 self.mcafter = np.mean(self.after) * np.ones(len(self.after))
@@ -190,7 +184,7 @@ class AllEvents:
             event.PlotEvent()
 
     def PlotIEvent(self,i):
-        event=self.events[i]
+        event = self.events[i]
         event.Plotevent()
 
     def PlotHistogram(self):
