@@ -410,7 +410,7 @@ def PlotGTau(eventClass, xLim = None, yLim = None, showCurrentInstead = False):
     # show(p)
 
 
-def PlotEvent(event,ax=None, savefile=os.getcwd(), showCUSUM=False):
+def PlotEvent(event,ax=None, savefile=os.getcwd(), showCUSUM=True, showCurrent=False):
     """
     Function used to plot a single event passed in argument. The event will be represented
     in a blue trace and the baseline in a red trace.
@@ -462,8 +462,13 @@ def PlotEvent(event,ax=None, savefile=os.getcwd(), showCUSUM=False):
 
 
     fn=filename_w_ext = os.path.basename(event.filename)
-
-    plotTitle = fn + '\n' + 'Event length: {}\nConductance drop: {} with voltage {}'.format(Time.format_data(eventLength), Cond.format_data(currentDrop/event.voltage),Volt.format_data(event.voltage))
+    if showCurrent:
+        plotTitle = fn + '\n' + 'Event length: {}\nCurrent drop: {} with voltage {}'.format(
+            Time.format_data(eventLength), Cond.format_data(currentDrop),
+            Volt.format_data(event.voltage))
+    else:
+        plotTitle = fn + '\n' + 'Event length: {}\nConductance drop: {} with voltage {}'.\
+            format(Time.format_data(eventLength), Cond.format_data(currentDrop/event.voltage),Volt.format_data(event.voltage))
 
     ax.set_xlabel('time (s)')
     ax.set_ylabel('current (A)')
