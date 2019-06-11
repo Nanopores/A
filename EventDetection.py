@@ -213,6 +213,8 @@ def eventdetection(fullfilename, coefficients, verboseLevel=1, CutTraces=False, 
             # if output -1 fit failed, if output -2 differential failed
             if not isinstance(output, int) and len(output) > 1:
                 (ps1, pe1, pe2, rsquared_event, Idrop) = output
+                if verboseLevel >= 3:
+                    print('ps1: {}, pe1: {}, pe2: {}, rsquared: {}'.format(ps1, pe1, pe2, rsquared_event))
 
                 # length small enough and r squared big enough
                 if (pe2-ps1)/samplerate < minTime and rsquared_event > 0.7:
@@ -229,13 +231,15 @@ def eventdetection(fullfilename, coefficients, verboseLevel=1, CutTraces=False, 
                     newEvent.eventLength = (pe1-ps1)/samplerate
 
                     if verboseLevel >= 2:
-                        print('Fitted impulse of {t:1.3f} ms and {i:2.2f} nA and {r:1.2f} R-squared'.format(
+                        print('Fitted impulse of {t:1.3f} ms and {i:2.2f} nA and {r:1.2f} R-squared\n'.format(
                             t=newEvent.eventLength*1e3, i=newEvent.currentDrop*1e9, r=rsquared_event))
                 elif (pe2-ps1)/samplerate < 3 * minTime and rsquared_event < 0.5:
                     if verboseLevel >= 2:
-                        print('Bad fit {r:1.2f} R-squared'.format(r=rsquared_event))
+                        print('Bad fit {r:1.2f} R-squared\n'.format(r=rsquared_event))
                     output = -1  # Don't include in rest of analysis
                 else:
+                    if verboseLevel >= 3:
+                        print('Too long event for impulse')
                     output = 2
 
             # Good enough for CUSUM fitting
@@ -261,7 +265,7 @@ def eventdetection(fullfilename, coefficients, verboseLevel=1, CutTraces=False, 
 
                     cusumEvents += 1
                     if verboseLevel >= 2:
-                        print('Fitted CUSUM of {t:1.3f} ms and {i:2.2f} nA'.format(
+                        print('Fitted CUSUM of {t:1.3f} ms and {i:2.2f} nA\n'.format(
                             t=newEvent.eventLengthCUSUM * 1e3, i=newEvent.currentDropCUSUM * 1e9))
                 else:
                     trace = loadedData['i1'][int(beginEvent):int(endEvent)]
@@ -275,7 +279,7 @@ def eventdetection(fullfilename, coefficients, verboseLevel=1, CutTraces=False, 
                     newEvent.SetCoefficients(coefficients, loadedData['v1'][voltI])
 
                     if verboseLevel >= 2:
-                        print('CUSUM failed. Adding only roughly located event of {t:1.3f} ms and {i:2.2f} nA'.format(
+                        print('CUSUM failed. Adding only roughly located event of {t:1.3f} ms and {i:2.2f} nA\n'.format(
                             t=len(trace) * 1e3/samplerate, i=(np.mean(np.append(traceBefore,traceAfter)) - np.mean(trace) )* 1e9))
 
 
@@ -285,7 +289,7 @@ def eventdetection(fullfilename, coefficients, verboseLevel=1, CutTraces=False, 
 
     if verboseLevel >= 1:
         print('done. Total fitting took {}'.format(timeInSec.format_data(timeit.default_timer() - start_time)))
-        print('{} events fitted with CUSUM'.format(cusumEvents))
+        print('{} events fitted with CUSUM\n'.format(cusumEvents))
 
     #Plot events if True
     if showFigures:
