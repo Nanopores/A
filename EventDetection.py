@@ -145,7 +145,7 @@ def eventdetection(fullfilename, coefficients, verboseLevel=1, CutTraces=False, 
     samplerate = loadedData['samplerate']
 
     if verboseLevel >= 1:
-        print('Recursive lowpass...', end='')
+        print('\n Recursive lowpass...', end='')
 
     # Call RecursiveLowPassFast to detect events in current trace
     start_time = timeit.default_timer()
@@ -155,7 +155,7 @@ def eventdetection(fullfilename, coefficients, verboseLevel=1, CutTraces=False, 
             events.extend(Functions.RecursiveLowPassFast(cutTrace, coefficients, loadedData['samplerate']))
     else:
         events = Functions.RecursiveLowPassFast(loadedData['i1'], coefficients, loadedData['samplerate'])
-    if verboseLevel>=1:
+    if verboseLevel >= 1:
         print('done. Calculation took {}'.format(timeInSec.format_data(timeit.default_timer() - start_time)))
         print('Roughly detected events: {}'.format(len(events)))
 
@@ -230,7 +230,7 @@ def eventdetection(fullfilename, coefficients, verboseLevel=1, CutTraces=False, 
 
                     if verboseLevel >= 2:
                         print('Fitted impulse of {t:1.3f} ms and {i:2.2f} nA and {r:1.2f} R-squared'.format(
-                            t=newEvent.eventLength*1e3, i=Idrop*1e9, r=rsquared_event))
+                            t=newEvent.eventLength*1e3, i=newEvent.currentDrop*1e9, r=rsquared_event))
                 elif (pe2-ps1)/samplerate < 3 * minTime and rsquared_event < 0.5:
                     if verboseLevel >= 2:
                         print('Bad fit {r:1.2f} R-squared'.format(r=rsquared_event))
@@ -279,7 +279,7 @@ def eventdetection(fullfilename, coefficients, verboseLevel=1, CutTraces=False, 
 
     if verboseLevel >= 1:
         print('done. Total fitting took {}'.format(timeInSec.format_data(timeit.default_timer() - start_time)))
-        print('{} events fitted'.format(cusumEvents))
+        print('{} events fitted with CUSUM'.format(cusumEvents))
 
     #Plot events if True
     if showFigures:
