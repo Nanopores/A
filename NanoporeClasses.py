@@ -77,6 +77,8 @@ class TranslocationEvent:
 
         if currentDrop is None:
             self.currentDrop = baseline - self.meanTrace
+        else:
+            self.currentDrop = currentDrop
 
     def SetCoefficients(self,coefficients,voltage):
         self.coefficients = coefficients
