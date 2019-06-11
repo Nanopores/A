@@ -222,7 +222,7 @@ def eventdetection(fullfilename, coefficients, verboseLevel=1, CutTraces=False, 
                     ps1c = beginEvent - 25 + ps1
                     pe2c = beginEvent - 25 + pe2
                     traceBefore = loadedData['i1'][int(ps1c) - IncludedBaseline:int(ps1c)]
-                    traceAfter = loadedData['i1'][int(pe2c):int(pe2c) + pe2c]
+                    traceAfter = loadedData['i1'][int(pe2c):int(pe2c) + IncludedBaseline]
                     newEvent.SetEvent(trace, ps1c, localBaseline, samplerate, currentDrop=Idrop)
                     newEvent.SetCoefficients(coefficients, loadedData['v1'][voltI])
                     newEvent.SetBaselineTrace(traceBefore, traceAfter)
