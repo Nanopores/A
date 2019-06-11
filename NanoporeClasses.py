@@ -96,11 +96,11 @@ class TranslocationEvent:
         self.kd = kd
         self.segmentedSignal = segmentedSignal
         self.changeTimes = changeTimes
-        if len(changeTimes)>1:
+        if len(changeTimes) >= 1:
             self.beginEventCUSUM = changeTimes[0]
             self.currentDropCUSUM = max(segmentedSignal)-min(segmentedSignal)
 
-        if len(changeTimes)>2:
+        if len(changeTimes) >= 2:
             self.endEventCUSUM = changeTimes[-1]
             self.eventLengthCUSUM = (changeTimes[-1]-changeTimes[0])/self.samplerate
             if hasattr(self,'before') and hasattr(self,'after') and hasattr(self,'eventTrace'):
