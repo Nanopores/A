@@ -33,7 +33,7 @@ coefficients = {'a': 0.999,
 
 def GetParameters():
     print("Usage:")
-    print("run(inputData, newExtension=None, newCoefficients={}, outputFile=None, force=False, cut=False, verbose=False)")
+    print("run(inputData, newExtension=None, newCoefficients={}, outputFile=None, force=False, cut=False, verboseLevel=0)")
     print()
     print("Default extension:")
     print(extension)
@@ -42,7 +42,7 @@ def GetParameters():
     pprint(coefficients)
 
 
-def batcheventdetection(folder, extension, coefficients, verbose=True, forceRun=False, CutTraces=False):
+def batcheventdetection(folder, extension, coefficients, verboseLevel=1, forceRun=False, CutTraces=False):
     # Create new class that contains all events
     AllEvents = NC.AllEvents()
 
@@ -52,7 +52,7 @@ def batcheventdetection(folder, extension, coefficients, verbose=True, forceRun=
     for fullfilename in glob.glob(os.path.join(folder,extension)):
 
         # Extract filename and generate filename to save located events
-        if verbose:
+        if verboseLevel >= 1:
             print('analysing '+fullfilename)
         filename, file_extension = os.path.splitext(os.path.basename(fullfilename))
         directory = os.path.dirname(fullfilename) + os.sep + 'analysisfiles'
@@ -68,7 +68,7 @@ def batcheventdetection(folder, extension, coefficients, verbose=True, forceRun=
 
                 # If coefficients before are not identical, analysis needs to run again
                 if (coefficientsloaded == coefficients):
-                    if verbose:
+                    if verboseLevel >= 1:
                         print('loaded from file')
                 else:
                     forceRun = True
@@ -79,14 +79,14 @@ def batcheventdetection(folder, extension, coefficients, verbose=True, forceRun=
 
         if forceRun:
             # Extract list of events for this file
-            tEL = eventdetection(fullfilename, coefficients, verbose, CutTraces)
-            if verbose:
+            tEL = eventdetection(fullfilename, coefficients, verboseLevel, CutTraces)
+            if verboseLevel >= 1:
                 print('Saved {} events'.format(len(tEL.events)))
 
             # Open savefile and save events for this file
             shelfFile['TranslocationEvents'] = tEL
             shelfFile['coefficients'] = coefficients
-            if verbose:
+            if verboseLevel >= 1:
                 print('saved to file')
 
         shelfFile.close()
@@ -144,7 +144,7 @@ def eventdetection(fullfilename, coefficients, verboseLevel=1, CutTraces=False, 
     dt = coefficients['dt']
     samplerate = loadedData['samplerate']
 
-    if verboseLevel>=1:
+    if verboseLevel >= 1:
         print('Recursive lowpass...', end='')
 
     # Call RecursiveLowPassFast to detect events in current trace
@@ -239,7 +239,7 @@ def eventdetection(fullfilename, coefficients, verboseLevel=1, CutTraces=False, 
                     output = 2
 
             # Good enough for CUSUM fitting
-            if abs(output) == 2:
+            if isinstance(output, int) and abs(output) == 2:
                 # CUSUM fit
                 sigma = np.sqrt(stdEvent)
                 h = hbook * delta / sigma
@@ -335,8 +335,8 @@ def run(inputData, newExtension=None, newCoefficients={}, outputFile=None, force
         False by default.
     cut : bool, optional
         False by default. False by default. If True, will cut the signal traces around the events to avoid having appended chunks detected as events.
-    verbose : bool, optional
-        False by default. False by default. If True, it will display a simple figure with the shape of the signal.
+    verboseLevel : int, optional
+        0 by default. 0 by default. If higher, it will print various outputs during running
 
     Returns
     -------
