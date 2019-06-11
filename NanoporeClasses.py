@@ -21,7 +21,7 @@ class TranslocationEvent:
     filename : str
         directory of the source file from which the event was extracted
     type: str
-        classification of the event 'Real' (CUSUM-fitted), 'Rough' (non-CUSUM fitted), 'Impulse' (short events)
+        classification of the event 'CUSUM' (CUSUM-fitted), 'Rough' (non-CUSUM fitted), 'Impulse' (short events)
     evenTrace: lst(int)
         list of data points within the event
     baseline:float

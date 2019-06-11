@@ -253,7 +253,7 @@ def eventdetection(fullfilename, coefficients, verboseLevel=1, CutTraces=False, 
                     beginEvent = krmv[0]
 
                     # Adding CUSUM fitted event
-                    newEvent = NC.TranslocationEvent(fullfilename, 'Real')
+                    newEvent = NC.TranslocationEvent(fullfilename, 'CUSUM')
                     newEvent.SetEvent(trace, beginEvent, localBaseline, samplerate)
                     newEvent.SetBaselineTrace(traceBefore, traceAfter)
                     newEvent.SetCoefficients(coefficients, loadedData['v1'][voltI])
