@@ -42,7 +42,7 @@ def GetParameters():
     pprint(coefficients)
 
 
-def batcheventdetection(folder, extension, newcoefficients={}, verbose=True, forceRun=False, CutTraces=False):
+def batcheventdetection(folder, extension, coefficients, verbose=True, forceRun=False, CutTraces=False):
     # Create new class that contains all events
     AllEvents = NC.AllEvents()
 
@@ -74,18 +74,18 @@ def batcheventdetection(folder, extension, newcoefficients={}, verbose=True, for
                     forceRun = True
             except:
                 # Except if cannot be loaded, analysis needs to run
-                forceRun=True
+                forceRun = True
                 pass
 
         if forceRun:
             # Extract list of events for this file
-            tEL = eventdetection(fullfilename,newcoefficients, verbose, CutTraces)
+            tEL = eventdetection(fullfilename, coefficients, verbose, CutTraces)
             if verbose:
                 print('Saved {} events'.format(len(tEL.events)))
 
             # Open savefile and save events for this file
             shelfFile['TranslocationEvents'] = tEL
-            shelfFile['coefficients'] = newcoefficients
+            shelfFile['coefficients'] = coefficients
             if verbose:
                 print('saved to file')
 
@@ -97,7 +97,7 @@ def batcheventdetection(folder, extension, newcoefficients={}, verbose=True, for
     return AllEvents
 
 
-def eventdetection(fullfilename, newcoefficients={}, verboseLevel=1, CutTraces=False, showFigures=False):
+def eventdetection(fullfilename, coefficients, verboseLevel=1, CutTraces=False, showFigures=False):
     """ 
     Function used to find the events of TranslocationEvents class in the raw data in file 'filename'. 
     It calls the function RecursiveLowPassFast to approximatively locate rough events in the data. 
@@ -114,8 +114,8 @@ def eventdetection(fullfilename, newcoefficients={}, verboseLevel=1, CutTraces=F
     ----------
         fullfilename : str
             Full path to data file.
-        newcoefficients : dict
-            Contains the parameters for the analysis that deviate from the default.
+        coefficients : dict
+            Contains the parameters for the analysis.
         verboseLevel : bool, optional
             1 by default. It will print strings indicating the progress of the function in the console with different levels of depth.
         CutTraces : bool, optional
@@ -128,9 +128,6 @@ def eventdetection(fullfilename, newcoefficients={}, verboseLevel=1, CutTraces=F
         All the events in the signal. 
     
     """
-
-    for key in newcoefficients:
-        coefficients[key]=newcoefficients[key]
 
     if 'ChimeraLowPass' in coefficients:
         ChimeraLowPass = coefficients['ChimeraLowPass']
