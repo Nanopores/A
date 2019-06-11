@@ -247,11 +247,16 @@ def eventdetection(fullfilename, coefficients, verboseLevel=1, CutTraces=False, 
                 krmv = [krmvVal + int(beginEvent) - dt + 1 for krmvVal in krmv]
 
                 if len(krmv) > 2:
-                    newEvent = NC.TranslocationEvent(fullfilename, 'Real')
                     trace = loadedData['i1'][int(krmv[0]):int(krmv[-1])]
                     traceBefore = loadedData['i1'][int(krmv[0]) - IncludedBaseline:int(krmv[0])]
                     traceAfter = loadedData['i1'][int(krmv[-1]):int(krmv[-1]) + IncludedBaseline]
                     beginEvent = krmv[0]
+
+                    # Adding CUSUM fitted event
+                    newEvent = NC.TranslocationEvent(fullfilename, 'Real')
+                    newEvent.SetEvent(trace, beginEvent, localBaseline, samplerate)
+                    newEvent.SetBaselineTrace(traceBefore, traceAfter)
+                    newEvent.SetCoefficients(coefficients, loadedData['v1'][voltI])
                     newEvent.SetCUSUMVariables(mc, kd, krmv)
 
                     cusumEvents += 1
@@ -259,19 +264,20 @@ def eventdetection(fullfilename, coefficients, verboseLevel=1, CutTraces=False, 
                         print('Fitted CUSUM of {t:1.3f} ms and {i:2.2f} nA'.format(
                             t=newEvent.eventLengthCUSUM * 1e3, i=newEvent.currentDropCUSUM * 1e9))
                 else:
-                    newEvent = NC.TranslocationEvent(fullfilename, 'Rough')
-
                     trace = loadedData['i1'][int(beginEvent):int(endEvent)]
                     traceBefore = loadedData['i1'][int(beginEvent) - IncludedBaseline:int(beginEvent)]
                     traceAfter = loadedData['i1'][int(endEvent):int(endEvent) + IncludedBaseline]
+
+                    # Adding roughly detected event
+                    newEvent = NC.TranslocationEvent(fullfilename, 'Rough')
+                    newEvent.SetEvent(trace, beginEvent, localBaseline, samplerate)
+                    newEvent.SetBaselineTrace(traceBefore, traceAfter)
+                    newEvent.SetCoefficients(coefficients, loadedData['v1'][voltI])
 
                     if verboseLevel >= 2:
                         print('CUSUM failed. Adding only roughly located event of {t:1.3f} ms and {i:2.2f} nA'.format(
                             t=len(trace) * 1e3/samplerate, i=(np.mean(np.append(traceBefore,traceAfter)) - np.mean(trace) )* 1e9))
 
-                newEvent.SetEvent(trace, beginEvent, localBaseline, samplerate)
-                newEvent.SetBaselineTrace(traceBefore, traceAfter)
-                newEvent.SetCoefficients(coefficients, loadedData['v1'][voltI])
 
             if output != -1:
                 # Add event to TranslocationList
