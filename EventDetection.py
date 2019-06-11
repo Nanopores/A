@@ -267,7 +267,7 @@ def eventdetection(fullfilename, coefficients, verboseLevel=1, CutTraces=False, 
 
                     if verboseLevel >= 2:
                         print('CUSUM failed. Adding only roughly located event of {t:1.3f} ms and {i:2.2f} nA'.format(
-                            t=len(trace) * 1e3/samplerate, i=np.mean(trace) * 1e9))
+                            t=len(trace) * 1e3/samplerate, i=(np.mean(np.append(traceBefore,traceAfter)) - np.mean(trace) )* 1e9))
 
                 newEvent.SetEvent(trace, beginEvent, localBaseline, samplerate)
                 newEvent.SetBaselineTrace(traceBefore, traceAfter)
