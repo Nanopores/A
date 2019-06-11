@@ -211,7 +211,7 @@ def eventdetection(fullfilename, coefficients, verboseLevel=1, CutTraces=False, 
                 output = -1  # Don't include in rest of analysis
 
             # if output -1 fit failed, if output -2 differential failed
-            if len(output) > 1:
+            if not isinstance(output, int) and len(output) > 1:
                 (ps1, pe1, pe2, rsquared_event, Idrop) = output
 
                 # length small enough and r squared big enough
@@ -316,7 +316,7 @@ def LoadEvents(loadname):
     AllEvents.SetFolder(loadname)
     return AllEvents
 
-def run(inputData, newExtension=None, newCoefficients={}, outputFile=None, force=False, cut=False, verbose=False):
+def run(inputData, newExtension=None, newCoefficients={}, outputFile=None, force=False, cut=False, verboseLevel=0):
     """ 
     Function used to call all the other functions in the module 
     needed to find the events in raw nanopore experiment data.  
@@ -352,9 +352,9 @@ def run(inputData, newExtension=None, newCoefficients={}, outputFile=None, force
         coefficients[key]=newCoefficients[key]
 
     if os.path.isdir(inputData):
-        TranslocationEvents=batcheventdetection(inputData, newExtension, coefficients, verbose, force, cut)
+        TranslocationEvents = batcheventdetection(inputData, newExtension, coefficients, verboseLevel, force, cut)
     else:
-        TranslocationEvents=eventdetection(inputData,coefficients, verbose, cut)
+        TranslocationEvents = eventdetection(inputData,coefficients, verboseLevel, cut)
 
     #Check if list is empty
     if outputFile is not None and TranslocationEvents.events:
