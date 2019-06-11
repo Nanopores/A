@@ -246,7 +246,7 @@ def eventdetection(fullfilename, coefficients, verboseLevel=1, CutTraces=False, 
                 (mc, kd, krmv) = Functions.CUSUM(traceforfitting, delta, h, verbose=(verboseLevel >= 3))
                 krmv = [krmvVal + int(beginEvent) - dt + 1 for krmvVal in krmv]
 
-                if len(krmv) > 2:
+                if len(krmv) > 1:
                     trace = loadedData['i1'][int(krmv[0]):int(krmv[-1])]
                     traceBefore = loadedData['i1'][int(krmv[0]) - IncludedBaseline:int(krmv[0])]
                     traceAfter = loadedData['i1'][int(krmv[-1]):int(krmv[-1]) + IncludedBaseline]
