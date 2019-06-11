@@ -21,6 +21,12 @@ from bokeh.palettes import Spectral4
 from bokeh.plotting import figure, output_file, show, output_notebook
 from bokeh.layouts import row, column, gridplot
 
+#needed for plotting in jupyter
+from bokeh.resources import INLINE
+import bokeh.io
+bokeh.io.output_notebook(INLINE)
+
+
 if (platform.system()=='Darwin'):
     root = Tk()
     root.withdraw()
