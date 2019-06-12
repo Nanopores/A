@@ -452,7 +452,7 @@ def PlotEvent(event,ax=None, savefile=os.getcwd(), showCUSUM=True, showCurrent=F
         ShowEventInTrace(event)
 
 
-    if showCUSUM and hasattr(event, 'changeTimes') and len(event.changeTimes)>2:
+    if showCUSUM and hasattr(event, 'changeTimes') and len(event.changeTimes)>=2:
         eventLength = event.eventLengthCUSUM
         currentDrop = event.currentDropCUSUM
     else:
