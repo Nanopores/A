@@ -684,6 +684,7 @@ def PlotGTauVoltage (eventClass, xLim=None, yLim=None, showCurrent=False, showRo
     # CUSUM fitted events
     voltageLimits = [0.01, 0.91]
     voltagesList = eventClass.GetAllVoltages()
+    voltagesList.sort()
 
     # Extract y and tau out of events
     def extractytau(filteredevents):
