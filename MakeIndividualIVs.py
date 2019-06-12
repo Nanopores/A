@@ -58,6 +58,7 @@ Parameters = {
 def GetParameters():
     print("Usage:")
     print("run(filenames,newParameters={},verbose=False, noPlot=False")
+    print('Returns poresize in m')
     print()
     print("Default Parameters:")
     pprint(Parameters)
