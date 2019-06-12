@@ -1,4 +1,5 @@
 import sys
+import os
 from PyQt5.QtWidgets import *
 
 
@@ -12,9 +13,11 @@ class AnalysisUI(QWidget):
     def AllVariable(self):
         # Let's dump all the variable we will need here...
         self.importedFiles = []
+        self.selectedFiles = []
 
     def initUI(self):
         # Main Window
+        self.AllVariable()
         self.setGeometry(300, 300, 500, 500)
         self.setWindowTitle('This will be our interface for the analysis')
 
@@ -28,19 +31,20 @@ class AnalysisUI(QWidget):
 
         ## All Actions go here:
         self.button_fileimport.clicked.connect(self.ImportButtonPushed)
-
-
-
+        self.button_clearfilelist.clicked.connect(self.ClearListButtonPushed)
+        self.list_filelist.clicked.connect(self.SelectionInFileListChanged)
         self.show()
 
     def MakeFileImportLayout(self):
         self.FileImportLayout = QGroupBox("File Import")
         layout = QGridLayout()
         self.button_fileimport = QPushButton('Open Files')
+        self.button_clearfilelist = QPushButton('Clear List')
+        self.list_filelist = QListWidget()
+        self.list_filelist.setSelectionMode(QAbstractItemView.ExtendedSelection)
         layout.addWidget(self.button_fileimport, 0, 0)
-        layout.addWidget(QPushButton('2'), 1, 0)
-        layout.addWidget(QPushButton('3'), 2, 0)
-        layout.addWidget(QPushButton('4'), 3, 0)
+        layout.addWidget(self.list_filelist, 1, 0)
+        layout.addWidget(self.button_clearfilelist, 2, 0)
         self.FileImportLayout.setLayout(layout)
 
 
@@ -61,7 +65,16 @@ class AnalysisUI(QWidget):
         self.AnalysisParameters.setLayout(layout)
 
     def ImportButtonPushed(self, event):
-        QMessageBox.information(self, 'Really?', 'Fuck Off!!')
+        files = QFileDialog.getOpenFileNames(self, 'Select Files to Add to list', filter = "Images (*.dat *.log)")
+        ## Add to file list if unique:
+        for i in files[0]:
+            if i not in self.importedFiles:
+                self.importedFiles.append(i)
+        self.UpdateFileList()
+
+    def ClearListButtonPushed(self, event):
+        self.importedFiles = []
+        self.UpdateFileList()
 
     def closeEvent(self, event):
         reply = QMessageBox.question(self, 'Message',
@@ -71,6 +84,21 @@ class AnalysisUI(QWidget):
             event.accept()
         else:
             event.ignore()
+
+    def UpdateFileList(self):
+        self.list_filelist.clear()
+        for i in self.importedFiles:
+            self.list_filelist.addItem(os.path.split(i)[1])
+
+    def SelectionInFileListChanged(self, event):
+        items = self.list_filelist.selectedItems()
+        x = []
+        for i in range(len(items)):
+            x.append(str(self.list_filelist.selectedItems()[i].text()))
+        self.selectedFiles = x
+        print('The following files are selected in the list:')
+        print(x)
+
 
 ## Execution
 if __name__ == '__main__':
