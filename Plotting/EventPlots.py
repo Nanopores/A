@@ -258,14 +258,14 @@ def PlotG_tau(events, savefile = None, showCurrent=False, normalized=False, show
     plt.show()
 
 
-def PlotGTau(eventClass, xLim=None, yLim=None, showCurrent=False, includeRough=False):
+def PlotGTau(eventClass, xLim=None, yLim=None, showCurrent=False, showRough=False):
 
     # categorize events in three types:
     # CUSUM fitted events
     CUSUMEvents = eventClass.GetEventTypes('CUSUM')
 
     # Non-fitted events
-    nonFittedEvents = eventClass.GetEventTypes('Rough') if includeRough else []
+    nonFittedEvents = eventClass.GetEventTypes('Rough') if showRough else []
 
     # Impulse events
     impulseEvents = eventClass.GetEventTypes('Impulse')
@@ -678,7 +678,7 @@ if __name__=='__main__':
         PlotG_tau(translocationEvents.events, inputData)
 
 
-def PlotGTauVoltage (eventClass, xLim=None, yLim=None, showCurrent=False, includeRough=False):
+def PlotGTauVoltage (eventClass, xLim=None, yLim=None, showCurrent=False, showRough=False):
     # sort the voltages
     # categorize events in three types
     # CUSUM fitted events
@@ -687,7 +687,7 @@ def PlotGTauVoltage (eventClass, xLim=None, yLim=None, showCurrent=False, includ
 
     # Extract y and tau out of events
     def extractytau(filteredevents):
-        filteredevents = [event for event in filteredevents if includeRough or not event.type == 'Rough']
+        filteredevents = [event for event in filteredevents if showRough or not event.type == 'Rough']
         if showCurrent:
             yVals = [event.currentDrop for event in filteredevents]
             tau = [event.eventLength for event in filteredevents]
