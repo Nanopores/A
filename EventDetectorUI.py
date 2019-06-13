@@ -1,12 +1,17 @@
 import sys
 import os
 from PyQt5.QtWidgets import *
+from PyQt5 import QtCore
 import matplotlib
 matplotlib.use('QT5Agg')
 import numpy as np
 import matplotlib.pylab as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+font = {'family' : 'monospace',
+        'weight' : 'regular',
+        'size'   : 4}
+matplotlib.rc('font', **font)  # pass in the font dict as kwargs
 
 
 class AnalysisUI(QWidget):
@@ -40,7 +45,7 @@ class AnalysisUI(QWidget):
     def initUI(self):
         # Main Window
         self.AllVariable()
-        self.setGeometry(300, 300, 1000, 500)
+        self.setGeometry(0, 0, 1200, 750)
         self.setWindowTitle('Do not use this tool for shitty science...')
 
         # Assemble the different layout pieces
@@ -62,6 +67,7 @@ class AnalysisUI(QWidget):
 
     def MakeFileImportLayout(self):
         self.FileImportLayout = QGroupBox("File Import")
+        self.FileImportLayout.setFixedWidth(400)
         layout = QGridLayout()
         self.button_fileimport = QPushButton('Open Files')
         self.button_fileimport.setToolTip('Select the files you want to import into the list. You can do multiple selections.')
@@ -79,6 +85,7 @@ class AnalysisUI(QWidget):
         self.AnalysisParameters = QGroupBox("Analysis")
         self.LowPassSettings = QGroupBox("Low Pass Settings")
         self.CusumSettings = QGroupBox("Cusum Settings")
+        self.CusumSettings.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Maximum))     #This allows this part to remain small in vertical position when the UI resizes.
         self.OtherSettings = QGroupBox("Other Settings")
         self.button_startAnalysis = QPushButton('Start Analysis')
         self.button_startAnalysis.setToolTip('This button will provoke your computer to sel-destruct. Use at your own risk!!!!!')
@@ -186,16 +193,21 @@ class AnalysisUI(QWidget):
         self.EventNavigatorLayout = QGroupBox("Event Navigator")
         self.navigation_buttons =QButtonGroup()
         self.button_eventForward = QPushButton('Forward')
+        self.button_eventForward.setToolTip('Advance one event forward')
         self.button_eventBackward = QPushButton('Backward')
-
+        self.button_eventBackward.setToolTip('Go one event back')
+        self.text_eventNumber = QLineEdit('Current Event Number')
+        self.text_eventNumber.setToolTip('This is the number of the current event. You can edit this field to jump directly to an event.')
+        self.text_eventNumber.setAlignment(QtCore.Qt.AlignCenter)
         layout = QGridLayout()
-        layout.addWidget(self.figure_singleEvent, 0, 0)
-        layout.addWidget(self.button_eventForward, 2, 1)
+        layout.addWidget(self.figure_singleEvent, 0, 0, 1, 3)
+        layout.addWidget(self.button_eventForward, 2, 2)
+        layout.addWidget(self.text_eventNumber, 2, 1)
         layout.addWidget(self.button_eventBackward, 2, 0)
-        layout.addWidget(self.figure_wholeTrace, 3, 0)
+        layout.addWidget(self.figure_wholeTrace, 3, 0, 1, 3)
         if self.TurnToolbarsOn:
-            layout.addWidget(self.toolbarSingleEvent, 1, 0)
-            layout.addWidget(self.toolbarWholeTrace, 4, 0)
+            layout.addWidget(self.toolbarSingleEvent, 1, 0, 1, 3)
+            layout.addWidget(self.toolbarWholeTrace, 4, 0, 1, 3)
         self.EventNavigatorLayout.setLayout(layout)
 
 
