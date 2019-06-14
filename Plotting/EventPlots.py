@@ -21,7 +21,7 @@ from bokeh.palettes import Spectral4
 from bokeh.plotting import figure, output_file, show, output_notebook
 from bokeh.layouts import row, column, gridplot
 
-#needed for plotting in jupyter
+# Needed for plotting in jupyter
 from bokeh.resources import INLINE
 import bokeh.io
 bokeh.io.output_notebook(INLINE)
@@ -40,7 +40,7 @@ Volt = EngFormatter(unit='V', places=2)
 Cond = EngFormatter(unit='S', places=2)
 
 
-def PlotG_tau(events, savefile = None, showCurrentInstead=False, normalized=False, showCUSUM=True):
+def PlotG_tau(events, savefile = None, showCurrent=False, normalized=False, showCUSUM=True, showLog=False):
     """
     Function used to produce scatter plots and histograms of the events.
     The figure produced has 3 subplots:
@@ -50,7 +50,7 @@ def PlotG_tau(events, savefile = None, showCurrentInstead=False, normalized=Fals
             and in y-coordinates the conductance drop [nS].
 
     In the plots, the events were distributed into the 3 types of events:
-        CUSUM-fitted in red ('Real' type)
+        CUSUM-fitted in red ('CUSUM' type)
         Non-fitted in blue ('Rough' type)
         Impulse in green ('Impulse' type)
 
@@ -60,7 +60,7 @@ def PlotG_tau(events, savefile = None, showCurrentInstead=False, normalized=Fals
         All the events to be plotted.
     savefile : str, optional
         Full path to file where the plots will be saved.
-    showCurrentInstead : bool, optional
+    showCurrent : bool, optional
         False by default. If True, it will change the SI unit in the y-axis from siemens [S] to ampers [A].
         So instead of units in conductance drop, it will have current drop.
     normalized : bool, optional
@@ -70,25 +70,25 @@ def PlotG_tau(events, savefile = None, showCurrentInstead=False, normalized=Fals
 
     """
 
-    #Clean up events
+    # Clean up events
     events = [event for event in events if event.voltage is not 0]
 
-    #categorize events in three types
-    #CUSUM fitted events
+    # categorize events in three types
+    # CUSUM fitted events
     if any(hasattr(event, 'changeTimes') and len(event.changeTimes)>2 for event in events):
         CUSUMIndices, CUSUMEdevents = zip(*[(ind, event) for ind, event in enumerate(events) if
                                         hasattr(event, 'changeTimes') and len(event.changeTimes) > 2])
     else:
         CUSUMIndices = CUSUMEdevents = []
 
-    #Non-fitted events
+    # Non-fitted events
     if any(event.type =='Rough' for event in events):
         nonFittedIndices, nonFittedEvents = zip(*[(ind, event) for ind, event in enumerate(events) if
                                             event.type == 'Rough'])
     else:
         nonFittedIndices = nonFittedEvents = []
 
-    #Impulse events
+    # Impulse events
     if any(event.type == 'Impulse' for event in events):
         impulseIndices, impulseEvents = zip(*[(ind, event) for ind, event in enumerate(events) if
                                               event.type == 'Impulse'])
@@ -98,24 +98,28 @@ def PlotG_tau(events, savefile = None, showCurrentInstead=False, normalized=Fals
     catEvents=(CUSUMEdevents, nonFittedEvents, impulseEvents)
     catIndices=(CUSUMIndices,nonFittedIndices,impulseIndices)
 
-    #Extract y and tau out of events
+    # Extract y and tau out of events
     def extractytau(filteredevents):
-        if showCurrentInstead:
+        if showCurrent:
             yVals = [event.currentDrop for event in filteredevents]
             tau = [event.eventLength for event in filteredevents]
         else:
             yVals = [event.currentDrop / event.voltage for event in filteredevents if event.voltage > 0]
             tau = [event.eventLength for event in filteredevents if event.voltage > 0]
-        return tau,yVals
+        return tau, yVals
 
-    #Save figure
+    # Save figure
     def SavePlot(event):
         # Check if directory exists
         directory = os.path.dirname(savefile)
-        if showCurrentInstead:
+        if showCurrent:
             fig.savefig(directory + os.sep + 'PlotITau.pdf', transparent=True)
         else:
             fig.savefig(directory + os.sep + 'PlotGTau.pdf', transparent=True)
+
+    def ShowLog():
+        bshowlog.label.set_text = 'Show ' + axScatter.xscale
+        axScatter.set_xscale('linear') if axScatter.xscale == 'log' else axScatter.set_xscale('log')
 
     # definitions for the axes
     left, width = 0.15, 0.55
@@ -130,13 +134,13 @@ def PlotG_tau(events, savefile = None, showCurrentInstead=False, normalized=Fals
     # start with a rectangular Figure
     fig = plt.figure(1, figsize=(10, 8))
 
-    #define axes and link histogram to scatterplot
+    # define axes and link histogram to scatterplot
     axScatter = plt.axes(rect_scatter)
 
     axHistx = plt.axes(rect_histx, sharex=axScatter)
     axHisty = plt.axes(rect_histy, sharey=axScatter)
 
-    #Checkboxes to turn on or off events
+    # Checkboxes to turn on or off events
     rax = plt.axes([0.75, 0.73, 0.14, 0.15])
     visBool=[True,True,True]
     labelsCheckBox=('CUSUM-fitted', 'Not fitted', 'impulse')
@@ -151,8 +155,14 @@ def PlotG_tau(events, savefile = None, showCurrentInstead=False, normalized=Fals
     # Link button to axes to preserve function
     bax._bnext = bnext
 
+    baxl = plt.axes([0.77, 0.95, 0.1, 0.03])
+    txt = 'log' if showLog else 'linear'
+    bshowlog = Button(baxl, 'Show ' + txt)
+    bshowlog.on_clicked(ShowLog)
+    # Link button to axes to preserve function
+    bax._bshowlog = bshowlog
 
-    #Show labels
+    # Show labels
     def setlabels():
         plt.setp(axHistx.get_xticklabels(), visible=False)
         plt.setp(axHisty.get_yticklabels(), visible=False)
@@ -162,60 +172,59 @@ def PlotG_tau(events, savefile = None, showCurrentInstead=False, normalized=Fals
         if normalized:
             axScatter.set_ylabel('current drop (normalized)')
         else:
-            if showCurrentInstead:
+            if showCurrent:
                 axScatter.set_ylabel('current drop (A)')
                 axScatter.yaxis.set_major_formatter(Amp)
             else:
                 axScatter.set_ylabel('Conductance drop (G)')
                 axScatter.yaxis.set_major_formatter(Cond)
 
+    # Set limits
+    bins = 100
+    extra = 0.1  # 0.1 = 10%
+    allTau, allYVals = extractytau(events)
+    yClean = [y for y in allYVals if str(y) != 'nan']
+    taurangeHist = np.linspace(min(allTau), max(allTau), num=bins)
+    yValsrangeHist = np.linspace(min(yClean), max(yClean), num=bins)
 
-
-    # Determine nice limits by hand:
-    def limits(tau, yVals, axScatter):
-        extra = 0.1  # 0.1 = 10%
-        tauRange = np.max(tau) - np.min(tau)
-        yClean = [y for y in yVals if str(y) != 'nan']
-        yRange = np.max(yClean) - np.min(yClean)
-
-        axScatter.set_xlim((np.min(tau) - extra * tauRange, np.max(tau) + extra * tauRange))
-        axScatter.set_ylim((np.min(yClean) - extra * yRange, np.max(yClean) + extra * yRange))
-
-
-    #define colors of the 3 classes
-    colors=['tomato', 'lightgreen','skyblue']
-    linecolors=['red','green', 'blue']
+    # define colors of the 3 classes
+    colors = ['tomato', 'lightgreen','skyblue']
+    linecolors = ['red','green', 'blue']
 
     # the scatter plot:
-    scatters=[None]*3
+    scatters = [None]*3
+
     def PlotEvents(visBool):
-        #clear axes
+        # clear axes
         axScatter.clear()
         axHistx.clear()
         axHisty.clear()
 
-        #lists for setting the limits
-        alltau=[]
-        allyVals=[]
+        # lists for setting the limits
+        alltau = []
+        allyVals = []
         for i in range(len(catEvents)):
-            #If checkbox is True, plot events
+            # If checkbox is True, plot events
             if visBool[i]:
 
-                #Extract Tau and Y
-                events=catEvents[i]
-                tau,yVals = extractytau(events)
+                # Extract Tau and Y
+                events = catEvents[i]
+                tau, yVals = extractytau(events)
                 scatters[i] = axScatter.scatter(tau, yVals, color=colors[i], marker='o', s=30,
                                              linewidths=0.1,edgecolors=linecolors[i], picker=5,visible=visBool[i])  # added some stuff here to improve aesthetics
-                axScatter.set_xscale('log')
-                axHistx.hist(tau, bins=100, color=colors[i], visible=visBool[i])
-                axHisty.hist(yVals, bins=50, orientation='horizontal', color=colors[i], visible=visBool[i])
+                if showLog:
+                    axScatter.set_xscale('log')
 
-                alltau.extend(tau)
-                allyVals.extend(yVals)
+                axHistx.hist(tau, bins=taurangeHist, color=colors[i], visible=visBool[i])
+                axHisty.hist(yVals, bins=yValsrangeHist, orientation='horizontal', color=colors[i], visible=visBool[i])
 
-        #set limits
-        if len(alltau)>0:
-            limits(alltau,allyVals,axScatter)
+        # set limits
+        if len(alltau) > 0:
+            tauRange = np.max(tau) - np.min(tau)
+            yRange = np.max(yClean) - np.min(yClean)
+            axScatter.set_xlim((np.min(tau) - extra * tauRange, np.max(tau) + extra * tauRange))
+            axScatter.set_ylim((np.min(yClean) - extra * yRange, np.max(yClean) + extra * yRange))
+
         setlabels()
         plt.title('{} number of events'.format(len(alltau)))
 
@@ -228,7 +237,6 @@ def PlotG_tau(events, savefile = None, showCurrentInstead=False, normalized=Fals
                 visBool[i] = not visBool[i]
         PlotEvents(visBool)
         plt.draw()
-
 
     # WHen clicking on event
     def onpick(event):
@@ -249,21 +257,22 @@ def PlotG_tau(events, savefile = None, showCurrentInstead=False, normalized=Fals
 
     plt.show()
 
-def PlotGTau(eventClass, xLim = None, yLim = None, showCurrentInstead = False):
 
-    #categorize events in three types
-    #CUSUM fitted events
+def PlotGTau(eventClass, xLim=None, yLim=None, showCurrent=False, showRough=False):
+
+    # categorize events in three types:
+    # CUSUM fitted events
     CUSUMEvents = eventClass.GetEventTypes('CUSUM')
 
-    #Non-fitted events
-    nonFittedEvents = eventClass.GetEventTypes('Rough')
+    # Non-fitted events
+    nonFittedEvents = eventClass.GetEventTypes('Rough') if showRough else []
 
-    #Impulse events
+    # Impulse events
     impulseEvents = eventClass.GetEventTypes('Impulse')
 
-    #Extract y and tau out of events
+    # Extract y and tau out of events
     def extractytau(filteredevents):
-        if showCurrentInstead:
+        if showCurrent:
             yVals = [event.currentDrop for event in filteredevents]
             tau = [event.eventLength for event in filteredevents]
         else:
@@ -271,10 +280,10 @@ def PlotGTau(eventClass, xLim = None, yLim = None, showCurrentInstead = False):
             tau = [event.eventLength for event in filteredevents if event.voltage > 0]
         return tau,yVals
 
-    #define of variables
-    TOOLS="box_zoom,pan,wheel_zoom,reset"
-    colors=['tomato', 'lightgreen','skyblue']
-    linecolors=['red','green', 'blue']
+    # define of variables
+    TOOLS = "box_zoom,pan,wheel_zoom,reset"
+    colors = ['tomato', 'lightgreen','skyblue']
+    linecolors = ['red','green', 'blue']
     backgroundColor = "#fafafa"
     bins = 50
 
@@ -284,12 +293,12 @@ def PlotGTau(eventClass, xLim = None, yLim = None, showCurrentInstead = False):
 
     p.background_fill_color = "#fafafa"
 
-    #select min max
-    events = [event for event in eventClass.events if showCurrentInstead or event.voltage is not 0]
+    # select min max
+    events = [event for event in eventClass.events if showCurrent or event.voltage is not 0]
 
     allTau, allYVals = extractytau(events)
 
-    #Set limits
+    # Set limits
     if xLim is None:
         taurange = np.linspace(min(allTau), max(allTau), num=bins)
     else:
@@ -304,14 +313,14 @@ def PlotGTau(eventClass, xLim = None, yLim = None, showCurrentInstead = False):
         p.y_range=Range1d(yLim[0], yLim[1])
         yValsrange = np.linspace(yLim[0], yLim[1], num=bins)
 
-    #initialize values
+    # initialize values
     zerostau = np.zeros(len(taurange) - 1)
     previoustau = np.zeros(len(taurange) - 1)
     zerosy = np.zeros(len(yValsrange)-1)
     previousy = np.zeros(len(yValsrange) - 1)
 
 
-    #Define histogram bottom
+    # Define histogram bottom
     ph = figure(plot_width=p.plot_width, plot_height=100, x_range=p.x_range,
                 y_range=(0, 1), min_border=10, min_border_left=50, y_axis_location="right")
 
@@ -319,7 +328,7 @@ def PlotGTau(eventClass, xLim = None, yLim = None, showCurrentInstead = False):
     ph.xgrid.grid_line_color = None
     ph.yaxis.major_label_orientation = np.pi / 4
 
-    #Define the second histogram
+    # Define the second histogram
     pv = figure(plot_width=300, plot_height=p.plot_height, x_range=(0, 1),
                 y_range=p.y_range, min_border=10, y_axis_location="right")
 
@@ -329,7 +338,8 @@ def PlotGTau(eventClass, xLim = None, yLim = None, showCurrentInstead = False):
 
     legend_it = []
 
-    for selectEvents, name, color, linecolor in zip([CUSUMEvents, nonFittedEvents, impulseEvents], ["CUSUM", "Non-fitted", "Impulse"], colors, linecolors):
+    for selectEvents, name, color, linecolor in zip([CUSUMEvents, nonFittedEvents, impulseEvents],
+                                                    ["CUSUM", "Non-fitted", "Impulse"], colors, linecolors):
         tau, yVals = extractytau(selectEvents)
 
         c = p.scatter(tau, yVals, size=3, line_width=2, color=color, alpha=0.8)
@@ -337,25 +347,25 @@ def PlotGTau(eventClass, xLim = None, yLim = None, showCurrentInstead = False):
         hhist, hedges = np.histogram(tau, bins=taurange)
 
         hh = ph.quad(bottom=zerostau +previoustau, left=hedges[:-1], right=hedges[1:], top=hhist+previoustau,
-                fill_color = color,line_color =  linecolor)
+                     fill_color=color, line_color = linecolor)
 
         previoustau +=hhist
 
         vhist, vedges = np.histogram(yVals, bins=yValsrange)
         vh = pv.quad(left=zerosy + previousy, bottom=vedges[:-1], top=vedges[1:], right=vhist+previousy,
-                color=color, line_color= linecolor)
+                     color=color, line_color=linecolor)
         previousy +=vhist
 
-        #Sharing legend is broke
-        #legend_it.append((name, [c, hh, vh]))
+        # Sharing legend is broke
+        # legend_it.append((name, [c, hh, vh]))
         legend_it.append(LegendItem(label=name, renderers=[vh]))
 
-    #p.legend.location =  "top_right"
-    #legend = Legend(items=legend_it, location=(0, -30))
+    # p.legend.location =  "top_right"
+    # legend = Legend(items=legend_it, location=(0, -30))
     legend = Legend(items=legend_it)
     pv.add_layout(legend, 'right')
 
-    #pv.legend.click_policy = "hide"
+    pv.legend.click_policy = "hide"
 
     ph.y_range.end = max(previoustau)*1.1
     pv.x_range.end = max(previousy) * 1.1
@@ -410,7 +420,7 @@ def PlotGTau(eventClass, xLim = None, yLim = None, showCurrentInstead = False):
     # show(p)
 
 
-def PlotEvent(event,ax=None, savefile=os.getcwd(), showCUSUM=True, showCurrent=False):
+def PlotEvent(event, ax=None, savefile=os.getcwd(), showCUSUM=True, showCurrent=False):
     """
     Function used to plot a single event passed in argument. The event will be represented
     in a blue trace and the baseline in a red trace.
@@ -424,7 +434,9 @@ def PlotEvent(event,ax=None, savefile=os.getcwd(), showCUSUM=True, showCurrent=F
     savefile : str, optional
         By default, the current working directory. Full path to the directory to save the plot.
     showCUSUM : bool, optional
-        False by default. If True, it will plot the CUSUM-fit overlayed in yellow.
+        True by default. If True, it will plot the CUSUM-fit overlayed in yellow.
+    showCurrent : bool, optional
+        False by default. If True, it will plot the current drop instead of conductance drop.
 
     """
 
@@ -448,15 +460,14 @@ def PlotEvent(event,ax=None, savefile=os.getcwd(), showCUSUM=True, showCurrent=F
         eventMouse.inaxes.figure.savefig(savename, transparent=True)
 
     def ShowFullTrace(eventMouse):
-        event=eventMouse.inaxes.figure.axes[0]._event
+        event = eventMouse.inaxes.figure.axes[0]._event
         ShowEventInTrace(event)
 
-
-    if showCUSUM and hasattr(event, 'changeTimes') and len(event.changeTimes)>=2:
+    if showCUSUM and hasattr(event, 'changeTimes') and len(event.changeTimes) >= 2:
         eventLength = event.eventLengthCUSUM
         currentDrop = event.currentDropCUSUM
     else:
-        showCUSUM=False
+        showCUSUM = False
         eventLength = event.eventLength
         currentDrop = event.currentDrop
 
@@ -464,7 +475,7 @@ def PlotEvent(event,ax=None, savefile=os.getcwd(), showCUSUM=True, showCurrent=F
     fn=filename_w_ext = os.path.basename(event.filename)
     if showCurrent:
         plotTitle = fn + '\n' + 'Event length: {}\nCurrent drop: {} with voltage {}'.format(
-            Time.format_data(eventLength), Cond.format_data(currentDrop),
+            Time.format_data(eventLength), Amp.format_data(currentDrop),
             Volt.format_data(event.voltage))
     else:
         plotTitle = fn + '\n' + 'Event length: {}\nConductance drop: {} with voltage {}'.\
@@ -479,23 +490,23 @@ def PlotEvent(event,ax=None, savefile=os.getcwd(), showCUSUM=True, showCurrent=F
         plt.title(plotTitle)
 
 
-    #Add buttons
+    # Add buttons
 
-    #Save button
+    # Save button
     bax = plt.axes([0.77, 0.95, 0.15, 0.03])
     bsave = Button(bax, 'Save figure')
     bsave.on_clicked(SavePlot)
-    #Link button to axes to preserve function
+    # Link button to axes to preserve function
     ax._bsave = bsave
 
-    #Show original trace button
+    # Show original trace button
     bax2 = plt.axes([0.77, 0.9, 0.15, 0.03])
     bfull = Button(bax2, 'Show original Trace')
     # Link button to axes to preserve function
     ax._bfull = bfull
     bfull.on_clicked(ShowFullTrace)
 
-    #Plotting
+    # Plotting
     timeVals1 = np.linspace(0, len(event.before) / event.samplerate, num=len(event.before))
     timeVals2 = np.linspace(0 + max(timeVals1), len(event.eventTrace) / event.samplerate + max(timeVals1),
                             num=len(event.eventTrace))
@@ -512,13 +523,13 @@ def PlotEvent(event,ax=None, savefile=os.getcwd(), showCUSUM=True, showCurrent=F
         timeVals = np.linspace(0, len(event.segmentedSignal) / event.samplerate, num=len(event.segmentedSignal))
 
         if hasattr(event,'mcbefore') and hasattr(event,'mcafter') and hasattr(event,'mctrace'):
-            ax.plot(timeVals1, event.mcbefore,'--', color='tomato')
-            x=np.append(np.append(timeVals1[-1],timeVals2),timeVals3[0])
-            y=np.append(np.append(event.mcbefore[-1],event.mctrace),event.mcafter[0])
+            ax.plot(timeVals1, event.mcbefore, '--', color='tomato')
+            x = np.append(np.append(timeVals1[-1], timeVals2), timeVals3[0])
+            y = np.append(np.append(event.mcbefore[-1], event.mctrace), event.mcafter[0])
             ax.plot(x, y, color='yellow')
-            ax.plot(timeVals3, event.mcafter,'--', color='tomato')
+            ax.plot(timeVals3, event.mcafter, '--', color='tomato')
         else:
-            ax.plot(timeVals,event.segmentedSignal, color='yellow') #,timeVals3[0],event.mcafter[0]
+            ax.plot(timeVals, event.segmentedSignal, color='yellow') #,timeVals3[0],event.mcafter[0]
     else:
         beforeBaseline=np.full(len(event.before), event.baseline)
         ax.plot(timeVals1,beforeBaseline, '--', color='tomato')
@@ -667,18 +678,17 @@ if __name__=='__main__':
         PlotG_tau(translocationEvents.events, inputData)
 
 
-def PlotGTauVoltage (eventClass, xLim = None, yLim = None, showCurrentInstead = False):
-
-
-    #sort the voltages
+def PlotGTauVoltage (eventClass, xLim=None, yLim=None, showCurrent=False, showRough=False):
+    # sort the voltages
     # categorize events in three types
     # CUSUM fitted events
     voltageLimits = [0.01, 0.91]
     voltagesList = eventClass.GetAllVoltages()
 
-    #Extract y and tau out of events
+    # Extract y and tau out of events
     def extractytau(filteredevents):
-        if showCurrentInstead:
+        filteredevents = [event for event in filteredevents if showRough or not event.type == 'Rough']
+        if showCurrent:
             yVals = [event.currentDrop for event in filteredevents]
             tau = [event.eventLength for event in filteredevents]
         else:
@@ -691,7 +701,7 @@ def PlotGTauVoltage (eventClass, xLim = None, yLim = None, showCurrentInstead = 
     colors = ['tomato', 'lightgreen','skyblue', 'magenta','black']
     linecolors = ['red', 'green', 'blue', 'magenta', 'black']
 
-    assert(len(voltagesList)<=len(colors))
+    assert(len(voltagesList) <= len(colors))
     backgroundColor = "#fafafa"
     bins = 50
 
@@ -701,12 +711,12 @@ def PlotGTauVoltage (eventClass, xLim = None, yLim = None, showCurrentInstead = 
 
     p.background_fill_color = "#fafafa"
 
-    #select min max
-    events = [event for event in eventClass.events if showCurrentInstead or event.voltage is not 0]
+    # select min max
+    events = [event for event in eventClass.events if showCurrent or event.voltage is not 0]
 
     allTau, allYVals = extractytau(events)
 
-    #Set limits
+    # Set limits
     if xLim is None:
         taurange = np.linspace(min(allTau), max(allTau), num=bins)
     else:
@@ -721,14 +731,14 @@ def PlotGTauVoltage (eventClass, xLim = None, yLim = None, showCurrentInstead = 
         p.y_range=Range1d(yLim[0], yLim[1])
         yValsrange = np.linspace(yLim[0], yLim[1], num=bins)
 
-    #initialize values
+    # initialize values
     zerostau = np.zeros(len(taurange) - 1)
     previoustau = np.zeros(len(taurange) - 1)
     zerosy = np.zeros(len(yValsrange)-1)
     previousy = np.zeros(len(yValsrange) - 1)
 
 
-    #Define histogram bottom
+    # Define histogram bottom
     ph = figure(plot_width=p.plot_width, plot_height=100, x_range=p.x_range,
                 y_range=(0, 1), min_border=10, min_border_left=50, y_axis_location="right")
 
@@ -736,7 +746,7 @@ def PlotGTauVoltage (eventClass, xLim = None, yLim = None, showCurrentInstead = 
     ph.xgrid.grid_line_color = None
     ph.yaxis.major_label_orientation = np.pi / 4
 
-    #Define the second histogram
+    # Define the second histogram
     pv = figure(plot_width=300, plot_height=p.plot_height, x_range=(0, 1),
                 y_range=p.y_range, min_border=10, y_axis_location="right")
 
@@ -747,12 +757,12 @@ def PlotGTauVoltage (eventClass, xLim = None, yLim = None, showCurrentInstead = 
     legend_it = []
 
     i = 0
-    #for i in range(len(voltagesList)):
+    # for i in range(len(voltagesList)):
     for voltage in voltagesList:
         color = colors[i]
         linecolor = linecolors[i]
-        i+=1
-        #for voltage, color, linecolor in zip(voltagesList, colors, linecolors):
+        i += 1
+        # for voltage, color, linecolor in zip(voltagesList, colors, linecolors):
         selectEvents = eventClass.GetEventsforVoltages(voltage)
         tau, yVals = extractytau(selectEvents)
 
@@ -761,16 +771,16 @@ def PlotGTauVoltage (eventClass, xLim = None, yLim = None, showCurrentInstead = 
         hhist, hedges = np.histogram(tau, bins=taurange)
 
         hh = ph.quad(bottom=zerostau +previoustau, left=hedges[:-1], right=hedges[1:], top=hhist+previoustau,
-                fill_color = color,line_color =  linecolor)
+                     fill_color=color, line_color=linecolor)
 
         previoustau +=hhist
 
         vhist, vedges = np.histogram(yVals, bins=yValsrange)
         vh = pv.quad(left=zerosy + previousy, bottom=vedges[:-1], top=vedges[1:], right=vhist+previousy,
-                color=color, line_color= linecolor)
+                     color=color, line_color=linecolor)
         previousy +=vhist
 
-        #Sharing legend is broke
+        # Sharing legend is broke
         #legend_it.append((name, [c, hh, vh]))
         name = str(Volt.format_data(voltage))
         legend_it.append(LegendItem(label=name, renderers=[vh]))
@@ -780,7 +790,7 @@ def PlotGTauVoltage (eventClass, xLim = None, yLim = None, showCurrentInstead = 
     legend = Legend(items=legend_it)
     pv.add_layout(legend, 'right')
 
-    #pv.legend.click_policy = "hide"
+    pv.legend.click_policy = "hide"
 
     ph.y_range.end = max(previoustau)*1.1
     pv.x_range.end = max(previousy) * 1.1
