@@ -1,23 +1,41 @@
 import sys
 from PyQt5.QtWidgets import *
 
+import os
+import numpy as np
+import shelve
+
+import matplotlib
+matplotlib.use('QT5Agg')
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from Plotting import EventPlots
+import NanoporeClasses as NC
 
 class AnalysisUI(QWidget):
 
     def __init__(self):
         super().__init__()
-        self.AllVariable()
-        self.initUI()
+        # self.AllVariable()
 
-    def AllVariable(self):
+
+    #def AllVariable(self):
         # Let's dump all the variable we will need here...
         self.importedFiles = []
         self.selectedFiles = []
         self.analyzedFiles = []
 
+        # Defining the plots
+        self.TurnToolbarsOn = False
+        self.pltFig = plt.figure(1, figsize=(12, 10))
+        self.pltFig.__attached = True
+        self.figurePlotting = FigureCanvas(figure=self.pltFig)
+
+        self.initUI()
+
     def initUI(self):
         # Main Window
-        self.setGeometry(300, 200, 1200, 750)
+        self.setGeometry(300, 200, 1200, 850)
         self.setWindowTitle('Translocation event analysis')
 
         # Assemble the different layout pieces
@@ -34,6 +52,9 @@ class AnalysisUI(QWidget):
         self.list_filelist.clicked.connect(self.SelectionInFileListChanged)
         # self.button_startAnalysis.clicked.connect(self.AnalysisButtonPressed)
 
+        self.plotCurrent.clicked.connect(self.PlotSelected)
+        self.plotVoltage.clicked.connect(self.PlotSelected)
+        self.showLog.clicked.connect(self.PlotSelected)
         self.show()
 
     def MakeFileImportLayout(self):
@@ -46,7 +67,7 @@ class AnalysisUI(QWidget):
         self.button_clearfilelist.setToolTip('This deletes your current list of files.')
         self.list_filelist = QListWidget()
         self.list_filelist.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        self.list_filelist.setToolTip('This is the list of current files. Entries in green are already analyzed. Your selection defines which files are used in the analysis.')
+        self.list_filelist.setToolTip('This is the list of current files. selected files will be plotted.')
         layout.addWidget(self.button_fileimport, 0, 0)
         layout.addWidget(self.list_filelist, 1, 0)
         layout.addWidget(self.button_clearfilelist, 2, 0)
@@ -62,21 +83,18 @@ class AnalysisUI(QWidget):
         # layout.setColumnStretch(2, 4)
 
         self.plotCurrent = QCheckBox('Show Current')
-        self.plotVoltage = QCheckBox('Seperate events by voltage')
-
-        self.showImpulse = QCheckBox('Show impulse events')
-        self.showImpulse.setChecked(True)
-        self.showCUSUM = QCheckBox('Show CUSUM fitted events')
-        self.showCUSUM.setChecked(True)
-        self.showRough = QCheckBox('Show non-fitted events')
+        self.plotVoltage = QCheckBox('Seperate by voltage')
+        self.showLog = QCheckBox('Show log')
 
         layoutsettings = QGridLayout()
         layoutsettings.addWidget(self.plotCurrent, 0, 0)
         layoutsettings.addWidget(self.plotVoltage, 0, 1)
-        layoutsettings.addWidget(self.showImpulse, 0, 2)
-        layoutsettings.addWidget(self.showCUSUM, 0, 3)
-        layoutsettings.addWidget(self.showRough, 0, 4)
+        layoutsettings.addWidget(self.showLog, 0, 2)
         self.Plotsettings.setLayout(layoutsettings)
+
+        layoutPlotting = QGridLayout()
+        layoutPlotting.addWidget(self.figurePlotting)
+        self.Plotting.setLayout(layoutPlotting)
 
         # Final Assembly
         layout = QGridLayout()
@@ -99,18 +117,43 @@ class AnalysisUI(QWidget):
 
     def UpdateFileList(self):
         self.list_filelist.clear()
-        for i in self.importedFiles:
-            self.list_filelist.addItem(os.path.split(i)[1])
-        ## If file is present, make the row green. This means analysis was done on it.
+        i = 0
+        for file in self.importedFiles:
+            item = QListWidgetItem(os.path.split(file)[1], type=i)
+            self.list_filelist.addItem(item)
+            i += 1
 
     def SelectionInFileListChanged(self, event):
         items = self.list_filelist.selectedItems()
-        x = []
-        for i in range(len(items)):
-            x.append(str(self.list_filelist.selectedItems()[i].text()))
-        self.selectedFiles = x
+        selectedFiles = []
+        for item in items:
+            idx = item.type()
+            selectedFiles.append(str(self.importedFiles[idx]))
+        self.selectedFiles = selectedFiles
         print('The following files are selected in the list:')
-        print(x)
+        print(selectedFiles)
+        self.PlotSelected()
+
+    def ClearFigure(self):
+        self.pltFig.clf()
+
+    def PlotSelected(self):
+        self.ClearFigure()
+        plotCurrent = self.plotCurrent.isChecked()
+        plotVoltage = self.plotVoltage.isChecked()
+        showLog = self.showLog.isChecked()
+
+        if len(self.selectedFiles)>0:
+            translocationEvents = NC.AllEvents()
+            for filename in self.selectedFiles:
+                shelfFile = shelve.open(os.path.splitext(filename)[0])
+                translocationEventstemp = shelfFile['TranslocationEvents']
+                shelfFile.close()
+                translocationEvents.AddEvent(translocationEventstemp)
+
+            EventPlots.PlotG_tau(translocationEvents, fig=self.pltFig, showCurrent=plotCurrent, showLog=showLog)
+
+            self.figurePlotting.draw()
 
 
     def closeEvent(self, event):
