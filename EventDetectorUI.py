@@ -2,19 +2,20 @@ import sys
 import os
 from PyQt5.QtWidgets import *
 from PyQt5 import QtCore
-from PyQt5.QtGui import QColor
+from PyQt5.QtGui import QColor, QIntValidator
 import matplotlib
 matplotlib.use('QT5Agg')
 import numpy as np
 import matplotlib.pylab as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-font = {'family' : 'monospace',
-        'weight' : 'regular',
+font = {'weight' : 'regular',
         'size'   : 4}
-matplotlib.rc('font', **font)  # pass in the font dict as kwargs
-from EventDetection import *
 
+matplotlib.rc('font', **font)  # pass in the font dict as kwargs
+matplotlib.rc('lines', linewidth = 0.5)
+from EventDetection import *
+from Plotting.EventPlots import *
 
 class AnalysisUI(QWidget):
 
@@ -27,9 +28,11 @@ class AnalysisUI(QWidget):
         self.importedFiles = []
         self.selectedFiles = []
         self.analyzedFiles = []
+        self.rawtrace = []
+        self.AllEvents = NC.AllEvents()
 
         # Defining the plots
-        self.TurnToolbarsOn = False
+        self.TurnToolbarsOn = True
         self.fig_singleEvent = plt.figure(1, figsize=(10, 10))
         self.ax_singleEvent = self.fig_singleEvent.add_subplot(111)
         self.ax_singleEvent.plot(np.arange(1, 10), np.arange(1, 10))
@@ -40,6 +43,7 @@ class AnalysisUI(QWidget):
 
         self.figure_singleEvent = FigureCanvas(figure=self.fig_singleEvent)
         self.figure_wholeTrace = FigureCanvas(figure=self.fig_wholeTrace)
+
         if self.TurnToolbarsOn:
             self.toolbarWholeTrace = NavigationToolbar(self.figure_wholeTrace, self)
             self.toolbarSingleEvent = NavigationToolbar(self.figure_singleEvent, self)
@@ -47,7 +51,7 @@ class AnalysisUI(QWidget):
     def initUI(self):
         # Main Window
         self.AllVariable()
-        self.setGeometry(0, 0, 1200, 750)
+        self.setGeometry(0, 0, 1200, 600)
         self.setWindowTitle('Do not use this tool for shitty science...')
 
         # Assemble the different layout pieces
@@ -55,7 +59,7 @@ class AnalysisUI(QWidget):
         self.MakeAnalysisParametersAndRunLayout()
         self.MakeEventNavigatorLayout()
         windowLayout = QHBoxLayout()
-        windowLayout.addWidget(self.FileImportLayout, 10)
+        windowLayout.addWidget(self.FileImportLayout)
         windowLayout.addWidget(self.AnalysisParameters)
         windowLayout.addWidget(self.EventNavigatorLayout)
         self.setLayout(windowLayout)
@@ -66,11 +70,14 @@ class AnalysisUI(QWidget):
         self.list_filelist.clicked.connect(self.SelectionInFileListChanged)
         self.list_filelist.doubleClicked.connect(self.FileDoubleClicked)
         self.button_startAnalysis.clicked.connect(self.AnalysisButtonPressed)
+        self.text_eventNumber.returnPressed.connect(self.EventNumberChanged)
+        self.button_eventForward.clicked.connect(self.ForwardButtonPushed)
+        self.button_eventBackward.clicked.connect(self.BackwardButtonPushed)
         self.show()
 
     def MakeFileImportLayout(self):
         self.FileImportLayout = QGroupBox("File Import")
-        self.FileImportLayout.setFixedWidth(400)
+        self.FileImportLayout.setFixedWidth(200)
         layout = QGridLayout()
         self.button_fileimport = QPushButton('Open Files')
         self.button_fileimport.setToolTip('Select the files you want to import into the list. You can do multiple selections.')
@@ -199,15 +206,18 @@ class AnalysisUI(QWidget):
         self.button_eventForward.setToolTip('Advance one event forward')
         self.button_eventBackward = QPushButton('Backward')
         self.button_eventBackward.setToolTip('Go one event back')
-        self.text_eventNumber = QLineEdit('Current Event Number')
+        self.text_eventNumber = QLineEdit('0')
+        self.text_eventNumber.setValidator(QIntValidator(0, 100000))
         self.text_eventNumber.setToolTip('This is the number of the current event. You can edit this field to jump directly to an event.')
         self.text_eventNumber.setAlignment(QtCore.Qt.AlignCenter)
         layout = QGridLayout()
         layout.addWidget(self.figure_singleEvent, 0, 0, 1, 3)
+        self.figure_singleEvent.setFixedHeight(250)
         layout.addWidget(self.button_eventForward, 2, 2)
         layout.addWidget(self.text_eventNumber, 2, 1)
         layout.addWidget(self.button_eventBackward, 2, 0)
         layout.addWidget(self.figure_wholeTrace, 3, 0, 1, 3)
+        self.figure_wholeTrace.setFixedHeight(300)
         if self.TurnToolbarsOn:
             layout.addWidget(self.toolbarSingleEvent, 1, 0, 1, 3)
             layout.addWidget(self.toolbarWholeTrace, 4, 0, 1, 3)
@@ -234,10 +244,10 @@ class AnalysisUI(QWidget):
             self.list_filelist.addItem(os.path.split(i)[1])
             folder = os.path.dirname(i) + os.sep + 'analysisfiles'
             filename, file_extension = os.path.splitext(os.path.basename(i))
-            potentialanalysisfile = folder + os.sep + filename + 'data.db'
+            potentialanalysisfile = folder + os.sep + filename + 'data'
             print(potentialanalysisfile)
             print(os.path.exists(potentialanalysisfile))
-            if os.path.isfile(potentialanalysisfile):
+            if os.path.isfile(potentialanalysisfile + '.dat') or os.path.isfile(potentialanalysisfile + '.db'):
             ## If file is present, make the row green. This means analysis was done on it.
                 self.list_filelist.item(ind).setBackground(QColor('green'))
 
@@ -250,13 +260,17 @@ class AnalysisUI(QWidget):
         print('The following files are selected in the list:')
         print(x)
 
-    def AnalysisButtonPressed(self):
-        # Get Full File Paths:
+    def GetFullFilePath(self, listoffiles):
         fullfilepaths = []
-        for i in self.selectedFiles:
+        for i in listoffiles:
             for j in self.importedFiles:
                 if i in j:
                     fullfilepaths.append(j)
+        return fullfilepaths
+
+    def AnalysisButtonPressed(self):
+        # Get Full File Paths:
+        fullfilepaths = self.GetFullFilePath(self.selectedFiles)
         print(fullfilepaths)
         # Fill coefficient dictionary from the user inputs
         coefficients = {}
@@ -275,8 +289,57 @@ class AnalysisUI(QWidget):
             eventdetectionwithfilegeneration(i, coefficients, forceRun=True, verboseLevel=1)
         self.UpdateFileList()
 
+    def BackwardButtonPushed(self):
+        if (int(self.text_eventNumber.text())-1) < 0:
+            self.text_eventNumber.setText('0')
+        else:
+            self.text_eventNumber.setText(str(int(self.text_eventNumber.text())-1))
+        self.EventNumberChanged()
+
+    def ForwardButtonPushed(self):
+        if (int(self.text_eventNumber.text())+1) >= len(self.AllEvents.events):
+            self.text_eventNumber.setText(str(len(self.AllEvents.events)-1))
+        else:
+            self.text_eventNumber.setText(str(int(self.text_eventNumber.text())+1))
+        self.EventNumberChanged()
+
+    def EventNumberChanged(self):
+        print(int(self.text_eventNumber.text()))
+        if len(self.AllEvents.events):
+            self.DrawEvent(int(self.text_eventNumber.text()))
+            self.DrawWholeTrace(int(self.text_eventNumber.text()))
+
+    def DrawEvent(self, number):
+        self.ax_singleEvent.clear()
+        PlotEvent(self.AllEvents.events[number], ax=self.ax_singleEvent, savefile=os.getcwd(), showCUSUM=True,
+                  showCurrent=False, showButtons=False, axisFormatter=False)
+        self.figure_singleEvent.draw()
+
+    def DrawWholeTrace(self, number):
+        self.ax_wholeTrace.clear()
+        ShowEventInTrace_SignalPreloaded(self.rawtrace, self.AllEvents, number, self.ax_wholeTrace)
+        self.figure_wholeTrace.draw()
+
     def FileDoubleClicked(self, event):
-        print(event.column())
+        DoubleclickedFile = self.list_filelist.selectedItems()[0].text()
+        # Get Analysis file
+        fullfilepath = self.GetFullFilePath([DoubleclickedFile])[0]
+        filename, file_extension = os.path.splitext(os.path.basename(fullfilepath))
+        folder = os.path.dirname(fullfilepath) + os.sep + 'analysisfiles'
+        analysisfilepath = folder + os.sep + filename + 'data'
+        print('Analysis File Path: {}'.format(analysisfilepath))
+        if os.path.isfile(analysisfilepath + '.dat') or os.path.isfile(analysisfilepath + '.db'):
+            ## Display the analysis
+            print('Lets show the analysis')
+            ## Load the analysis file
+            self.AllEvents = LoadEvents(analysisfilepath)
+            self.text_eventNumber.setValidator(QIntValidator(0, len(self.AllEvents.events)-1))
+            self.rawtrace = LoadData.OpenFile(self.AllEvents.events[0].filename, ChimeraLowPass = 10e3, approxImpulseResponse = True, Split = True, verbose = False)['i1']
+            self.DrawEvent(int(self.text_eventNumber.text()))
+            self.DrawWholeTrace(int(self.text_eventNumber.text()))
+            print(self.AllEvents)
+        else:
+            error = QMessageBox.critical(self, 'Important Message', 'Please select a file that has been analyzed (turned green).', QMessageBox.Retry)
 
     def closeEvent(self, event):
         '''

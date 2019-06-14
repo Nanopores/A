@@ -91,7 +91,7 @@ def ImportChimeraData(datafilename):
     return output
 
 
-def OpenFile(filename = '', ChimeraLowPass = 10e3,approxImpulseResponse=False,Split=False,verbose=False):
+def OpenFile(filename = '', ChimeraLowPass = 10e3, approxImpulseResponse=False, Split=False, verbose=False):
     """ 
     Function used to read data. It extracts the currents and voltage signals from the file in input
     by calling the import function corresponding to the file format.

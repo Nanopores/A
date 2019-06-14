@@ -1,6 +1,7 @@
 ﻿import numpy as np
 import matplotlib
-matplotlib.use('TkAgg')
+matplotlib.use('Qt5Agg')
+#matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.ticker import EngFormatter
@@ -21,11 +22,12 @@ from bokeh.palettes import Spectral4
 from bokeh.plotting import figure, output_file, show, output_notebook
 from bokeh.layouts import row, column, gridplot
 
-# Needed for plotting in jupyter
-from bokeh.resources import INLINE
-import bokeh.io
-bokeh.io.output_notebook(INLINE)
 
+## IS THERE A WAY FOR TO KNOW WHO IS EXECUTING THE FILE, SO THAT WE CAN ONLY IMPORT THIS FOR NOTEBOOKS?
+# Needed for plotting in jupyter
+#from bokeh.resources import INLINE
+#import bokeh.io
+#bokeh.io.output_notebook(INLINE)
 
 if (platform.system()=='Darwin'):
     root = Tk()
@@ -420,7 +422,7 @@ def PlotGTau(eventClass, xLim=None, yLim=None, showCurrent=False, showRough=Fals
     # show(p)
 
 
-def PlotEvent(event, ax=None, savefile=os.getcwd(), showCUSUM=True, showCurrent=False):
+def PlotEvent(event, ax=None, savefile=os.getcwd(), showCUSUM=True, showCurrent=False, showButtons = True, axisFormatter = True):
     """
     Function used to plot a single event passed in argument. The event will be represented
     in a blue trace and the baseline in a red trace.
@@ -445,13 +447,13 @@ def PlotEvent(event, ax=None, savefile=os.getcwd(), showCUSUM=True, showCurrent=
     if ax is None:
         #plt.figure(figsize=(10, 6))
         fig, ax = plt.subplots(figsize=(10, 6))
-    ax._event=event
+    ax._event = event
 
     def SavePlot(eventMouse):
         # Check if directory exists
         directory = os.path.dirname(savefile)
         savename=directory + os.sep + 'event.pdf'
-        i=1
+        i = 1
 
         while os.path.exists(directory + os.sep + 'event_{}.pdf'.format(i)):
             i += 1
@@ -483,28 +485,29 @@ def PlotEvent(event, ax=None, savefile=os.getcwd(), showCUSUM=True, showCurrent=
 
     ax.set_xlabel('time (s)')
     ax.set_ylabel('current (A)')
-    ax.xaxis.set_major_formatter(Time)
-    ax.yaxis.set_major_formatter(Amp)
+    if axisFormatter:
+        ax.xaxis.set_major_formatter(Time)
+        ax.yaxis.set_major_formatter(Amp)
 
     if plotTitle:
         plt.title(plotTitle)
 
+    if showButtons:
+        # Add buttons
 
-    # Add buttons
+        # Save button
+        bax = plt.axes([0.77, 0.95, 0.15, 0.03])
+        bsave = Button(bax, 'Save figure')
+        bsave.on_clicked(SavePlot)
+        # Link button to axes to preserve function
+        ax._bsave = bsave
 
-    # Save button
-    bax = plt.axes([0.77, 0.95, 0.15, 0.03])
-    bsave = Button(bax, 'Save figure')
-    bsave.on_clicked(SavePlot)
-    # Link button to axes to preserve function
-    ax._bsave = bsave
-
-    # Show original trace button
-    bax2 = plt.axes([0.77, 0.9, 0.15, 0.03])
-    bfull = Button(bax2, 'Show original Trace')
-    # Link button to axes to preserve function
-    ax._bfull = bfull
-    bfull.on_clicked(ShowFullTrace)
+        # Show original trace button
+        bax2 = plt.axes([0.77, 0.9, 0.15, 0.03])
+        bfull = Button(bax2, 'Show original Trace')
+        # Link button to axes to preserve function
+        ax._bfull = bfull
+        bfull.on_clicked(ShowFullTrace)
 
     # Plotting
     timeVals1 = np.linspace(0, len(event.before) / event.samplerate, num=len(event.before))
@@ -542,6 +545,27 @@ def PlotEvent(event, ax=None, savefile=os.getcwd(), showCUSUM=True, showCurrent=
     if 'fig' in locals():
          plt.show()
 
+def ShowEventInTrace_SignalPreloaded(FullTrace, AllData, eventnumber, ax):
+    times = np.linspace(0, len(FullTrace) / AllData.events[eventnumber].samplerate, num=len(FullTrace))
+    ax.plot(times, FullTrace, zorder=1)
+
+    ax.set_xlabel('time (s)')
+    ax.set_ylabel('current (A)')
+
+    # Create a Rectangle patch
+    if hasattr(AllData.events[eventnumber], 'changeTimes') and len(AllData.events[eventnumber].changeTimes) > 2:
+        start_i = (AllData.events[eventnumber].beginEventCUSUM - len(AllData.events[eventnumber].before)) / AllData.events[eventnumber].samplerate
+        end_i = (AllData.events[eventnumber].endEventCUSUM + len(AllData.events[eventnumber].after)) / AllData.events[eventnumber].samplerate
+    else:
+        start_i = (AllData.events[eventnumber].beginEvent - len(AllData.events[eventnumber].before)) / AllData.events[eventnumber].samplerate
+        end_i = (AllData.events[eventnumber].endEvent + len(AllData.events[eventnumber].after)) / AllData.events[eventnumber].samplerate
+    minE = np.min(np.append(np.append(AllData.events[eventnumber].eventTrace, AllData.events[eventnumber].before), AllData.events[eventnumber].after))
+    maxE = np.max(np.append(np.append(AllData.events[eventnumber].eventTrace, AllData.events[eventnumber].before), AllData.events[eventnumber].after))
+    rect = patches.Rectangle((start_i, minE - 0.1 * (maxE - minE)), end_i - start_i, maxE + 0.2 * (maxE - minE) - minE,
+                             linestyle='--', linewidth=1, edgecolor='r', facecolor='none', zorder=10)
+    # Add the patch to the Axes
+    ax.add_patch(rect)
+
 def ShowEventInTrace(event):
     """
     Function used to show the event with it's location framed in red in the original full signal trace in blue.
@@ -553,15 +577,15 @@ def ShowEventInTrace(event):
 
     """
 
-    filename=event.filename
-    loadedData = LoadData.OpenFile(filename,1e3,True) #, ChimeraLowPass, True, CutTraces)
+    filename = event.filename
+    loadedData = LoadData.OpenFile(filename, 1e3, True) #, ChimeraLowPass, True, CutTraces)
 
     fig, ax = plt.subplots(figsize=(10, 6))
 
     FullTrace = loadedData['i1']
 
-    times=np.linspace(0, len(FullTrace) / event.samplerate, num=len(FullTrace))
-    ax.plot(times,FullTrace,zorder=1)
+    times = np.linspace(0, len(FullTrace) / event.samplerate, num=len(FullTrace))
+    ax.plot(times, FullTrace, zorder=1)
 
     ax.set_xlabel('time (s)')
     ax.set_ylabel('current (A)')
