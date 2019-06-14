@@ -44,6 +44,49 @@ def GetParameters():
     print("Default coefficients:")
     pprint(coefficients)
 
+def eventdetectionwithfilegeneration(file, coefficients, verboseLevel=1, forceRun=False, CutTraces=False):
+    # Create new class that contains all events
+    AllEvents = NC.AllEvents()
+    # Loop over all files in folder
+    # Extract filename and generate filename to save located events
+    if verboseLevel >= 1:
+        print('analysing ' + file)
+    directory = os.path.dirname(file) + os.sep + 'analysisfiles'
+    if not os.path.exists(directory):
+        os.makedirs(directory, exist_ok=True)
+    filename, file_extension = os.path.splitext(os.path.basename(file))
+    savefilename = directory + os.sep + filename + 'data'
+    shelfFile = shelve.open(savefilename)
+    if ~forceRun:
+        try: #Check if file can be loaded
+            coefficientsloaded=shelfFile['coefficients']
+            tEL = shelfFile['TranslocationEvents']
+            # If coefficients before are not identical, analysis needs to run again
+            if (coefficientsloaded == coefficients):
+                if verboseLevel >= 1:
+                    print('loaded from file')
+            else:
+                forceRun = True
+        except:
+            # Except if cannot be loaded, analysis needs to run
+            forceRun = True
+            pass
+
+    if forceRun:
+        # Extract list of events for this file
+        tEL = eventdetection(file, coefficients, verboseLevel, CutTraces)
+        if verboseLevel >= 1:
+            print('Saved {} events'.format(len(tEL.events)))
+
+        # Open savefile and save events for this file
+        shelfFile['TranslocationEvents'] = tEL
+        shelfFile['coefficients'] = coefficients
+        if verboseLevel >= 1:
+            print('saved to file')
+    shelfFile.close()
+    # Add events to the initially created class that contains all events
+    AllEvents.AddEvent(tEL)
+    return AllEvents
 
 def batcheventdetection(folder, extension, coefficients, verboseLevel=1, forceRun=False, CutTraces=False):
     # Create new class that contains all events
@@ -98,7 +141,6 @@ def batcheventdetection(folder, extension, coefficients, verboseLevel=1, forceRu
         AllEvents.AddEvent(tEL)
 
     return AllEvents
-
 
 def eventdetection(fullfilename, coefficients, verboseLevel=1, CutTraces=False, showFigures=False):
     """ 
@@ -318,7 +360,6 @@ def eventdetection(fullfilename, coefficients, verboseLevel=1, CutTraces=False, 
         plt.show()
     return translocationEventList
 
-
 def LoadEvents(loadname):
     # Check if loadname is a directory or not
     if os.path.isdir(loadname):
@@ -335,7 +376,6 @@ def LoadEvents(loadname):
     AllEvents.AddEvent(TranslocationEvents)
     AllEvents.SetFolder(loadname)
     return AllEvents
-
 
 def run(inputData, newExtension=None, newCoefficients={}, outputFile=None, force=False, cut=False, verboseLevel=0):
     """ 

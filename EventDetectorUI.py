@@ -2,6 +2,7 @@ import sys
 import os
 from PyQt5.QtWidgets import *
 from PyQt5 import QtCore
+from PyQt5.QtGui import QColor
 import matplotlib
 matplotlib.use('QT5Agg')
 import numpy as np
@@ -12,6 +13,7 @@ font = {'family' : 'monospace',
         'weight' : 'regular',
         'size'   : 4}
 matplotlib.rc('font', **font)  # pass in the font dict as kwargs
+from EventDetection import *
 
 
 class AnalysisUI(QWidget):
@@ -62,6 +64,7 @@ class AnalysisUI(QWidget):
         self.button_fileimport.clicked.connect(self.ImportButtonPushed)
         self.button_clearfilelist.clicked.connect(self.ClearListButtonPushed)
         self.list_filelist.clicked.connect(self.SelectionInFileListChanged)
+        self.list_filelist.doubleClicked.connect(self.FileDoubleClicked)
         self.button_startAnalysis.clicked.connect(self.AnalysisButtonPressed)
         self.show()
 
@@ -227,9 +230,16 @@ class AnalysisUI(QWidget):
 
     def UpdateFileList(self):
         self.list_filelist.clear()
-        for i in self.importedFiles:
+        for ind, i in enumerate(self.importedFiles):
             self.list_filelist.addItem(os.path.split(i)[1])
-        ## If file is present, make the row green. This means analysis was done on it.
+            folder = os.path.dirname(i) + os.sep + 'analysisfiles'
+            filename, file_extension = os.path.splitext(os.path.basename(i))
+            potentialanalysisfile = folder + os.sep + filename + 'data.db'
+            print(potentialanalysisfile)
+            print(os.path.exists(potentialanalysisfile))
+            if os.path.isfile(potentialanalysisfile):
+            ## If file is present, make the row green. This means analysis was done on it.
+                self.list_filelist.item(ind).setBackground(QColor('green'))
 
     def SelectionInFileListChanged(self, event):
         items = self.list_filelist.selectedItems()
@@ -241,7 +251,32 @@ class AnalysisUI(QWidget):
         print(x)
 
     def AnalysisButtonPressed(self):
-        self.analyzedFiles = self.selectedFiles
+        # Get Full File Paths:
+        fullfilepaths = []
+        for i in self.selectedFiles:
+            for j in self.importedFiles:
+                if i in j:
+                    fullfilepaths.append(j)
+        print(fullfilepaths)
+        # Fill coefficient dictionary from the user inputs
+        coefficients = {}
+        coefficients['maxEventLength'] = self.settings_other_MaxEventLength.value()
+        coefficients['minEventLength'] = self.settings_other_MinEventLength.value()
+        coefficients['fitLength'] = self.settings_other_fitLength.value()
+        coefficients['delta'] = self.settings_cusum_dI.value()
+        coefficients['hbook'] = self.settings_cusum_hBook.value()
+        coefficients['a'] = np.float(self.settings_LP_a.currentText())
+        coefficients['S'] = self.settings_LP_S.value()
+        coefficients['E'] = self.settings_LP_E.value()
+        coefficients['ChimeraLowPass'] = self.settings_other_ChimeraLP.value()
+        coefficients['dt'] = 25
+        coefficients['deltaRel'] = None
+        for i in fullfilepaths:
+            eventdetectionwithfilegeneration(i, coefficients, forceRun=True, verboseLevel=1)
+        self.UpdateFileList()
+
+    def FileDoubleClicked(self, event):
+        print(event.column())
 
     def closeEvent(self, event):
         '''
