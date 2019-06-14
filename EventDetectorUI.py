@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pylab as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+
 font = {'weight' : 'regular',
         'size'   : 4}
 
