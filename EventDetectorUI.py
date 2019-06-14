@@ -64,6 +64,7 @@ class AnalysisUI(QWidget):
         self.button_fileimport.clicked.connect(self.ImportButtonPushed)
         self.button_clearfilelist.clicked.connect(self.ClearListButtonPushed)
         self.list_filelist.clicked.connect(self.SelectionInFileListChanged)
+        self.list_filelist.doubleClicked.connect(self.FileDoubleClicked)
         self.button_startAnalysis.clicked.connect(self.AnalysisButtonPressed)
         self.show()
 
@@ -273,6 +274,10 @@ class AnalysisUI(QWidget):
         for i in fullfilepaths:
             eventdetectionwithfilegeneration(i, coefficients, forceRun=True, verboseLevel=1)
         self.UpdateFileList()
+
+    def FileDoubleClicked(self, event):
+        print(event.column())
+
     def closeEvent(self, event):
         '''
         reply = QMessageBox.question(self, 'Message',

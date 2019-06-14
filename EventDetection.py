@@ -142,7 +142,6 @@ def batcheventdetection(folder, extension, coefficients, verboseLevel=1, forceRu
 
     return AllEvents
 
-
 def eventdetection(fullfilename, coefficients, verboseLevel=1, CutTraces=False, showFigures=False):
     """ 
     Function used to find the events of TranslocationEvents class in the raw data in file 'filename'. 
@@ -361,7 +360,6 @@ def eventdetection(fullfilename, coefficients, verboseLevel=1, CutTraces=False, 
         plt.show()
     return translocationEventList
 
-
 def LoadEvents(loadname):
     # Check if loadname is a directory or not
     if os.path.isdir(loadname):
@@ -378,7 +376,6 @@ def LoadEvents(loadname):
     AllEvents.AddEvent(TranslocationEvents)
     AllEvents.SetFolder(loadname)
     return AllEvents
-
 
 def run(inputData, newExtension=None, newCoefficients={}, outputFile=None, force=False, cut=False, verboseLevel=0):
     """ 
