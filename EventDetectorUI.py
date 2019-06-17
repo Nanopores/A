@@ -31,6 +31,7 @@ class AnalysisUI(QWidget):
         self.analyzedFiles = []
         self.rawtrace = []
         self.AllEvents = NC.AllEvents()
+        self.wholetracedrawnforthefirsttime = True
 
         # Defining the plots
         self.TurnToolbarsOn = True
@@ -40,7 +41,7 @@ class AnalysisUI(QWidget):
 
         self.fig_wholeTrace = plt.figure(2, figsize=(16, 9))
         self.ax_wholeTrace = self.fig_wholeTrace.add_subplot(111)
-        self.ax_wholeTrace.plot(np.arange(1, 10), -np.arange(1, 10))
+        self.line_wholeTrace, = self.ax_wholeTrace.plot(np.arange(1, 10), -np.arange(1, 10))
 
         self.figure_singleEvent = FigureCanvas(figure=self.fig_singleEvent)
         self.figure_wholeTrace = FigureCanvas(figure=self.fig_wholeTrace)
@@ -53,7 +54,7 @@ class AnalysisUI(QWidget):
         # Main Window
         self.AllVariable()
         self.setGeometry(0, 0, 1200, 600)
-        self.setWindowTitle('Do not use this tool for shitty science...')
+        self.setWindowTitle('A user interface is like a joke...')
 
         # Assemble the different layout pieces
         self.MakeFileImportLayout()
@@ -317,9 +318,13 @@ class AnalysisUI(QWidget):
         self.figure_singleEvent.draw()
 
     def DrawWholeTrace(self, number):
-        self.ax_wholeTrace.clear()
-        ShowEventInTrace_SignalPreloaded(self.rawtrace, self.AllEvents, number, self.ax_wholeTrace)
+        #self.ax_wholeTrace.clear()
+        ShowEventInTrace_SignalPreloaded(self.rawtrace, self.AllEvents, number, self.ax_wholeTrace, line=self.line_wholeTrace, firstCall=self.wholetracedrawnforthefirsttime)
+        self.wholetracedrawnforthefirsttime = False
+        #self.ax_wholeTrace.autoscale(enable=True)
         self.figure_wholeTrace.draw()
+        #self.figure_wholeTrace.flush_events()
+
 
     def FileDoubleClicked(self, event):
         DoubleclickedFile = self.list_filelist.selectedItems()[0].text()
@@ -341,6 +346,7 @@ class AnalysisUI(QWidget):
             print(self.AllEvents)
         else:
             error = QMessageBox.critical(self, 'Important Message', 'Please select a file that has been analyzed (turned green).', QMessageBox.Retry)
+        self.wholetracedrawnforthefirsttime = True
 
     def closeEvent(self, event):
         '''

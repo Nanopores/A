@@ -104,7 +104,7 @@ class AnalysisUI(QWidget):
 
     # Button Actions
     def ImportButtonPushed(self, event):
-        files = QFileDialog.getOpenFileNames(self, 'Select Files to Add to list', filter="data files (*.dat)")
+        files = QFileDialog.getOpenFileNames(self, 'Select Files to Add to list', filter="data files (*.dat, *.db)")
         # Add to file list if unique:
         for file in files[0]:
             if file not in self.importedFiles:

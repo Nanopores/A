@@ -579,9 +579,18 @@ def PlotEvent(event, ax=None, savefile=os.getcwd(), showCUSUM=True, showCurrent=
     if 'fig' in locals():
          plt.show()
 
-def ShowEventInTrace_SignalPreloaded(FullTrace, AllData, eventnumber, ax):
+def ShowEventInTrace_SignalPreloaded(FullTrace, AllData, eventnumber, ax, line = None, firstCall = True):
     times = np.linspace(0, len(FullTrace) / AllData.events[eventnumber].samplerate, num=len(FullTrace))
-    ax.plot(times, FullTrace, zorder=1)
+    if line:
+        line.set_ydata(FullTrace)
+        line.set_xdata(times)
+        if firstCall:
+            ax.set_xlim(np.min(times), np.max(times))
+            ax.set_ylim(np.min(FullTrace), np.max(FullTrace))
+        print('updated lines')
+    else:
+        ax.plot(times, FullTrace, zorder=1)
+        print('Updated plot')
 
     ax.set_xlabel('time (s)')
     ax.set_ylabel('current (A)')
@@ -598,6 +607,7 @@ def ShowEventInTrace_SignalPreloaded(FullTrace, AllData, eventnumber, ax):
     rect = patches.Rectangle((start_i, minE - 0.1 * (maxE - minE)), end_i - start_i, maxE + 0.2 * (maxE - minE) - minE,
                              linestyle='--', linewidth=1, edgecolor='r', facecolor='none', zorder=10)
     # Add the patch to the Axes
+    print(ax.patches.clear())
     ax.add_patch(rect)
 
 def ShowEventInTrace(event):
