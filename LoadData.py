@@ -314,3 +314,14 @@ def LoadVariables(loadname, variableName):
         shelfFile.close()
         print('Loaded  ' + variableName + 'from ' + loadname + '.dat')
         return Variable
+
+def LowPassAndResample(inpsignal, samplerate, LP, LPtoSR = 5):
+    Wn = np.round(2 * LP / samplerate, 4)  # [0,1] nyquist frequency
+    b, a = signal.bessel(4, Wn, btype='low', analog=False)  # 4-th order digital filter
+    z, p, k = signal.tf2zpk(b, a)
+    eps = 1e-9
+    r = np.max(np.abs(p))
+    approx_impulse_len = int(np.ceil(np.log(eps) / np.log(r)))
+    Filt_sig = (signal.filtfilt(b, a, inpsignal, method='gust', irlen=approx_impulse_len))
+    ds_factor = np.ceil(samplerate / (2 * LP))
+    return (scipy.signal.resample(Filt_sig, int(len(inpsignal) / ds_factor)), samplerate / ds_factor)

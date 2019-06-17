@@ -457,7 +457,7 @@ def PlotGTauVoltage (eventClass, xLim=None, yLim=None, showCurrent=False):
     # show the results
     show(fig)
 
-def PlotEvent(event, ax=None, savefile=os.getcwd(), showCUSUM=True, showCurrent=False, showButtons = True, axisFormatter = True):
+def PlotEvent(event, ax=None, savefile=os.getcwd(), showCUSUM=True, showCurrent=False, showButtons = True, axisFormatter = True, plotTitleBool = True):
     """
     Function used to plot a single event passed in argument. The event will be represented
     in a blue trace and the baseline in a red trace.
@@ -523,7 +523,7 @@ def PlotEvent(event, ax=None, savefile=os.getcwd(), showCUSUM=True, showCurrent=
         ax.xaxis.set_major_formatter(Time)
         ax.yaxis.set_major_formatter(Amp)
 
-    if plotTitle:
+    if plotTitleBool:
         plt.title(plotTitle)
 
     if showButtons:
@@ -579,7 +579,7 @@ def PlotEvent(event, ax=None, savefile=os.getcwd(), showCUSUM=True, showCurrent=
     if 'fig' in locals():
          plt.show()
 
-def ShowEventInTrace_SignalPreloaded(FullTrace, AllData, eventnumber, ax, line = None, firstCall = True):
+def ShowEventInTrace_SignalPreloaded(FullTrace, AllData, eventnumber, ax, line = None, firstCall = True, dscorrection = None):
     times = np.linspace(0, len(FullTrace) / AllData.events[eventnumber].samplerate, num=len(FullTrace))
     if line:
         line.set_ydata(FullTrace)
@@ -596,12 +596,25 @@ def ShowEventInTrace_SignalPreloaded(FullTrace, AllData, eventnumber, ax, line =
     ax.set_ylabel('current (A)')
 
     # Create a Rectangle patch
-    if hasattr(AllData.events[eventnumber], 'changeTimes') and len(AllData.events[eventnumber].changeTimes) > 2:
-        start_i = (AllData.events[eventnumber].beginEventCUSUM - len(AllData.events[eventnumber].before)) / AllData.events[eventnumber].samplerate
-        end_i = (AllData.events[eventnumber].endEventCUSUM + len(AllData.events[eventnumber].after)) / AllData.events[eventnumber].samplerate
+    if dscorrection:
+        if hasattr(AllData.events[eventnumber], 'changeTimes') and len(AllData.events[eventnumber].changeTimes) > 2:
+            start_i = (AllData.events[eventnumber].beginEventCUSUM - len(AllData.events[eventnumber].before)) / AllData.events[eventnumber].samplerate * dscorrection
+            end_i = (AllData.events[eventnumber].endEventCUSUM + len(AllData.events[eventnumber].after)) / AllData.events[eventnumber].samplerate * dscorrection
+        else:
+            start_i = (AllData.events[eventnumber].beginEvent - len(AllData.events[eventnumber].before)) / AllData.events[eventnumber].samplerate * dscorrection
+            end_i = (AllData.events[eventnumber].endEvent + len(AllData.events[eventnumber].after)) / AllData.events[eventnumber].samplerate * dscorrection
     else:
-        start_i = (AllData.events[eventnumber].beginEvent - len(AllData.events[eventnumber].before)) / AllData.events[eventnumber].samplerate
-        end_i = (AllData.events[eventnumber].endEvent + len(AllData.events[eventnumber].after)) / AllData.events[eventnumber].samplerate
+        if hasattr(AllData.events[eventnumber], 'changeTimes') and len(AllData.events[eventnumber].changeTimes) > 2:
+            start_i = (AllData.events[eventnumber].beginEventCUSUM - len(AllData.events[eventnumber].before)) / \
+                      AllData.events[eventnumber].samplerate
+            end_i = (AllData.events[eventnumber].endEventCUSUM + len(AllData.events[eventnumber].after)) / \
+                    AllData.events[eventnumber].samplerate
+        else:
+            start_i = (AllData.events[eventnumber].beginEvent - len(AllData.events[eventnumber].before)) / \
+                      AllData.events[eventnumber].samplerate
+            end_i = (AllData.events[eventnumber].endEvent + len(AllData.events[eventnumber].after)) / AllData.events[
+                eventnumber].samplerate
+
     minE = np.min(np.append(np.append(AllData.events[eventnumber].eventTrace, AllData.events[eventnumber].before), AllData.events[eventnumber].after))
     maxE = np.max(np.append(np.append(AllData.events[eventnumber].eventTrace, AllData.events[eventnumber].before), AllData.events[eventnumber].after))
     rect = patches.Rectangle((start_i, minE - 0.1 * (maxE - minE)), end_i - start_i, maxE + 0.2 * (maxE - minE) - minE,

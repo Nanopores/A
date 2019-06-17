@@ -17,6 +17,7 @@ matplotlib.rc('font', **font)  # pass in the font dict as kwargs
 matplotlib.rc('lines', linewidth = 0.5)
 from EventDetection import *
 from Plotting.EventPlots import *
+from LoadData import *
 
 class AnalysisUI(QWidget):
 
@@ -30,8 +31,12 @@ class AnalysisUI(QWidget):
         self.selectedFiles = []
         self.analyzedFiles = []
         self.rawtrace = []
+        self.rawtracesamplerate = 0
+
         self.AllEvents = NC.AllEvents()
         self.wholetracedrawnforthefirsttime = True
+        self.dsrawtrace = []
+        self.dssamplerate = 0
 
         # Defining the plots
         self.TurnToolbarsOn = True
@@ -75,6 +80,7 @@ class AnalysisUI(QWidget):
         self.text_eventNumber.returnPressed.connect(self.EventNumberChanged)
         self.button_eventForward.clicked.connect(self.ForwardButtonPushed)
         self.button_eventBackward.clicked.connect(self.BackwardButtonPushed)
+        self.setting_LPForWholeTracePlot.editingFinished.connect(self.LPForWholeTracePlotChanged)
         self.show()
 
     def MakeFileImportLayout(self):
@@ -95,10 +101,13 @@ class AnalysisUI(QWidget):
 
     def MakeAnalysisParametersAndRunLayout(self):
         self.AnalysisParameters = QGroupBox("Analysis")
+        self.AnalysisParameters.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum))
         self.LowPassSettings = QGroupBox("Low Pass Settings")
+        self.LowPassSettings.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum))
         self.CusumSettings = QGroupBox("Cusum Settings")
-        self.CusumSettings.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Maximum))     #This allows this part to remain small in vertical position when the UI resizes.
+        self.CusumSettings.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum))     #This allows this part to remain small in vertical position when the UI resizes.
         self.OtherSettings = QGroupBox("Other Settings")
+        self.OtherSettings.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum))     #This allows this part to remain small in vertical position when the UI resizes.
         self.button_startAnalysis = QPushButton('Start Analysis')
         self.button_startAnalysis.setToolTip('This button will provoke your computer to sel-destruct. Use at your own risk!!!!!')
 
@@ -123,7 +132,7 @@ class AnalysisUI(QWidget):
         self.settings_LP_S.setToolTip('The current needs to go below mean + S*std to initiate an event')
 
         layout1 = QGridLayout()
-        layout1.addWidget(QLabel('Low Pass Filter Coefficient (a)'), 0, 0)
+        layout1.addWidget(QLabel('Filter Coefficient (a)'), 0, 0)
         layout1.addWidget(self.settings_LP_a, 0, 1)
         layout1.addWidget(QLabel('Start Coefficient (S)'), 1, 0)
         layout1.addWidget(self.settings_LP_S, 1, 1)
@@ -183,7 +192,7 @@ class AnalysisUI(QWidget):
         self.settings_other_fitLength.setToolTip('minimal event length to be fitted for impulses')
 
         layoutOther = QGridLayout()
-        layoutOther.addWidget(QLabel('Chimera Low Pass'), 0, 0)
+        layoutOther.addWidget(QLabel('Chimera LP'), 0, 0)
         layoutOther.addWidget(self.settings_other_ChimeraLP, 0, 1)
         layoutOther.addWidget(QLabel('Max event length'), 1, 0)
         layoutOther.addWidget(self.settings_other_MaxEventLength, 1, 1)
@@ -208,21 +217,30 @@ class AnalysisUI(QWidget):
         self.button_eventForward.setToolTip('Advance one event forward')
         self.button_eventBackward = QPushButton('Backward')
         self.button_eventBackward.setToolTip('Go one event back')
+        self.setting_LPForWholeTracePlot = QDoubleSpinBox()
+        self.setting_LPForWholeTracePlot.setValue(10)
+        self.setting_LPForWholeTracePlot.setSingleStep(0.5)
+        self.setting_LPForWholeTracePlot.setSuffix(' kHz')
         self.text_eventNumber = QLineEdit('0')
         self.text_eventNumber.setValidator(QIntValidator(0, 100000))
         self.text_eventNumber.setToolTip('This is the number of the current event. You can edit this field to jump directly to an event.')
         self.text_eventNumber.setAlignment(QtCore.Qt.AlignCenter)
         layout = QGridLayout()
-        layout.addWidget(self.figure_singleEvent, 0, 0, 1, 3)
+        layout.addWidget(self.figure_singleEvent, 0, 0, 1, 5)
         self.figure_singleEvent.setFixedHeight(250)
-        layout.addWidget(self.button_eventForward, 2, 2)
-        layout.addWidget(self.text_eventNumber, 2, 1)
-        layout.addWidget(self.button_eventBackward, 2, 0)
-        layout.addWidget(self.figure_wholeTrace, 3, 0, 1, 3)
-        self.figure_wholeTrace.setFixedHeight(300)
+        self.figure_singleEvent.setFixedWidth(600)
+        layout.addWidget(self.button_eventForward, 2, 4)
+        layout.addWidget(self.text_eventNumber, 2, 3)
+        layout.addWidget(self.button_eventBackward, 2, 2)
+        layout.addWidget(self.setting_LPForWholeTracePlot, 2, 1)
+        layout.addWidget(QLabel('Downsample plot below: '), 2, 0)
+        layout.addWidget(self.figure_wholeTrace, 3, 0, 1, 5)
+        self.figure_wholeTrace.setFixedHeight(250)
+        self.figure_wholeTrace.setFixedWidth(600)
+
         if self.TurnToolbarsOn:
-            layout.addWidget(self.toolbarSingleEvent, 1, 0, 1, 3)
-            layout.addWidget(self.toolbarWholeTrace, 4, 0, 1, 3)
+            layout.addWidget(self.toolbarSingleEvent, 1, 0, 1, 5)
+            layout.addWidget(self.toolbarWholeTrace, 4, 0, 1, 5)
         self.EventNavigatorLayout.setLayout(layout)
 
 
@@ -314,12 +332,11 @@ class AnalysisUI(QWidget):
     def DrawEvent(self, number):
         self.ax_singleEvent.clear()
         PlotEvent(self.AllEvents.events[number], ax=self.ax_singleEvent, savefile=os.getcwd(), showCUSUM=True,
-                  showCurrent=False, showButtons=False, axisFormatter=False)
+                  showCurrent=False, showButtons=False, axisFormatter=False, plotTitleBool=False)
         self.figure_singleEvent.draw()
 
     def DrawWholeTrace(self, number):
-        #self.ax_wholeTrace.clear()
-        ShowEventInTrace_SignalPreloaded(self.rawtrace, self.AllEvents, number, self.ax_wholeTrace, line=self.line_wholeTrace, firstCall=self.wholetracedrawnforthefirsttime)
+        ShowEventInTrace_SignalPreloaded(self.dsrawtrace, self.AllEvents, number, self.ax_wholeTrace, line=self.line_wholeTrace, firstCall=self.wholetracedrawnforthefirsttime, dscorrection=self.dssamplerate/self.rawtracesamplerate)
         self.wholetracedrawnforthefirsttime = False
         #self.ax_wholeTrace.autoscale(enable=True)
         self.figure_wholeTrace.draw()
@@ -340,13 +357,20 @@ class AnalysisUI(QWidget):
             ## Load the analysis file
             self.AllEvents = LoadEvents(analysisfilepath)
             self.text_eventNumber.setValidator(QIntValidator(0, len(self.AllEvents.events)-1))
-            self.rawtrace = LoadData.OpenFile(self.AllEvents.events[0].filename, ChimeraLowPass = 10e3, approxImpulseResponse = True, Split = True, verbose = False)['i1']
+            inputfile = LoadData.OpenFile(self.AllEvents.events[0].filename, ChimeraLowPass = 10e3, approxImpulseResponse = True, Split = True, verbose = False)
+            self.rawtrace = inputfile['i1']
+            self.rawtracesamplerate = inputfile['samplerate']
+            self.LPForWholeTracePlotChanged()
             self.DrawEvent(int(self.text_eventNumber.text()))
             self.DrawWholeTrace(int(self.text_eventNumber.text()))
             print(self.AllEvents)
         else:
             error = QMessageBox.critical(self, 'Important Message', 'Please select a file that has been analyzed (turned green).', QMessageBox.Retry)
         self.wholetracedrawnforthefirsttime = True
+
+    def LPForWholeTracePlotChanged(self):
+        print(self.setting_LPForWholeTracePlot.value())
+        self.dsrawtrace, self.dssamplerate = LowPassAndResample(self.rawtrace, self.rawtracesamplerate, self.setting_LPForWholeTracePlot.value() * 1e3, LPtoSR=2)
 
     def closeEvent(self, event):
         '''
