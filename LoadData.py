@@ -7,11 +7,11 @@ import numpy as np
 import pyabf
 import scipy
 import scipy.signal as sig
-from PyQt5 import QtGui
+from PyQt5 import QtGui, QtWidgets
 from scipy import io
 from scipy import signal
 import Functions
-
+from tkinter.filedialog import askopenfilenames
 
 def ImportABF(datafilename):
     abf = pyabf.ABF(datafilename)
@@ -77,7 +77,6 @@ def ImportChimeraRaw(datafilename):
     output = {'matfilename': str(os.path.splitext(datafilename)[0]),'i1raw': data, 'v1': np.float64(matfile['SETUP_biasvoltage']), 'samplerateRaw': np.int64(samplerate), 'type': 'ChimeraRaw', 'filename': datafilename, 'graphene': 0, 'blockLength':blockLength}
     return output
 
-
 def ImportChimeraData(datafilename):
     matfile = io.loadmat(str(os.path.splitext(datafilename)[0]))
     samplerate = matfile['ADCSAMPLERATE']
@@ -89,7 +88,6 @@ def ImportChimeraData(datafilename):
     else:
         output = ImportChimeraRaw(datafilename)
     return output
-
 
 def OpenFile(filename = '', ChimeraLowPass = 10e3, approxImpulseResponse=False, Split=False, verbose=False):
     """ 
@@ -128,7 +126,8 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3, approxImpulseResponse=False, 
     if ChimeraLowPass==None:
         ChimeraLowPass=10e3
     if filename == '':
-        datafilename = QtGui.QFileDialog.getOpenFileName()
+
+        datafilename = askopenfilenames()
         datafilename=datafilename[0]
         print(datafilename)
     else:
