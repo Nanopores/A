@@ -175,7 +175,7 @@ def eventdetection(fullfilename, coefficients, verboseLevel=1, CutTraces=False, 
     """
 
     if os.path.getsize(fullfilename) <= 8:
-            print('File incorrect size')
+        print('File incorrect size')
         return -1
 
     if 'ChimeraLowPass' in coefficients:
