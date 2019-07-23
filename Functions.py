@@ -1214,7 +1214,7 @@ def CUSUM(input, delta, h,verbose=False):
 def GetPSD(input):
     Fulltrace = input['i1']
     samplerate = input['samplerate']
-    f, Pxx_den = sig.welch(Fulltrace, samplerate,nperseg=2**18)
+    f, Pxx_den = sig.welch(Fulltrace, samplerate, nperseg=2**18)
     return f, Pxx_den
 
 
