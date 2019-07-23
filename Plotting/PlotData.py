@@ -80,8 +80,10 @@ def SimpleTracePlot(filename, lowPass = 10e3):
 
 def PlotPSD(inputdata):
     if os.path.isfile(inputdata):
-        loadedData = LoadData.OpenFile(inputdata, approxImpulseResponse=True) #, ChimeraLowPass, True, CutTraces)
+        filename = inputdata
+        loadedData = LoadData.OpenFile(filename, approxImpulseResponse=True) #, ChimeraLowPass, True, CutTraces)
     else:
+        filename = ''
         loadedData = inputdata
     frequencies, P_den = Functions.GetPSD(loadedData)
 
