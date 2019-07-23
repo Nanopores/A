@@ -79,7 +79,7 @@ def SimpleTracePlot(filename, lowPass = 10e3):
     show(p)
 
 def PlotPSD(inputdata):
-    if os.path.isfile(inputdata):
+    if isinstance(inputdata, str):
         filename = inputdata
         loadedData = LoadData.OpenFile(filename, approxImpulseResponse=True) #, ChimeraLowPass, True, CutTraces)
     else:
