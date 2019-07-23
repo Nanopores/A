@@ -89,12 +89,12 @@ def PlotPSD(inputdata):
 
     output_notebook()
 
-    p = figure(plot_height=300, plot_width=900, y_axis_type="log", tools='pan,box_zoom,xwheel_zoom,reset,save')
+    p = figure(plot_height=300, plot_width=900, x_axis_type="log", y_axis_type="log", tools='pan,box_zoom,xwheel_zoom,reset,save')
 
     p.line(frequencies,P_den*1e24)
 
     p.xaxis.axis_label = 'Frequencies (Hz)'
-    p.yaxis.axis_label = 'PSD ($frac{pA^2}{Hz}$)'
+    p.yaxis.axis_label = 'PSD pA^2/Hz)'
 
     p.title.text = 'PSD :' + os.path.basename(filename)
 
