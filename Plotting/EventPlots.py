@@ -17,12 +17,13 @@ from bokeh.models import Legend,LegendItem,Range1d
 from bokeh.palettes import Spectral4
 from bokeh.plotting import figure, output_file, show, output_notebook
 from bokeh.layouts import row, column, gridplot
+
+from holoviews.plotting import bokeh
 from holoviews.operation import histogram
 import holoviews as hv
 from holoviews import opts
 
 hv.extension('bokeh ')
-
 
 #needed for plotting in jupyter
 from bokeh.resources import INLINE
