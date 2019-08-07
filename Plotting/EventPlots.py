@@ -28,6 +28,7 @@ hv.extension('bokeh')
 #needed for plotting in jupyter
 from bokeh.resources import INLINE
 import bokeh.io
+bokeh.io.output_notebook(INLINE)
 
 
 Amp = EngFormatter(unit='A', places=2)
