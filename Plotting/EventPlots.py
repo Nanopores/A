@@ -128,7 +128,7 @@ def PlotGTau(eventClass, xLim = None, yLim = None, showCurrent = False, normaliz
     # xhist, yhist = (histogram(points3*points2*points, bin_range=br[dim], dimension=dim)
     #                 for dim in 'xy')
 
-    ((points3 * points2 * points).opts(logx=showLog, xlabel=xlabel, ylabel=ylabel, width=500, height=500, xlim=brx,
+    return ((points3 * points2 * points).opts(logx=showLog, xlabel=xlabel, ylabel=ylabel, width=500, height=500, xlim=brx,
                                        ylim=bry) << yhist.opts(
         width=200) << xhist.opts(height=150, logx=showLog)).opts(
         opts.Histogram(xlabel='', ylabel='', alpha=0.3, show_legend=False))
