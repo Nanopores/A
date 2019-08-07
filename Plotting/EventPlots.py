@@ -23,7 +23,7 @@ from holoviews.operation import histogram
 import holoviews as hv
 from holoviews import opts
 
-hv.extension('bokeh ')
+hv.extension('bokeh')
 
 #needed for plotting in jupyter
 from bokeh.resources import INLINE
