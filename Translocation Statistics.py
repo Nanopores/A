@@ -6,8 +6,10 @@ import Functions as f
 import shelve
 from sklearn.mixture import GaussianMixture as GMM
 import os
-import matplotlib.pyplot as plt
 import matplotlib
+#matplotlib.use('Qt5Agg')
+import matplotlib.pyplot as plt
+
 import h5py
 import seaborn as sns
 from tkinter import Tk
@@ -20,15 +22,15 @@ from scipy.stats import gaussian_kde
 matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
 
-filenames = askopenfilenames(filetypes=[('data files', '*.dat')], parent = root) # show an "Open" dialog box and return the path to the selected file
+filenames = askopenfilenames(filetypes=[('data files', '*.dat')], parent = root)
 root.update()
 
 
 Name = ''
 cm = plt.cm.get_cmap('RdYlBu')
-voltageLimits = [0.01, 0.51]
-dwellrange = (0, 10)
-dIrange = (0, 1)
+voltageLimits = [0.19, 0.51]
+dwellrange = (0, 25)
+dIrange = (0, 2.5)
 FracDIRange = (0, 100)
 
 count = 0
@@ -50,7 +52,7 @@ for file in filenames:
     print(file)
     fileNamewithourend, end = os.path.splitext(file)
     shelfFile = shelve.open(fileNamewithourend)
-    event = shelfFile['translocationEvents']
+    event = shelfFile['TranslocationEvents']
     dIF = np.append(dIF, np.array(event.GetAllIdropsNorm())*100)
     dI = np.append(dI, np.array(event.GetAllIdrops())*1e9)
     tempvoltage = np.array([])
@@ -60,7 +62,7 @@ for file in filenames:
         tempvoltage = np.append(tempvoltage, ev.voltage)
         templocalbaseline = np.append(templocalbaseline, ev.baseline)
         tempeventlength = np.append(tempeventlength, ev.eventLength)
-    filepath = event.events[0].filename[19:].replace('2018 - CURRENT', '2018')
+    filepath = event.events[0].filename[19:] #.replace('2019 - CURRENT', '2019')
     st = os.stat('/Volumes/'+filepath.replace('\\','/'))
     dt = np.append(dt, tempeventlength*1e3)
     t = np.append(t, st.st_birthtime * np.ones(len(event.GetAllIdropsNorm())))
@@ -106,10 +108,10 @@ cond = np.array([])
 for i,dati in enumerate(data):
     cond = np.append(cond, dati/availableVoltages[i])
 
-# Fractional Current Drop Scatter Plot
+# Fractional Current Drop % Scatter Plot
 fig1 = plt.figure(1, figsize=(9, 6))
 ax = fig1.add_subplot(111)
-sc = ax.scatter(dt[np.where(v > 0)]*1e3, dIF[np.where(v > 0)], c=v[np.where(v > 0)], vmin=min(v[np.where(v > 0)]), vmax=max(v[np.where(v > 0)]), s=35, cmap=cm)
+sc = ax.scatter(dt[np.where(v > 0)], dIF[np.where(v > 0)], c=v[np.where(v > 0)], vmin=min(v[np.where(v > 0)]), vmax=max(v[np.where(v > 0)]), s=35, cmap=cm)
 cbar = plt.colorbar(sc, ticks=availableVoltages)
 cbar.ax.set_yticklabels(labels)  # vertically oriented colorbar
 ax.set_xlabel('Time (s)')
@@ -117,8 +119,8 @@ ax.set_ylabel('Current Drop dI/I0 (%)')
 ax.set_title('{}\nScatter Plot, {} events'.format(Name, count))
 #plt.show()
 fig1.savefig(file[:-24] + 'ScatterFrac.pdf', transparent=True)
-ax.set_xlim(0, 40000)
-ax.set_ylim(0, 15)
+ax.set_xlim(dwellrange[0], dwellrange[1])
+ax.set_ylim(FracDIRange[0], FracDIRange[1])
 fig1.savefig(file[:-24] + 'ScatterFracZoomed.pdf', transparent=True)
 
 #fig1.clear()
@@ -133,12 +135,13 @@ cbar6.ax.set_yticklabels(labels)  # vertically oriented colorbar
 ax6.set_xlabel('Time (s)')
 ax6.set_ylabel('Current Drop dI (nA)')
 ax6.set_title('{}\nScatter Plot, {} events'.format(Name, count))
+#plt.show()
 fig6.savefig(file[:-24] + 'ScatterdI.pdf', transparent=True)
-#ax6.set_xlim(dwellrange)
-#ax6.set_ylim(dIrange)
+ax6.set_xlim(dwellrange[0], dwellrange[1])
+ax6.set_ylim(dIrange[0], dIrange[1])
 fig6.savefig(file[:-24] + 'ScatterdIZoomed.pdf', transparent=True)
 
-plt.show()
+#plt.show()
 
 #fig1.clear()
 #fig1.close()
@@ -211,25 +214,26 @@ fig7.savefig(file[:-24] + 'BoxplotdII0.pdf', transparent=True)
 fig8 = plt.figure(8, figsize=(6, 12))
 for i,dati in enumerate(dataDwell):
     ax8 = fig8.add_subplot(len(dataDwell), 1, i+1)
-    n, bins, patches = ax8.hist(x=dati, bins = 'auto', alpha=0.7, rwidth=0.85)
+    n, bins, patches = ax8.hist(x=dati, bins = 100, alpha=0.7, rwidth=0.85)
     ax8.grid(axis='y', alpha=0.75)
     ax8.set_xlabel('Dwell Time (ms)')
     ax8.set_ylabel('Frequency')
     ax8.set_title('{}mV'.format(int(availableVoltages[i]*1e3)))
-    ax8.set_xlim(left=np.min(np.concatenate(dataDwell).ravel()), right=np.max(np.concatenate(dataDwell).ravel()))
+    #ax8.set_xlim(left=np.min(np.concatenate(dataDwell).ravel()), right=np.max(np.concatenate(dataDwell).ravel()))
+    ax8.set_xlim(0,2)
 fig8.savefig(file[:-24] + 'HistogramDwellTime.pdf', transparent=True)
 
 # 9.Histogram DwellTime vs Voltages
 fig9 = plt.figure(9, figsize=(6, 12))
 for i,dati in enumerate(data):
     ax9 = fig9.add_subplot(len(data), 1, i+1)
-    n, bins, patches = ax9.hist(x=dati, bins = 'auto', alpha=0.7, rwidth=0.85)
+    n, bins, patches = ax9.hist(x=dati, bins = 100, alpha=0.7, rwidth=0.85)
     ax9.grid(axis='y', alpha=0.75)
     ax9.set_xlabel('Current Drop (nA)')
     ax9.set_ylabel('Frequency')
-    # ax9.set_xlim(0, 2)
     ax9.set_title('{}mV'.format(int(availableVoltages[i]*1e3)))
-    ax9.set_xlim(left=np.min(np.concatenate(data).ravel()), right=np.max(np.concatenate(data).ravel()))
+    #ax9.set_xlim(left=np.min(np.concatenate(data).ravel()), right=np.max(np.concatenate(data).ravel()))
+    ax9.set_xlim(0, 2)
 fig9.savefig(file[:-24] + 'HistogramCurrentDrop.pdf', transparent=True)
 plt.style.use("seaborn-darkgrid")
 
@@ -237,7 +241,7 @@ plt.style.use("seaborn-darkgrid")
 fig10 = plt.figure(10, figsize=(6, 12))
 for i, dati in enumerate(dataDwell):
     ax10 = fig10.add_subplot(len(dataDwell), 1, i+1)
-    ax10 = sns.distplot(dati)
+    ax10 = sns.distplot(dati, rug= False)
     ax10.set_xlabel('Dwell Time (ms)')
     ax10.set_ylabel('Frequency')
     ax10.set_title('{}mV'.format(int(availableVoltages[i]*1e3)))
@@ -254,6 +258,7 @@ for i,dati in enumerate(data):
     # ax11.set_xlim(0, 2)
     ax11.set_title('{}mV'.format(int(availableVoltages[i]*1e3)))
     ax11.set_xlim(left=np.min(np.concatenate(data).ravel()), right=np.max(np.concatenate(data).ravel()))
+    ax8.set_xlim(0, 2)
 fig11.savefig(file[:-24] + 'KDECurrentDrop.pdf')#, transparent=True)
 
 # 17 KDE DwellTime vs Voltages
@@ -264,7 +269,7 @@ for i,dati in enumerate(datadII0):
     ax17.set_xlabel('Current Drop (nA)')
     ax17.set_ylabel('Frequency')
     ax17.set_title('{}mV'.format(int(availableVoltages[i]*1e3)))
-    # ax17.set_xlim(left=0, right=100)
+    ax17.set_xlim(left=0, right=100)
 fig17.savefig(file[:-24] + 'KDECurrentDropdII0.pdf')#, transparent=True)
 
 # 18 KDE DwellTime vs Voltages
@@ -287,12 +292,8 @@ for i,dati in enumerate(data):
     ax15.set_ylabel('Current Drop (nA)')
     ax15.set_xlabel('Dwell Time (ms)')
     ax15.set_title('{}mV'.format(int(availableVoltages[i]*1e3)))
-    # ax15.set_xlim(left=np.min(np.concatenate(dataDwell).ravel())-1, right=np.max(np.concatenate(dataDwell).ravel())+1)
-    # ax15.set_ylim(bottom=np.min(np.concatenate(data).ravel())-1, top=np.max(np.concatenate(data).ravel()))
-    # Set graph limits manually
-    #ax15.set_xlim(0, 4)
-    # ax15.set_ylim(0, 1)
-
+    ax15.set_xlim(left=np.min(np.concatenate(dataDwell).ravel())-1, right=np.max(np.concatenate(dataDwell).ravel())+1)
+    ax15.set_ylim(bottom=np.min(np.concatenate(data).ravel())-1, top=np.max(np.concatenate(data).ravel()))
 fig15.savefig(file[:-24] + 'KDEScatterIndividualdI.pdf')#, transparent=True)
 
 # BiVariate KDE plot Individual Fractional
@@ -304,7 +305,7 @@ for i,dati in enumerate(datadII0):
     ax16.set_xlabel('Dwell Time (ms)')
     ax16.set_title('{}mV'.format(int(availableVoltages[i]*1e3)))
     ax16.set_xlim(left=np.min(np.concatenate(dataDwell).ravel())-1, right=np.max(np.concatenate(dataDwell).ravel())+1)
-    ax16.set_ylim(bottom=-5, top=100)
+    #ax16.set_ylim(bottom=0, top=100)
     # Set graph limits manually
     # ax16.set_xlim(0, 8)
     # ax16.set_ylim(0, 8)
@@ -336,8 +337,8 @@ ax12.legend()
 ax12.set_xlabel('Dwell Time (ms)')
 ax12.set_ylabel('Frequency')
 ax12.set_title('Dwell Time Histograms')
-ax12.set_xlim(left=np.min(np.concatenate(dataDwell).ravel()), right=np.max(np.concatenate(dataDwell).ravel()))
-# ax12.set_xlim(0, 2)
+#ax12.set_xlim(left=np.min(np.concatenate(dataDwell).ravel()), right=np.max(np.concatenate(dataDwell).ravel()))
+ax12.set_xlim(0, 6)
 fig12.savefig(file[:-24] + 'KDESingleDwellTime.pdf')#, transparent=True)
 
 # KDE DwellTime vs Voltages ALL on One
@@ -350,7 +351,7 @@ ax13.set_xlabel('Current Drop (nA)')
 ax13.set_ylabel('Frequency')
 ax13.set_title('Current Drop Histograms')
 ax13.set_xlim(left=np.min(np.concatenate(data).ravel()), right=np.max(np.concatenate(data).ravel()))
-fig13.savefig(file[:-24] + 'KDESingleCurrentDrop.pdf')#, transparent=True)
+fig13.savefig(file[:-24] + 'KDESingleCurrentDrop.pdf')
 
 # KDE DwellTime vs Voltages ALL on One
 fig20 = plt.figure(20, figsize=(16, 9))
@@ -402,6 +403,6 @@ for i, dati in enumerate(datalBase):
     ax22.set_ylabel('Frequency')
     # ax22.set_xlim(0, 50)
     ax22.set_title('{}mV'.format(int(availableVoltages[i]*1e3)))
-    ax22.set_xlim(left=-10, right=50)#np.min(np.concatenate(datalBase).ravel()), right=np.max(np.concatenate(datalBase).ravel()))
+    ax22.set_xlim(left= 0, right=50)#np.min(np.concatenate(datalBase).ravel()), right=np.max(np.concatenate(datalBase).ravel()))
 fig22.savefig(file[:-24] + 'LocalBaseline.pdf')#, transparent=True)
 
