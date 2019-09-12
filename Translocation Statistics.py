@@ -126,7 +126,7 @@ fig1.savefig(file[:-24] + 'ScatterFracZoomed.pdf', transparent=True)
 #fig1.clear()
 #fig1.close()
 
-# 1.Fractional Current Drop Scatter Plot
+# 1.Fractional Current Drop Scatter Plot...
 fig6 = plt.figure(6, figsize=(9, 6))
 ax6 = fig6.add_subplot(111)
 sc6 = ax6.scatter(dt[np.where(v > 0)], dI[np.where(v > 0)], c=v[np.where(v > 0)], vmin=min(v[np.where(v > 0)]), vmax=max(v[np.where(v > 0)]), s=35, cmap=cm)
