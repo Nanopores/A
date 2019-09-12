@@ -1,3 +1,5 @@
+
+import numpy as np
 def SaveToHDF5(inp_file, AnalysisResults, coefficients, outdir):
     file = str(os.path.split(inp_file['filename'])[1][:-4])
     f = h5py.File(outdir + file + '_OriginalDB.hdf5', "w")
