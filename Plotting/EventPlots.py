@@ -180,7 +180,7 @@ def PlotG_tau(translocationEvents, fig=None, savefile=None, showCurrent=False, n
     catEvents = (CUSUMEvents, nonFittedEvents, impulseEvents)
 
     # Save figure
-    def SaveG(event):
+    def SavePlot(event):
         # Check if directory exists
         directory = os.path.dirname(savefile)
         if showCurrent:
