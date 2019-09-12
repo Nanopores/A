@@ -1,5 +1,7 @@
-from ObsoleteFunctions import UsefulFunctions as uf
+
+import UsefulFunctions as uf
 import os
+
 import matplotlib.pyplot as plt
 from tkinter import Tk
 from tkinter.filedialog import askopenfilenames
@@ -10,21 +12,12 @@ props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
 
 Tk().withdraw()
 os.system('''/usr/bin/osascript -e 'tell app "Finder" to set frontmost of process "python" to true' ''')
-
+#
 #filenames = ['/Volumes/backup/2017/Michael/Axopatch/20170512/10mMKClInFlowCellORingPore1mm.dat']
-filenames = ['/Volumes/Michael/Axopatch_DR/20171025/03A_GroundOnTrans_OvernightAfterChimeraMeasurements_IV.dat',
-             '/Volumes/Michael/Axopatch_DR/20171025/03A_AfterWash_1MKClpH7_GroundToTrans_IV_2.dat',
-             '/Volumes/Michael/Axopatch_DR/20171025/03A_AfterWash_1MKClpH115_GroundToTrans_IV_2.dat',
-             '/Volumes/Michael/Axopatch_DR/20171025/03A_AfterWash_1MKClpH7_GroundToTrans_500mV_IV_6.dat',
-             '/Volumes/Michael/Axopatch_DR/20171025/03A_AfterWash_1MKClpH341_GroundToTrans_500mV_IV_3.dat',
-             '/Volumes/Michael/Axopatch_DR/20171025/03A_AfterWash_1MKClpH7_GroundToTrans_500mV_IV_7.dat']
+#filenames = ['/Volumes/Michael/Axopatch_DR/20171025/03A_GroundOnTrans_OvernightAfterChimeraMeasurements_IV.dat','/Volumes/Michael/Axopatch_DR/20171025/03A_AfterWash_1MKClpH7_GroundToTrans_IV_2.dat','/Volumes/Michael/Axopatch_DR/20171025/03A_AfterWash_1MKClpH115_GroundToTrans_IV_2.dat','/Volumes/Michael/Axopatch_DR/20171025/03A_AfterWash_1MKClpH7_GroundToTrans_500mV_IV_6.dat','/Volumes/Michael/Axopatch_DR/20171025/03A_AfterWash_1MKClpH341_GroundToTrans_500mV_IV_3.dat', '/Volumes/Michael/Axopatch_DR/20171025/03A_AfterWash_1MKClpH7_GroundToTrans_500mV_IV_7.dat']
 
-labels = ['1) After Poly-D-Lysine, pH7',
-          '2) 1M KCl, pH 7',
-          '3) 1M KCl, pH 11',
-          '4) 1M KCl, pH 7',
-          '5) 1M KCl, pH 3'
-          '6) 1M KCl, pH 7']
+#labels = ['1) After Poly-D-Lysine, pH7', '2) 1M KCl, pH 7','3) 1M KCl, pH 11', '4) 1M KCl, pH 7','5) 1M KCl, pH 3''6) 1M KCl, pH 7']
+#
 expname = 'All'
 
 filenames = askopenfilenames() # show an "Open" dialog box and return the path to the selected file
@@ -71,7 +64,6 @@ for filename in filenames:
 
     #Save Figures
 ax1IV.legend()
-ax1IV.
 figIV.savefig(directory + os.sep + str(os.path.split(filename)[1]) + 'Merged_IV_i1.png', dpi=300)
 figIV.savefig(directory + os.sep + str(os.path.split(filename)[1]) + 'Merged_IV_i1.eps')
 figIV.clear()
