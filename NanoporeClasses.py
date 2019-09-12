@@ -152,7 +152,7 @@ class AllEvents:
 
     def GetEventTypes(self,eventType):
         events = []
-        events = [event for event in self.events if event.type == eventType]
+        events = [event for event in self.events if str.upper(event.type) == str.upper(eventType)]
         return events
 
     def GetEventsforVoltages(self,voltage):
@@ -161,6 +161,7 @@ class AllEvents:
 
     def GetAllVoltages(self):
         voltages = [event.voltage for event in self.events]
+        voltages.sort()
         voltages = set(voltages)
         return voltages
 

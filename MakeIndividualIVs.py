@@ -57,7 +57,8 @@ Parameters = {
 
 def GetParameters():
     print("Usage:")
-    print("run(filenames,newParameters={},verbose=False)")
+    print("run(filenames,newParameters={},verbose=False, noPlot=False")
+    print('Returns poresize in m')
     print()
     print("Default Parameters:")
     pprint(Parameters)
@@ -80,6 +81,8 @@ def run(filenames, newParameters={}, verbose=False, noPlot=False):
         Contains the default parameters for the analysis.
     verbose : bool, optional
         False by default. If True, it will display a simple figure with the shape of the signal.
+    noPlot : bool, optional
+        False by default. If True it will disable the plotting
 
     """
 

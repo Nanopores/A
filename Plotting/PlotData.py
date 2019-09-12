@@ -15,6 +15,11 @@ from bokeh.io import push_notebook
 from bokeh.plotting import figure, show, output_notebook
 from bokeh.models import FuncTickFormatter, NumeralTickFormatter
 
+# Needed for plotting in jupyter
+from bokeh.resources import INLINE
+import bokeh.io
+bokeh.io.output_notebook(INLINE)
+
 import math
 
 Amp = EngFormatter(unit='A', places=2)
@@ -73,18 +78,23 @@ def SimpleTracePlot(filename, lowPass = 10e3):
 
     show(p)
 
-def PlotPSD(filename):
-    loadedData = LoadData.OpenFile(filename,approxImpulseResponse = True) #, ChimeraLowPass, True, CutTraces)
-    frequencies,P_den = Functions.GetPSD(loadedData)
+def PlotPSD(inputdata):
+    if isinstance(inputdata, str):
+        filename = inputdata
+        loadedData = LoadData.OpenFile(filename, approxImpulseResponse=True) #, ChimeraLowPass, True, CutTraces)
+    else:
+        filename = ''
+        loadedData = inputdata
+    frequencies, P_den = Functions.GetPSD(loadedData)
 
     output_notebook()
 
-    p = figure(plot_height=300, plot_width=900,y_axis_type="log",tools='pan,box_zoom,xwheel_zoom,reset,save')
+    p = figure(plot_height=300, plot_width=900, x_axis_type="log", y_axis_type="log", tools='pan,box_zoom,xwheel_zoom,reset,save')
 
-    p.line(frequencies,P_den)
+    p.line(frequencies,P_den*1e24)
 
     p.xaxis.axis_label = 'Frequencies (Hz)'
-    p.yaxis.axis_label = 'Power'
+    p.yaxis.axis_label = 'PSD pA^2/Hz)'
 
     p.title.text = 'PSD :' + os.path.basename(filename)
 
