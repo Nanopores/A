@@ -23,6 +23,9 @@ from holoviews.operation import histogram
 import holoviews as hv
 from holoviews import opts
 
+import seaborn as sns
+sns.set()
+
 hv.extension('bokeh')
 
 #needed for plotting in jupyter
@@ -344,8 +347,8 @@ def PlotGTauVoltage (eventClass, xLim=None, yLim=None, showCurrent=False):
 
     #define of variables
     TOOLS = "box_zoom,pan,wheel_zoom,reset"
-    colors = ['tomato', 'lightgreen','skyblue', 'magenta','black']
-    linecolors = ['red', 'green', 'blue', 'magenta', 'black']
+    colors = sns.color_palette(n_colors=len(voltagesList))
+    linecolors = sns.color_palette("muted", n_colors=len(voltagesList))
 
     assert(len(voltagesList)<=len(colors))
     backgroundColor = "#fafafa"
