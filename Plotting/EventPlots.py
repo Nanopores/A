@@ -408,8 +408,8 @@ def PlotGTauVoltage (eventClass, xLim=None, yLim=None, showCurrent=False):
     i = 0
     #for i in range(len(voltagesList)):
     for voltage in voltagesList:
-        color = "#%02x%02x%02x" (colors[i])
-        linecolor = "#%02x%02x%02x" (linecolors[i])
+        color = "#%02x%02x%02x" % (int(colors[i][0]*255), int(colors[i][1]*255), int(colors[i][2]*255))
+        linecolor = "#%02x%02x%02x" % (int(linecolors[i][0]*255), int(linecolors[i][1]*255), int(linecolors[i][2]*255))
         i+=1
         #for voltage, color, linecolor in zip(voltagesList, colors, linecolors):
         selectEvents = eventClass.GetEventsforVoltages(voltage)
