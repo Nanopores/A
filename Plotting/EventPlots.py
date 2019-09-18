@@ -336,14 +336,15 @@ def PlotG_tau(translocationEvents, fig=None, savefile=None, showCurrent=False, n
         plt.show()
 
 
-def PlotGTauVoltage (eventClass, xLim=None, yLim=None, showCurrent=False):
+def PlotGTauVoltage (eventClass, xLim=None, yLim=None, showCurrent=False, voltageLimits = None):
     bokeh.io.output_notebook(INLINE)
 
     #sort the voltages
     # categorize events in three types
     # CUSUM fitted events
-    voltageLimits = [0.01, 0.91]
     voltagesList = eventClass.GetAllVoltages()
+    if voltageLimits is not None:
+        voltagesList = [x for x in voltagesList if x>voltageLimits[0] and x<voltageLimits[1]]
 
     #define of variables
     TOOLS = "box_zoom,pan,wheel_zoom,reset"
