@@ -23,6 +23,9 @@ from holoviews.operation import histogram
 import holoviews as hv
 from holoviews import opts
 
+import seaborn as sns
+sns.set()
+
 hv.extension('bokeh')
 
 #needed for plotting in jupyter
@@ -180,7 +183,7 @@ def PlotG_tau(translocationEvents, fig=None, savefile=None, showCurrent=False, n
     catEvents = (CUSUMEvents, nonFittedEvents, impulseEvents)
 
     # Save figure
-    def SaveG(event):
+    def SavePlot(event):
         # Check if directory exists
         directory = os.path.dirname(savefile)
         if showCurrent:
@@ -333,19 +336,20 @@ def PlotG_tau(translocationEvents, fig=None, savefile=None, showCurrent=False, n
         plt.show()
 
 
-def PlotGTauVoltage (eventClass, xLim=None, yLim=None, showCurrent=False):
+def PlotGTauVoltage (eventClass, xLim=None, yLim=None, showCurrent=False, voltageLimits = None):
     bokeh.io.output_notebook(INLINE)
 
     #sort the voltages
     # categorize events in three types
     # CUSUM fitted events
-    voltageLimits = [0.01, 0.91]
     voltagesList = eventClass.GetAllVoltages()
+    if voltageLimits is not None:
+        voltagesList = [x for x in voltagesList if x>voltageLimits[0] and x<voltageLimits[1]]
 
     #define of variables
     TOOLS = "box_zoom,pan,wheel_zoom,reset"
-    colors = ['tomato', 'lightgreen','skyblue', 'magenta','black']
-    linecolors = ['red', 'green', 'blue', 'magenta', 'black']
+    colors = sns.color_palette(n_colors=len(voltagesList))
+    linecolors = sns.color_palette("muted", n_colors=len(voltagesList))
 
     assert(len(voltagesList)<=len(colors))
     backgroundColor = "#fafafa"
@@ -405,8 +409,8 @@ def PlotGTauVoltage (eventClass, xLim=None, yLim=None, showCurrent=False):
     i = 0
     #for i in range(len(voltagesList)):
     for voltage in voltagesList:
-        color = colors[i]
-        linecolor = linecolors[i]
+        color = "#%02x%02x%02x" % (int(colors[i][0]*255), int(colors[i][1]*255), int(colors[i][2]*255))
+        linecolor = "#%02x%02x%02x" % (int(linecolors[i][0]*255), int(linecolors[i][1]*255), int(linecolors[i][2]*255))
         i+=1
         #for voltage, color, linecolor in zip(voltagesList, colors, linecolors):
         selectEvents = eventClass.GetEventsforVoltages(voltage)
