@@ -633,9 +633,15 @@ def ShowEventInTrace(event, lowPass = 1e3):
 
     fig, ax = plt.subplots(figsize=(10, 6))
 
-    FullTrace = loadedData['i1']
+    if loadedData['samplerate'] > lowPass:
+        output = Functions.LowPass(loadedData['i1'], loadedData['samplerate'], lowPass)
+        FullTrace = output['data']
+        samplerate = output['samplerate']
+    else:
+        FullTrace = loadedData['i1']
+        samplerate = loadedData['samplerate']
 
-    times = np.linspace(0, len(FullTrace) / event.samplerate, num=len(FullTrace))
+    times = np.linspace(0, len(FullTrace) / samplerate, num=len(FullTrace))
     ax.plot(times, FullTrace, zorder=1)
 
     ax.set_xlabel('time (s)')
