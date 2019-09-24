@@ -7,11 +7,11 @@ import numpy as np
 import pyabf
 import scipy
 import scipy.signal as sig
-from PyQt5 import QtGui
+from PyQt5 import QtGui, QtWidgets
 from scipy import io
 from scipy import signal
 import Functions
-
+from tkinter.filedialog import askopenfilenames
 
 def ImportABF(datafilename):
     abf = pyabf.ABF(datafilename)
@@ -77,7 +77,6 @@ def ImportChimeraRaw(datafilename):
     output = {'matfilename': str(os.path.splitext(datafilename)[0]),'i1raw': data, 'v1': np.float64(matfile['SETUP_biasvoltage']), 'samplerateRaw': np.int64(samplerate), 'type': 'ChimeraRaw', 'filename': datafilename, 'graphene': 0, 'blockLength':blockLength}
     return output
 
-
 def ImportChimeraData(datafilename):
     matfile = io.loadmat(str(os.path.splitext(datafilename)[0]))
     samplerate = matfile['ADCSAMPLERATE']
@@ -90,8 +89,7 @@ def ImportChimeraData(datafilename):
         output = ImportChimeraRaw(datafilename)
     return output
 
-
-def OpenFile(filename = '', ChimeraLowPass = 10e3,approxImpulseResponse=False,Split=False,verbose=False):
+def OpenFile(filename = '', ChimeraLowPass = 10e3, approxImpulseResponse=False, Split=False, verbose=False):
     """ 
     Function used to read data. It extracts the currents and voltage signals from the file in input
     by calling the import function corresponding to the file format.
@@ -128,7 +126,8 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3,approxImpulseResponse=False,Sp
     if ChimeraLowPass==None:
         ChimeraLowPass=10e3
     if filename == '':
-        datafilename = QtGui.QFileDialog.getOpenFileName()
+
+        datafilename = askopenfilenames()
         datafilename=datafilename[0]
         print(datafilename)
     else:
@@ -314,3 +313,14 @@ def LoadVariables(loadname, variableName):
         shelfFile.close()
         print('Loaded  ' + variableName + 'from ' + loadname + '.dat')
         return Variable
+
+def LowPassAndResample(inpsignal, samplerate, LP, LPtoSR = 5):
+    Wn = np.round(2 * LP / samplerate, 4)  # [0,1] nyquist frequency
+    b, a = signal.bessel(4, Wn, btype='low', analog=False)  # 4-th order digital filter
+    z, p, k = signal.tf2zpk(b, a)
+    eps = 1e-9
+    r = np.max(np.abs(p))
+    approx_impulse_len = int(np.ceil(np.log(eps) / np.log(r)))
+    Filt_sig = (signal.filtfilt(b, a, inpsignal, method='gust', irlen=approx_impulse_len))
+    ds_factor = np.ceil(samplerate / (2 * LP))
+    return (scipy.signal.resample(Filt_sig, int(len(inpsignal) / ds_factor)), samplerate / ds_factor)

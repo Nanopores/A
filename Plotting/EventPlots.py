@@ -616,7 +616,7 @@ def ShowEventInTrace_SignalPreloaded(FullTrace, AllData, eventnumber, ax, line =
     print(ax.patches.clear())
     ax.add_patch(rect)
 
-def ShowEventInTrace(event):
+def ShowEventInTrace(event, lowPass = 1e3):
     """
     Function used to show the event with it's location framed in red in the original full signal trace in blue.
 
@@ -624,11 +624,12 @@ def ShowEventInTrace(event):
     ----------
     event : TranslocationEvent object
         Event to be plotted.
+        LowPass low pass filter, default set to 1 kHz
 
     """
 
     filename = event.filename
-    loadedData = LoadData.OpenFile(filename, 1e3, True) #, ChimeraLowPass, True, CutTraces)
+    loadedData = LoadData.OpenFile(filename, lowPass, True)
 
     fig, ax = plt.subplots(figsize=(10, 6))
 
