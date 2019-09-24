@@ -53,7 +53,7 @@ def extractytau(filteredevents, showCurrent, normalized = False):
         tau = [event.eventLength for event in filteredevents if event.voltage > 0]
     return tau, yVals
 
-def PlotGTau(eventClass, xLim = None, yLim = None, showCurrent = False, normalized = False, showLog=False):
+def PlotGTau(eventClass, xLim = None, yLim = None, showCurrent = False, normalized = False, showLog=False, showNonFitted=False):
     """
     Function used to produce scatter plots and histograms of the events.
     The figure produced has 3 subplots:
@@ -82,6 +82,8 @@ def PlotGTau(eventClass, xLim = None, yLim = None, showCurrent = False, normaliz
         False by default. If True, it will change in the y-axis the unit from siemens [S] to normalized current drop without unit.
     showLog :   bool, optional
         False by default. If True, it will change the axis to logarithmic
+    showNonFitted:  bool, optional
+        False by default. If True, it will show non fitted events
 
     """
     # categorize events in three types
@@ -92,7 +94,10 @@ def PlotGTau(eventClass, xLim = None, yLim = None, showCurrent = False, normaliz
         CUSUMEvents = eventClass.GetEventTypes('Real')
 
     # Non-fitted events
-    nonFittedEvents = eventClass.GetEventTypes('Rough')
+    if showNonFitted:
+        nonFittedEvents = eventClass.GetEventTypes('Rough')
+    else:
+        nonFittedEvents = []
 
     # Impulse events
     impulseEvents = eventClass.GetEventTypes('Impulse')
