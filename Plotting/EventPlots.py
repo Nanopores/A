@@ -132,9 +132,9 @@ def PlotGTau(eventClass, xLim = None, yLim = None, showCurrent = False, normaliz
     tau3, yVals3 = extractytau(nonFittedEvents, showCurrent, normalized)
     points3 = hv.Points((tau3, yVals3), label='non-fitted')
 
-    xhist, yhist = (histogram(points3, bin_range=br[dim], dimension=dim, log=(showlogHist[dim] and len(tau3) > 0)) *
-                    histogram(points2, bin_range=br[dim], dimension=dim, log=(showlogHist[dim] and len(tau2) > 0)) *
-                    histogram(points, bin_range=br[dim], dimension=dim, log=(showlogHist[dim] and len(tau1) > 0))
+    xhist, yhist = (histogram(points3, bin_range=br[dim], dimension=dim, log=(showlogHist[dim] and len(tau3) > 0),normed=False) *
+                    histogram(points2, bin_range=br[dim], dimension=dim, log=(showlogHist[dim] and len(tau2) > 0),normed=False) *
+                    histogram(points, bin_range=br[dim], dimension=dim, log=(showlogHist[dim] and len(tau1) > 0),normed=False)
                     for dim in 'xy')
 
     return ((points3 * points2 * points).opts(logx=showLog, xlabel=xlabel, ylabel=ylabel, width=500, height=500, xlim=brx,
