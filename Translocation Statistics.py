@@ -24,11 +24,11 @@ matplotlib.rcParams['ps.fonttype'] = 42
 
 filenames = askopenfilenames(filetypes=[('data files', '*.dat')], parent = root)
 root.update()
-
+print(filenames)
 
 Name = ''
 cm = plt.cm.get_cmap('RdYlBu')
-voltageLimits = [0.19, 0.51]
+voltageLimits = [0, 0.41]
 dwellrange = (0, 25)
 dIrange = (0, 2.5)
 FracDIRange = (0, 100)
@@ -62,8 +62,10 @@ for file in filenames:
         tempvoltage = np.append(tempvoltage, ev.voltage)
         templocalbaseline = np.append(templocalbaseline, ev.baseline)
         tempeventlength = np.append(tempeventlength, ev.eventLength)
-    filepath = event.events[0].filename[19:] #.replace('2019 - CURRENT', '2019')
-    st = os.stat('/Volumes/'+filepath.replace('\\','/'))
+    path, filen = os.path.split(file)
+    print(path[:-13])
+    filepath = path[:-13] + filen[:-8] + '.dat'
+    st = os.stat(filepath.replace('\\', '/'))
     dt = np.append(dt, tempeventlength*1e3)
     t = np.append(t, st.st_birthtime * np.ones(len(event.GetAllIdropsNorm())))
     t2 = np.append(t2, st.st_mtime * np.ones(len(event.GetAllIdropsNorm())))
