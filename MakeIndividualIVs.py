@@ -99,8 +99,8 @@ def run(filenames, newParameters={}, verbose=False, noPlot=False):
         output = LoadData.OpenFile(filename, verbose=verbose)
         if Parameters['reversePolarity']:
             print('Polarity Reversed!!!!')
-            output['i1']= -output['i1']
-            output['v1']= -output['v1']
+            output['i1'] = -output['i1']
+            output['v1'] = -output['v1']
 
         directory = (str(os.path.split(filename)[0]) + os.sep + expname + '_SavedImages')
         if not os.path.exists(directory):
@@ -117,7 +117,6 @@ def run(filenames, newParameters={}, verbose=False, noPlot=False):
             currents = ['i1']
 
         for current in currents:
-            print(current)
             Slope = AllData[current][CurveFit]['Slope']
             Yintercept = AllData[current][CurveFit]['Yintercept']
 
@@ -175,7 +174,7 @@ def run(filenames, newParameters={}, verbose=False, noPlot=False):
                     writer=csv.writer(output, lineterminator='\n')
                     for i in range(len(x)):
                         writer.writerow([x[i], y[i]])
-                #plt.show()
+                plt.show()
                 figIV.clear()
                 #return poresize
             #else:

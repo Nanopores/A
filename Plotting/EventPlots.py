@@ -121,7 +121,7 @@ def PlotGTau(eventClass, xLim = None, yLim = None, showCurrent = False, normaliz
     showlogHist['y'] = False
 
     xlabel = 'Dwell time (s)'
-    ylabel = 'Current drop (A)'
+    ylabel = 'Current drop (A)' if showCurrent else 'Conductance drop (S)'
 
     tau1, yVals1 = extractytau(impulseEvents, showCurrent, normalized)
     points = hv.Points((tau1, yVals1), label='impulse')
