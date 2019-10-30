@@ -21,9 +21,7 @@ formA = EngFormatter(unit='A', places=3)
 formB = EngFormatter(unit='s', places=3)
 
 
-
-filenames = askopenfilenames() # show an "Open" dialog box and return the path to the selected file
-#colors=['k','r','b']
+filenames = askopenfilenames()
 root.update()
 
 for i,file in enumerate(filenames):
@@ -35,7 +33,7 @@ for i,file in enumerate(filenames):
 plt.show()
 
 
-#
+# Previous version is below
 # file = r'Z:\2019 - CURRENT\Mukesh_Archives\Axopatch200B\09102019\100bp_1MKCl\Dev_34_1MKCl_100bp_300mV.dat'
 # #file = '/Volumes/lben/lben-commun/2018 User Data/Michael/Axopatch/20180706/NorcadaCh1_100mMKCl_1mM_Cis_trans_ph74_640nm_150mmlens_50mW_IV_Later_Trace.dat'
 #
