@@ -28,10 +28,14 @@ sns.set()
 
 hv.extension('bokeh')
 
-#needed for plotting in jupyter
+# needed for plotting in jupyter
 from bokeh.resources import INLINE
 import bokeh.io
 bokeh.io.output_notebook(INLINE)
+
+# temporary, ignore bokeh warnings
+import warnings
+warnings.simplefilter(action='ignore', category=DeprecationWarning)
 
 
 Amp = EngFormatter(unit='A', places=2)
@@ -342,7 +346,68 @@ def PlotG_tau(translocationEvents, fig=None, savefile=None, showCurrent=False, n
         plt.show()
 
 
-def PlotGTauVoltage (eventClass, xLim=None, yLim=None, showCurrent=False, voltageLimits = None):
+def PlotGTauVoltage(eventClass, bins=20, xLim=None, yLim=None, showCurrent=False,
+                    voltageLimits=None, showLog=False, heatmap=False):
+    voltagesList = eventClass.GetAllVoltages()
+    if voltageLimits is not None:
+        voltagesList = [x for x in voltagesList if x >= voltageLimits[0] and x <= voltageLimits[1]]
+
+    # select min max
+    events = [event for event in eventClass.events if (showCurrent or event.voltage is not 0) and event.voltage in voltagesList]
+    allTau, allYVals = extractytau(events, showCurrent)
+
+    maxy = 1.1 * np.percentile(allYVals, 99)
+    minx = 0.9 * np.percentile(allTau, 1) if showLog else 0
+
+    brx = (minx, 1.1 * np.percentile(allTau, 99)) if xLim is None else tuple(xLim)
+    bry = (0, maxy) if yLim is None else tuple(yLim)
+    brxbins = np.linspace(brx[0], brx[-1], bins).tolist()
+    brybins = np.linspace(bry[0], bry[-1], bins).tolist()
+
+    # define of variables
+    colors = sns.color_palette(n_colors=len(voltagesList))
+    colorlist = ["#%02x%02x%02x" % (int(color[0]*255), int(color[1]*255), int(color[2]*255)) for color in colors]
+    linecolors = sns.color_palette("muted", n_colors=len(voltagesList))
+    linecolorlist = ["#%02x%02x%02x" % (int(color[0]*255), int(color[1]*255), int(color[2]*255)) for color in linecolors ]
+
+    xlabel = 'Dwell time (s)'
+    ylabel = 'Current drop (A)' if showCurrent else 'Conductance drop (S)'
+
+    # Filter points specifically for the heatmap
+    allTauf = [xval for (xval, yval) in zip(allTau, allYVals) if
+               xval > brx[0] and xval < brx[-1] and yval > bry[0] and yval < bry[-1]]
+    allYValsf = [yval for (xval, yval) in zip(allTau, allYVals) if
+               xval > brx[0] and xval < brx[-1] and yval > bry[0] and yval < bry[-1]]
+
+    hexT = hv.HexTiles((allTauf, allYValsf))
+
+    for i, voltage in enumerate(voltagesList):
+        selectEvents = eventClass.GetEventsforVoltages(voltage)
+        tau, yVals = extractytau(selectEvents, showCurrent)
+
+        if i == 0:
+            points = hv.Points((tau, yVals), label=str(Volt.format_data(voltage)))  #label=str(Volt.format_data(voltage))
+            xhist = histogram(points, bins=brxbins, dimension='x', log=(showLog and len(tau) > 0), normed=False)
+            yhist = histogram(points, bins=brybins, dimension='y', normed=False)
+        else: #label=str(Volt.format_data(voltage))
+            points = points * hv.Points((tau, yVals), label=str(Volt.format_data(voltage)))
+            xhist = xhist * histogram(points, bins=brxbins, dimension='x', log=(showLog and len(tau) > 0), normed=False)
+            yhist = yhist * histogram(points, bins=brybins, dimension='y', normed=False)
+
+    if heatmap and not showLog:
+        return ((hexT*points).opts(logx=showLog, xlabel=xlabel, ylabel=ylabel, width=500, height=500, xlim=brx, ylim=bry) \
+               << yhist.opts(width=200) << xhist.opts(height=150, logx=showLog)).opts(
+            opts.Histogram(color=hv.Cycle(colorlist), xlabel='', ylabel='', alpha=0.3, show_legend=False),
+            opts.HexTiles(min_count=0,tools=['hover']),
+            opts.Points(color=hv.Cycle(linecolorlist), alpha=1, size=1))
+    else:
+        return (points.opts(logx=showLog, xlabel=xlabel, ylabel=ylabel, width=500, height=500, xlim=brx, ylim=bry)\
+            << yhist.opts(width=200) << xhist.opts(height=150, logx=showLog)).opts(
+        opts.Histogram(color=hv.Cycle(colorlist), xlabel='', ylabel='', alpha=0.3, show_legend=False),
+        opts.Points(color=hv.Cycle(linecolorlist), alpha=0.4, size=6))
+
+
+def PlotGTauVoltageOld(eventClass, xLim=None, yLim=None, showCurrent=False, voltageLimits = None):
     bokeh.io.output_notebook(INLINE)
 
     #sort the voltages
@@ -350,7 +415,7 @@ def PlotGTauVoltage (eventClass, xLim=None, yLim=None, showCurrent=False, voltag
     # CUSUM fitted events
     voltagesList = eventClass.GetAllVoltages()
     if voltageLimits is not None:
-        voltagesList = [x for x in voltagesList if x>voltageLimits[0] and x<voltageLimits[1]]
+        voltagesList = [x for x in voltagesList if x >= voltageLimits[0] and x <= voltageLimits[1]]
 
     #define of variables
     TOOLS = "box_zoom,pan,wheel_zoom,reset"

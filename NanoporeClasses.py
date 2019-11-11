@@ -161,8 +161,8 @@ class AllEvents:
 
     def GetAllVoltages(self):
         voltages = [event.voltage for event in self.events]
-        voltages.sort()
-        voltages = set(voltages)
+        voltages = list(set(voltages))
+        voltages = sorted(voltages)
         return voltages
 
     def SetFolder(self,loadname):
