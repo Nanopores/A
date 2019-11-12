@@ -5,6 +5,8 @@ from bokeh import models
 from bokeh.io import export_svgs
 from holoext.utils import DEFAULT_N, get_cmap, flatten, tidy_fn
 
+import holoviews as hv
+
 def _get_figures_core(objs):
     if isinstance(objs, list):
         objs = [_get_figures_core(plot) for plot in objs]
@@ -41,3 +43,4 @@ def save_to_svg(hv_obj, save=None):
             save_fp = '{0}.{1}'.format(save_fp, 'svg')
 
         export_svgs(figure, save_fp)
+        print('Saved to :' + save_fp)
