@@ -377,8 +377,8 @@ def PlotGTauVoltage(eventClass, bins=20, xLim=None, yLim=None, showCurrent=False
         tau, yVals = extractytau(selectEvents, showCurrent)
 
         points_ = hv.Points((tau, yVals), label=str(Volt.format_data(voltage)))
-        xhist_ = histogram(points, bins=brxbins, dimension='x', log=(showLog and len(tau) > 0), normed=False)
-        yhist_ = histogram(points, bins=brybins, dimension='y', normed=False)
+        xhist_ = histogram(points_, bins=brxbins, dimension='x', log=(showLog and len(tau) > 0), normed=False)
+        yhist_ = histogram(points_, bins=brybins, dimension='y', normed=False)
         if i == 0:
             points = points_
             xhist = xhist_
