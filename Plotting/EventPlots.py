@@ -390,14 +390,14 @@ def PlotGTauVoltage(eventClass, bins=20, xLim=None, yLim=None, showCurrent=False
     if heatmap and not showLog:
         return ((hexT*points).opts(logx=showLog, xlabel=xlabel, ylabel=ylabel, width=500, height=500, xlim=brx, ylim=bry) \
                << yhist.opts(width=200) << xhist.opts(height=150, logx=showLog)).opts(
-            opts.Histogram(color=hv.Cycle(colorlist), xlabel='', ylabel='', alpha=0.3, show_legend=False),
+            opts.Histogram(fill_color=hv.Cycle(colorlist), xlabel='', ylabel='', alpha=0.3, show_legend=False),
             opts.HexTiles(min_count=0, tools=['hover']),
             opts.Points(color=hv.Cycle(colorlist), alpha=1, size=1, muted_alpha=.1))
     else:
         return (points.opts(logx=showLog, xlabel=xlabel, ylabel=ylabel, width=500, height=500, xlim=brx, ylim=bry)\
             << yhist.opts(width=200) << xhist.opts(height=150, logx=showLog)).opts(
-        opts.Histogram(color=hv.Cycle(colorlist), xlabel='', ylabel='', alpha=0.3, show_legend=False),
-        opts.Points(color=hv.Cycle(colorlist), alpha=0.4, size=6, muted_alpha=.05))
+            opts.Histogram(fill_color=hv.Cycle(colorlist), xlabel='', ylabel='', alpha=0.3, show_legend=False),
+            opts.Points(color=hv.Cycle(colorlist), alpha=0.4, size=6, muted_alpha=.05))
 
 def PlotEvent(event, ax=None, savefile=os.getcwd(), showCUSUM=True, showCurrent=False, showButtons = True, axisFormatter = True, plotTitleBool = True):
     """
