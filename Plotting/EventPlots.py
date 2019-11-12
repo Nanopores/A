@@ -360,8 +360,6 @@ def PlotGTauVoltage(eventClass, bins=20, xLim=None, yLim=None, showCurrent=False
     # define of variables
     colors = sns.color_palette(n_colors=len(voltagesList))
     colorlist = ["#%02x%02x%02x" % (int(color[0]*255), int(color[1]*255), int(color[2]*255)) for color in colors]
-    #linecolors = sns.color_palette("muted", n_colors=len(voltagesList))
-    #linecolorlist = ["#%02x%02x%02x" % (int(color[0]*255), int(color[1]*255), int(color[2]*255)) for color in linecolors ]
 
     xlabel = 'Dwell time (s)'
     ylabel = 'Current drop (A)' if showCurrent else 'Conductance drop (S)'
@@ -378,14 +376,17 @@ def PlotGTauVoltage(eventClass, bins=20, xLim=None, yLim=None, showCurrent=False
         selectEvents = eventClass.GetEventsforVoltages(voltage)
         tau, yVals = extractytau(selectEvents, showCurrent)
 
+        points_ = hv.Points((tau, yVals), label=str(Volt.format_data(voltage)))
+        xhist_ = histogram(points, bins=brxbins, dimension='x', log=(showLog and len(tau) > 0), normed=False)
+        yhist_ = histogram(points, bins=brybins, dimension='y', normed=False)
         if i == 0:
-            points = hv.Points((tau, yVals), label=str(Volt.format_data(voltage)))  #label=str(Volt.format_data(voltage))
-            xhist = histogram(points, bins=brxbins, dimension='x', log=(showLog and len(tau) > 0), normed=False)
-            yhist = histogram(points, bins=brybins, dimension='y', normed=False)
-        else: #label=str(Volt.format_data(voltage))
-            points = points * hv.Points((tau, yVals), label=str(Volt.format_data(voltage)))
-            xhist = xhist * histogram(points, bins=brxbins, dimension='x', log=(showLog and len(tau) > 0), normed=False)
-            yhist = yhist * histogram(points, bins=brybins, dimension='y', normed=False)
+            points = points_
+            xhist = xhist_
+            yhist = yhist_
+        else:
+            points = points * points_
+            xhist = xhist * xhist_
+            yhist = yhist * yhist_
 
     if heatmap and not showLog:
         return ((hexT*points).opts(logx=showLog, xlabel=xlabel, ylabel=ylabel, width=500, height=500, xlim=brx, ylim=bry) \
