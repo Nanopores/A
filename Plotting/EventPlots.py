@@ -367,8 +367,8 @@ def PlotGTauVoltage(eventClass, bins=20, xLim=None, yLim=None, showCurrent=False
     # define of variables
     colors = sns.color_palette(n_colors=len(voltagesList))
     colorlist = ["#%02x%02x%02x" % (int(color[0]*255), int(color[1]*255), int(color[2]*255)) for color in colors]
-    linecolors = sns.color_palette("muted", n_colors=len(voltagesList))
-    linecolorlist = ["#%02x%02x%02x" % (int(color[0]*255), int(color[1]*255), int(color[2]*255)) for color in linecolors ]
+    #linecolors = sns.color_palette("muted", n_colors=len(voltagesList))
+    #linecolorlist = ["#%02x%02x%02x" % (int(color[0]*255), int(color[1]*255), int(color[2]*255)) for color in linecolors ]
 
     xlabel = 'Dwell time (s)'
     ylabel = 'Current drop (A)' if showCurrent else 'Conductance drop (S)'
@@ -398,13 +398,13 @@ def PlotGTauVoltage(eventClass, bins=20, xLim=None, yLim=None, showCurrent=False
         return ((hexT*points).opts(logx=showLog, xlabel=xlabel, ylabel=ylabel, width=500, height=500, xlim=brx, ylim=bry) \
                << yhist.opts(width=200) << xhist.opts(height=150, logx=showLog)).opts(
             opts.Histogram(color=hv.Cycle(colorlist), xlabel='', ylabel='', alpha=0.3, show_legend=False),
-            opts.HexTiles(min_count=0,tools=['hover']),
-            opts.Points(color=hv.Cycle(linecolorlist), alpha=1, size=1))
+            opts.HexTiles(min_count=0, tools=['hover']),
+            opts.Points(color=hv.Cycle(colorlist), alpha=1, size=1))
     else:
         return (points.opts(logx=showLog, xlabel=xlabel, ylabel=ylabel, width=500, height=500, xlim=brx, ylim=bry)\
             << yhist.opts(width=200) << xhist.opts(height=150, logx=showLog)).opts(
         opts.Histogram(color=hv.Cycle(colorlist), xlabel='', ylabel='', alpha=0.3, show_legend=False),
-        opts.Points(color=hv.Cycle(linecolorlist), alpha=0.4, size=6))
+        opts.Points(color=hv.Cycle(colorlist), alpha=0.4, size=6))
 
 
 def PlotGTauVoltageOld(eventClass, xLim=None, yLim=None, showCurrent=False, voltageLimits = None):
