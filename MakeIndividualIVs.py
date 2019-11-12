@@ -176,9 +176,9 @@ def run(filenames, newParameters={}, verbose=False, noPlot=False):
                         writer.writerow([x[i], y[i]])
                 plt.show()
                 figIV.clear()
-                #return poresize
-            #else:
-                #return poresize
+                return poresize
+            else:
+                return poresize
 
 
 if __name__=='__main__':
