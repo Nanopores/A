@@ -173,17 +173,21 @@ def eventdetection(fullfilename, coefficients, verboseLevel=1, CutTraces=False, 
         All the events in the signal. 
     
     """
-
-    if os.path.getsize(fullfilename) <= 8:
-        print('File incorrect size')
-        return -1
-
-    if 'ChimeraLowPass' in coefficients:
-        ChimeraLowPass = coefficients['ChimeraLowPass']
+    if isinstance(fullfilename, dict):
+        loadedData = fullfilename
+        fullfilename = loadedData['filename']
     else:
-        ChimeraLowPass = None
+        if os.path.getsize(fullfilename) <= 8:
+            print('File incorrect size')
+            return -1
 
-    loadedData = LoadData.OpenFile(fullfilename, ChimeraLowPass, True, CutTraces)
+        if 'ChimeraLowPass' in coefficients:
+            ChimeraLowPass = coefficients['ChimeraLowPass']
+        else:
+            ChimeraLowPass = None
+
+        loadedData = LoadData.OpenFile(fullfilename, ChimeraLowPass, True, CutTraces)
+
     maxTime = coefficients['maxEventLength']
     minTime = coefficients['minEventLength']
     fitTime = coefficients['fitLength']

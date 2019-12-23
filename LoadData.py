@@ -13,6 +13,9 @@ from scipy import signal
 import Functions
 from tkinter.filedialog import askopenfilenames
 
+OPTData_ = {'samplerate': 6250.0,
+            'voltage': 200e-3}
+
 def ImportABF(datafilename):
     abf = pyabf.ABF(datafilename)
     #abf.info()  # shows what is available
@@ -54,6 +57,16 @@ def ImportAxopatchData(datafilename):
         output={'type': 'Axopatch', 'graphene': 0, 'samplerate': samplerate, 'i1': i1, 'v1': v1, 'filename': datafilename}
     return output
 
+def importAxopatchOPTRaw(datafilename):
+    x = np.fromfile(datafilename, np.dtype('>f8'))
+    i1 = np.array(x)
+    return i1
+
+def importAxpoatchOPT(datafilename, samplerate, voltage):
+    i1 = importAxopatchOPTRaw(datafilename)
+    output = {'type': 'Axopatch', 'graphene': 0, 'samplerate': samplerate, 'i1': i1, 'v1': voltage, 'filename': datafilename}
+    return output
+
 def ImportChimeraRaw(datafilename):
     matfile=io.loadmat(str(os.path.splitext(datafilename)[0]))
     #buffersize=matfile['DisplayBuffer']
@@ -89,7 +102,8 @@ def ImportChimeraData(datafilename):
         output = ImportChimeraRaw(datafilename)
     return output
 
-def OpenFile(filename = '', ChimeraLowPass = 10e3, approxImpulseResponse=False, Split=False, verbose=False):
+
+def OpenFile(filename = '', ChimeraLowPass = 10e3, approxImpulseResponse=False, Split=False, verbose=False, OPTData=OPTData_):
     """ 
     Function used to read data. It extracts the currents and voltage signals from the file in input
     by calling the import function corresponding to the file format.
@@ -136,11 +150,11 @@ def OpenFile(filename = '', ChimeraLowPass = 10e3, approxImpulseResponse=False, 
     if verbose:
         print('Loading file... ' +filename)
 
-    if datafilename[-3::] == 'dat':
-        isdat = 1
+    if datafilename[-3::].lower() == 'dat':
         output = ImportAxopatchData(datafilename)
-    elif datafilename[-3::] == 'log':
-        isdat = 0
+    elif datafilename[-3::].lower() == 'opt':
+        output = importAxpoatchOPT(datafilename, OPTData['samplerate'], OPTData['voltage'])
+    elif datafilename[-3::].lower() == 'log':
         output = ImportChimeraData(datafilename)
         if output['type'] is 'ChimeraRaw':  # Lowpass and downsample
             if verbose:
