@@ -28,6 +28,16 @@ Volt = EngFormatter(unit='V', places=2)
 Cond = EngFormatter(unit='S', places=2)
 
 
+def getdata(filename):
+    if isinstance(filename, str):
+        data = LoadData.OpenFile(filename,lowPass,True) #, ChimeraLowPass, True, CutTraces)
+    elif isinstance(filename,dict):
+        data = filename
+        filename = data['filename']
+    else:
+        raise Exception('Incorrect input')
+    return data
+
 def custom_formatterA():
     units = [('m', 1e-3),
              ('µ', 1e-6),
@@ -39,6 +49,7 @@ def custom_formatterA():
         if Math.abs(tick) >= u[1]:
             return '{0:.1f} {}A'.format(tick / u[1], u[0]) #Note, Javascript Math
     return '{:.2E}'.format(tick)
+
 
 def custom_formattersec():
     units = [
@@ -52,8 +63,17 @@ def custom_formattersec():
         if tick <= 100/u[1]:
             return '{0:.1f}{}'.format(tick * u[1], u[0])
 
-def SimpleTracePlot(filename, lowPass = 10e3):
-    loadedData = LoadData.OpenFile(filename,lowPass,True) #, ChimeraLowPass, True, CutTraces)
+
+def SimpleTracePlot(filename, lowPass=10e3):
+    loadedData = getdata(filename)
+    if isinstance(filename, str):
+        loadedData = LoadData.OpenFile(filename,lowPass,True) #, ChimeraLowPass, True, CutTraces)
+    elif isinstance(filename,dict):
+        loadedData = filename
+        filename = loadedData['filename']
+    else:
+        raise Exception('Incorrect input')
+
     if loadedData['samplerate'] > lowPass:
         output = Functions.LowPass(loadedData['i1'], loadedData['samplerate'], lowPass)
         FullTrace = output['data']
@@ -66,7 +86,7 @@ def SimpleTracePlot(filename, lowPass = 10e3):
 
     p = figure(plot_height=300, plot_width=900,tools='pan,box_zoom,xwheel_zoom,reset,save', active_scroll='xwheel_zoom')
 
-    times=np.linspace(0, len(FullTrace) / samplerate, num=len(FullTrace))
+    times = np.linspace(0, len(FullTrace) / samplerate, num=len(FullTrace))
     p.line(times,FullTrace)
 
     p.xaxis.axis_label = 'time (s)'
