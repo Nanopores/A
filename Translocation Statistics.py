@@ -1,5 +1,9 @@
 #Michael's Code modified for for Translocation Kinetics on Jochem's Event Detection
-import numpy as np
+from sys import platform
+if sys_pf == 'darwin':
+    import matplotlib
+    matplotlib.use("TkAgg")
+import numpy as a
 import pandas as pd
 import scipy.signal as sig
 import Functions as f
@@ -9,7 +13,6 @@ import os
 import matplotlib
 #matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
-
 import h5py
 import seaborn as sns
 from tkinter import Tk
@@ -28,9 +31,9 @@ print(filenames)
 
 Name = ''
 cm = plt.cm.get_cmap('RdYlBu')
-voltageLimits = [0, 0.41]
-dwellrange = (0, 25)
-dIrange = (0, 2.5)
+voltageLimits = [0.49, 0.51]
+dwellrange = (0, 1)
+dIrange = (0, 4)
 FracDIRange = (0, 100)
 
 count = 0
@@ -41,6 +44,10 @@ count = {}
 dt = np.array([])
 dIF = np.array([])
 dI = np.array([])
+tempvoltage = np.array([])
+templocalbaseline = np.array([])
+tempeventlength = np.array([])
+
 localBase = np.array([])
 v = np.array([])
 t = np.array([])
@@ -53,25 +60,19 @@ for file in filenames:
     fileNamewithourend, end = os.path.splitext(file)
     shelfFile = shelve.open(fileNamewithourend)
     event = shelfFile['TranslocationEvents']
-    dIF = np.append(dIF, np.array(event.GetAllIdropsNorm())*100)
-    dI = np.append(dI, np.array(event.GetAllIdrops())*1e9)
-    tempvoltage = np.array([])
-    templocalbaseline = np.array([])
-    tempeventlength = np.array([])
-    for ev in event.events:
-        tempvoltage = np.append(tempvoltage, ev.voltage)
-        templocalbaseline = np.append(templocalbaseline, ev.baseline)
-        tempeventlength = np.append(tempeventlength, ev.eventLength)
+    dIF = np.append(dIF, np.array([x.currentDrop/x.baseline for x in event.events if x.type == 'CUSUM'])*100)
+    dI = np.append(dI, np.array([x.currentDrop for x in event.events if x.type == 'CUSUM'])*1e9)
+    v = np.append(v, [x.voltage for x in event.events if x.type == 'CUSUM'])
+    localBase = np.append(localBase, [x.baseline*1e9/x.voltage for x in event.events if x.type == 'CUSUM'])
+    tempeventlength = np.append(tempeventlength, [x.eventLength for x in event.events if x.type == 'CUSUM'])
     path, filen = os.path.split(file)
     print(path[:-13])
     filepath = path[:-13] + filen[:-8] + '.dat'
     st = os.stat(filepath.replace('\\', '/'))
     dt = np.append(dt, tempeventlength*1e3)
-    t = np.append(t, st.st_birthtime * np.ones(len(event.GetAllIdropsNorm())))
-    t2 = np.append(t2, st.st_mtime * np.ones(len(event.GetAllIdropsNorm())))
-    v = np.append(v, tempvoltage)
-    count += len(event.GetAllIdropsNorm())
-    localBase = np.append(localBase, templocalbaseline*1e9/tempvoltage)
+    t = np.append(t, st.st_birthtime * np.ones(len([x.currentDrop/x.baseline for x in event.events if x.type == 'CUSUM'])))
+    t2 = np.append(t2, st.st_mtime * np.ones(len([x.currentDrop/x.baseline for x in event.events if x.type == 'CUSUM'])))
+    count += len([x.currentDrop/x.baseline for x in event.events if x.type == 'CUSUM'])
 ##
 
 # Sort the voltages.
@@ -116,7 +117,7 @@ ax = fig1.add_subplot(111)
 sc = ax.scatter(dt[np.where(v > 0)], dIF[np.where(v > 0)], c=v[np.where(v > 0)], vmin=min(v[np.where(v > 0)]), vmax=max(v[np.where(v > 0)]), s=35, cmap=cm)
 cbar = plt.colorbar(sc, ticks=availableVoltages)
 cbar.ax.set_yticklabels(labels)  # vertically oriented colorbar
-ax.set_xlabel('Time (s)')
+ax.set_xlabel('Time (ms)')
 ax.set_ylabel('Current Drop dI/I0 (%)')
 ax.set_title('{}\nScatter Plot, {} events'.format(Name, count))
 #plt.show()
@@ -134,7 +135,7 @@ ax6 = fig6.add_subplot(111)
 sc6 = ax6.scatter(dt[np.where(v > 0)], dI[np.where(v > 0)], c=v[np.where(v > 0)], vmin=min(v[np.where(v > 0)]), vmax=max(v[np.where(v > 0)]), s=35, cmap=cm)
 cbar6 = plt.colorbar(sc6, ticks=availableVoltages)
 cbar6.ax.set_yticklabels(labels)  # vertically oriented colorbar
-ax6.set_xlabel('Time (s)')
+ax6.set_xlabel('Time (ms)')
 ax6.set_ylabel('Current Drop dI (nA)')
 ax6.set_title('{}\nScatter Plot, {} events'.format(Name, count))
 #plt.show()
@@ -159,6 +160,30 @@ ax2.set_xticklabels(labels)
 ax2.get_xaxis().tick_bottom()
 ax2.get_yaxis().tick_left()
 fig2.savefig(file[:-24] + 'BoxplotdI.pdf', transparent=True)
+
+# # 2.Violin plot Delta I vs Voltages
+# fig70 = plt.figure(figsize=(9, 6))
+# ax70 = fig70.add_subplot(111)
+# bp = ax70.violinplot(data)
+# ax70.set_xlabel('Voltage (mV)')
+# ax70.set_ylabel('Current Drop dI (nA)')
+# ax70.set_title('{}\nViolin (outliers removed)\n{} events'.format(Name, count))
+# ax70.set_xticklabels(labels)
+# ax70.get_xaxis().tick_bottom()
+# ax70.get_yaxis().tick_left()
+# fig70.savefig(file[:-24] + 'Violin_plotdI.pdf', transparent=True)
+#
+# # 2.Violin Delta I vs Voltages
+# fig80 = plt.figure(figsize=(9, 6))
+# ax80 = fig80.add_subplot(111)
+# bp = ax80.violinplot(dataDwell)
+# ax80.set_xlabel('Voltage (mV)')
+# ax80.set_ylabel('Dwell time (dt)')
+# ax80.set_title('{}\nViolin (outliers removed)\n{} events'.format(Name, count))
+# ax80.set_xticklabels(labels)
+# ax80.get_xaxis().tick_bottom()
+# ax80.get_yaxis().tick_left()
+# fig80.savefig(file[:-24] + 'Violin_plotdt.pdf', transparent=True)
 
 # 3.BoxPlot DwellTime vs Voltages
 fig3 = plt.figure(3, figsize=(9, 6))
@@ -247,10 +272,10 @@ for i, dati in enumerate(dataDwell):
     ax10.set_xlabel('Dwell Time (ms)')
     ax10.set_ylabel('Frequency')
     ax10.set_title('{}mV'.format(int(availableVoltages[i]*1e3)))
-    ax10.set_xlim(left=np.min(np.concatenate(dataDwell).ravel()), right=np.max(np.concatenate(dataDwell).ravel()))
+    ax10.set_xlim(0,4)
 fig10.savefig(file[:-24] + 'KDEDwellTime.pdf')#, transparent=True)
 
-# 11 KDE DwellTime vs Voltages
+# 11 KDE CurrentDrop vs Voltages
 fig11 = plt.figure(11, figsize=(6, 12))
 for i,dati in enumerate(data):
     ax11 = fig11.add_subplot(len(data), 1, i+1)
@@ -259,8 +284,8 @@ for i,dati in enumerate(data):
     ax11.set_ylabel('Frequency')
     # ax11.set_xlim(0, 2)
     ax11.set_title('{}mV'.format(int(availableVoltages[i]*1e3)))
-    ax11.set_xlim(left=np.min(np.concatenate(data).ravel()), right=np.max(np.concatenate(data).ravel()))
-    ax8.set_xlim(0, 2)
+    # ax11.set_xlim(left=np.min(np.concatenate(data).ravel()), right=np.max(np.concatenate(data).ravel()))
+    ax11.set_xlim(0, 4)
 fig11.savefig(file[:-24] + 'KDECurrentDrop.pdf')#, transparent=True)
 
 # 17 KDE DwellTime vs Voltages
@@ -334,25 +359,25 @@ matplotlib.rcParams['font.size'] = 22
 fig12 = plt.figure(12, figsize=(16, 9))
 ax12 = fig12.add_subplot(111)
 for i, dati in enumerate(dataDwell):
-    ax12 = sns.distplot(dati, label='{}mV'.format(str(int(availableVoltages[i]*1e3))))
+    ax12 = sns.distplot(dati, label='{}mV'.format(str(int(availableVoltages[i]*1e3)), bins = 100, norm_hist=True))
 ax12.legend()
 ax12.set_xlabel('Dwell Time (ms)')
 ax12.set_ylabel('Frequency')
 ax12.set_title('Dwell Time Histograms')
 #ax12.set_xlim(left=np.min(np.concatenate(dataDwell).ravel()), right=np.max(np.concatenate(dataDwell).ravel()))
-ax12.set_xlim(0, 6)
+ax12.set_xlim(0, 1)
 fig12.savefig(file[:-24] + 'KDESingleDwellTime.pdf')#, transparent=True)
 
 # KDE DwellTime vs Voltages ALL on One
 fig13 = plt.figure(13, figsize=(16, 9))
 ax13 = fig13.add_subplot(111)
 for i,dati in enumerate(data):
-    ax13 = sns.distplot(dati, label='{}mV'.format(str(int(availableVoltages[i]*1e3)), norm_hist=True, hist=True))
+    ax13 = sns.distplot(dati, label='{}mV'.format(str(int(availableVoltages[i]*1e3)), bins = 100, norm_hist=True))
 ax13.legend()
 ax13.set_xlabel('Current Drop (nA)')
 ax13.set_ylabel('Frequency')
 ax13.set_title('Current Drop Histograms')
-ax13.set_xlim(left=np.min(np.concatenate(data).ravel()), right=np.max(np.concatenate(data).ravel()))
+ax13.set_xlim(0, 4)
 fig13.savefig(file[:-24] + 'KDESingleCurrentDrop.pdf')
 
 # KDE DwellTime vs Voltages ALL on One
@@ -408,3 +433,30 @@ for i, dati in enumerate(datalBase):
     ax22.set_xlim(left= 0, right=50)#np.min(np.concatenate(datalBase).ravel()), right=np.max(np.concatenate(datalBase).ravel()))
 fig22.savefig(file[:-24] + 'LocalBaseline.pdf')#, transparent=True)
 
+
+#Only KDEplot
+
+# KDE DwellTime vs Voltages
+fig32 = plt.figure(32, figsize=(16, 9))
+ax32 = fig32.add_subplot(111)
+for i, dati in enumerate(dataDwell):
+    ax32 = sns.kdeplot(dati, label='{}mV'.format(str(int(availableVoltages[i]*1e3)), bins = 100))
+ax32.legend()
+ax32.set_xlabel('Dwell Time (ms)')
+ax32.set_ylabel('Prob. density')
+ax32.set_title('Dwell Time Histograms')
+ax32.set_xlim(0, 1)
+ax32.set_xlim(left=np.min(np.concatenate(dataDwell).ravel()), right=np.max(np.concatenate(dataDwell).ravel()))
+fig32.savefig(file[:-24] + 'DwellTime_KDEPlot.pdf')
+
+# KDE Current Drop vs Voltages
+fig33 = plt.figure(33, figsize=(16, 9))
+ax33 = fig33.add_subplot(111)
+for i,dati in enumerate(data):
+    ax33 = sns.kdeplot(dati, label='{}mV'.format(str(int(availableVoltages[i]*1e3))), bw=0.2, shade = False)
+ax33.legend()
+ax33.set_xlabel('Current Drop (nA)')
+ax33.set_ylabel('Prob. density')
+ax33.set_title('Current Drop Histograms')
+ax33.set_xlim(4, 0)
+fig33.savefig(file[:-24] + 'CurrentDrop_KDEPlot.pdf')

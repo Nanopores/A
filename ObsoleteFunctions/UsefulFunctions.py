@@ -17,7 +17,7 @@ import h5py
 from timeit import default_timer as timer
 import platform
 from scipy.optimize import curve_fit
-import AnalysisParameters as pm
+#import AnalysisParameters as pm
 
 def Reshape1DTo2D(inputarray, buffersize):
     npieces = np.uint16(len(inputarray)/buffersize)

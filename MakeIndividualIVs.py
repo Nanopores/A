@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+from sys import platform as sys_pf
+if sys_pf == 'darwin':
+    import matplotlib
+    matplotlib.use("TkAgg")
 
 import numpy as np
 import Functions as uf
@@ -39,10 +43,10 @@ expname = 'All'
 Parameters = {
   'Type': 'Nanopore',  # Nanopore, Nanocapillary, NanocapillaryShrunken
   'reversePolarity':  0,
-  'specificConductance': 10.5,  # 10.5 S/m for 1M KCl
+  'specificConductance': 11.5,  # 10.5 S/m for 1M KCl
   'delay': 3,  # seconds for reading current
   # Nanopore
-  'poreLength':  20e-9,
+  'poreLength':  1e-9,
   # Nanocapillary
   'taperLength':  3.3e-3,
   'innerDiameter': 0.2e-3,
@@ -106,7 +110,7 @@ def run(filenames, newParameters={}, verbose=False, noPlot=False):
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-        AllData = uf.MakeIVData(output, approach=Parameters['fittingMethod'], delay = Parameters['delay'])#, UseVoltageRange = [-0.4, 0.4])
+        AllData = uf.MakeIVData(output, approach=Parameters['fittingMethod'], delay = Parameters['delay'], UseVoltageRange = [-0.51, 0.51])
         if AllData == 0:
             print('!!!! No Sweep in: ' + filename)
             continue
@@ -158,12 +162,18 @@ def run(filenames, newParameters={}, verbose=False, noPlot=False):
                 ind = np.argsort(AllData[current]['Voltage'])
                 ax1IV.errorbar(AllData[current]['Voltage'][ind], AllData[current]['Mean'][ind],
                               yerr=AllData[current]['SE'][ind], fmt='o', color='b')
-                ax1IV.plot(AllData[current]['Voltage'][ind], np.polyval([Slope,Yintercept], AllData[current]['Voltage'][ind]), color='r')
+                #ax1IV.plot(AllData[current]['Voltage'][ind], np.polyval([Slope,Yintercept], AllData[current]['Voltage'][ind]), color='r')
+                x = np.linspace(-540,540,100)
+                ax1IV.plot(x/1000,np.polyval([Slope, Yintercept], x/1000), color='r')
+                ax1IV.scatter(0.5, 12.6e-9,color='g', marker = "*" )
                 ax1IV.set_title(str(os.path.split(filename)[1])+ '\nR=' + Res.format_data(1/Slope) + ', G=' + Cond.format_data(Slope))
                 ax1IV.set_ylabel('Current ' + current)
                 ax1IV.set_xlabel('Voltage')
                 ax1IV.xaxis.set_major_formatter(EngFormatter(unit='V'))
                 ax1IV.yaxis.set_major_formatter(EngFormatter(unit='A'))
+                ax1IV.set_xlim(-0.6, 0.6)
+                ax1IV.set_ylim(-15e-9, 15e-9)
+                ax1IV.grid(True)
                 figIV.savefig(directory + os.sep + str(os.path.split(filename)[1]) + Type + '_' + current + 'IV.pdf', transparent=True)
 
                 x = AllData[current]['Voltage'][ind]
@@ -175,7 +185,7 @@ def run(filenames, newParameters={}, verbose=False, noPlot=False):
                     for i in range(len(x)):
                         writer.writerow([x[i], y[i]])
                 plt.show()
-                figIV.clear()
+                plt.close()
                 return poresize
             else:
                 return poresize

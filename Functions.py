@@ -3,7 +3,9 @@
 import math
 import os
 import pickle as pkl
+import scipy
 from scipy import signal
+import scipy.signal
 from scipy.optimize import curve_fit, OptimizeWarning
 from scipy.signal import find_peaks
 
@@ -11,8 +13,8 @@ from scipy.signal import find_peaks
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import scipy
-import scipy.signal as sig
+
+
 from matplotlib.ticker import EngFormatter
 from numpy import linalg as lin
 from scipy import constants as cst
