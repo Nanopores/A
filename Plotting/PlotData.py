@@ -28,7 +28,7 @@ Volt = EngFormatter(unit='V', places=2)
 Cond = EngFormatter(unit='S', places=2)
 
 
-def getdata(filename):
+def getdata(filename,lowPass):
     if isinstance(filename, str):
         data = LoadData.OpenFile(filename,lowPass,True) #, ChimeraLowPass, True, CutTraces)
     elif isinstance(filename,dict):
@@ -65,14 +65,7 @@ def custom_formattersec():
 
 
 def SimpleTracePlot(filename, lowPass=10e3):
-    loadedData = getdata(filename)
-    if isinstance(filename, str):
-        loadedData = LoadData.OpenFile(filename,lowPass,True) #, ChimeraLowPass, True, CutTraces)
-    elif isinstance(filename,dict):
-        loadedData = filename
-        filename = loadedData['filename']
-    else:
-        raise Exception('Incorrect input')
+    loadedData = getdata(filename, lowPass)
 
     if loadedData['samplerate'] > lowPass:
         output = Functions.LowPass(loadedData['i1'], loadedData['samplerate'], lowPass)
@@ -119,4 +112,3 @@ def PlotPSD(inputdata):
     p.title.text = 'PSD :' + os.path.basename(filename)
 
     show(p)
-
