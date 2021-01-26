@@ -39,10 +39,10 @@ expname = 'All'
 Parameters = {
   'Type': 'Nanopore',  # Nanopore, Nanocapillary, NanocapillaryShrunken
   'reversePolarity':  0,
-  'specificConductance': 10.5,  # 10.5 S/m for 1M KCl
-  'delay': 3,  # seconds for reading current
-  # Nanopore
-  'poreLength':  20e-9,
+  'specificConductance': 4.12,  # 10.5 S/m for 1M KCl
+  'delay':10,  # seconds for reading current
+  # Nanopore,
+  'poreLength': 1e-9, #360nm for Raluca
   # Nanocapillary
   'taperLength':  3.3e-3,
   'innerDiameter': 0.2e-3,
@@ -175,7 +175,7 @@ def run(filenames, newParameters={}, verbose=False, noPlot=False):
                     writer=csv.writer(output, lineterminator='\n')
                     for i in range(len(x)):
                         writer.writerow([x[i], y[i]])
-                #plt.show()
+                plt.show()
                 figIV.clear()
                 #return poresize
             #else:

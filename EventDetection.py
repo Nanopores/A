@@ -20,17 +20,17 @@ timeInSec = EngFormatter(unit='s', places=2)
 Amp = EngFormatter(unit='A', places=2)
 
 #Default parameters
-extension = '*.log'
+extension = '*.dat'
 coefficients = {'a': 0.999,
                 'E': 0,
                 'S': 5,
-                'maxEventLength': 200e-3,  # maximal event length to be considered an event
-                'minEventLength': 600e-6,  # maximal event length to be considered an impulse
+                'maxEventLength': 50000e-3,  # maximal event length to be considered an event
+                'minEventLength': 100e-6,  # maximal event length to be considered an impulse
                 'fitLength': 3e-3,  # minimal event length to be fitted for impulses
                 'dt': 25,  # go back dt points for fitting of impulses
                 'hbook': 1,
-                'delta': 0.2e-9,
-                'deltaRel': None,  # If set overrides delta, calculates delta relative to baseline
+                'delta': 1e-9,
+                'deltaRel': 0.2,  # If set overrides delta, calculates delta relative to baseline
                 'ChimeraLowPass': 10e3}
 
 def GetParameters():
@@ -143,18 +143,18 @@ def batcheventdetection(folder, extension, coefficients, verboseLevel=1, forceRu
     return AllEvents
 
 def eventdetection(fullfilename, coefficients, verboseLevel=1, CutTraces=False, showFigures=False):
-    """ 
-    Function used to find the events of TranslocationEvents class in the raw data in file 'filename'. 
-    It calls the function RecursiveLowPassFast to approximatively locate rough events in the data. 
-    If a short TranslocationEvent object is detected its type attribute will be changed to 'Impulse' and the 
-    meanTrace attribute will take the value of the minimal current value within the event. 
-    
-    Then the CUSUM function will be called  to build the CUSUM-fit and assign values to the different 
-    attributes of the TranslocationEvent objects. 
-    
+    """
+    Function used to find the events of TranslocationEvents class in the raw data in file 'filename'.
+    It calls the function RecursiveLowPassFast to approximatively locate rough events in the data.
+    If a short TranslocationEvent object is detected its type attribute will be changed to 'Impulse' and the
+    meanTrace attribute will take the value of the minimal current value within the event.
+
+    Then the CUSUM function will be called  to build the CUSUM-fit and assign values to the different
+    attributes of the TranslocationEvent objects.
+
     Depending on how the CUSUM was able to fit the trace inside and around the event, the type attribute of the TransocationEvent will be set to 'Real'
     (if the CUSUM fit went well) or 'Rough' (if the CUSUM was not able to fit the trace).
-    
+
     Parameters
     ----------
         fullfilename : str
@@ -170,13 +170,13 @@ def eventdetection(fullfilename, coefficients, verboseLevel=1, CutTraces=False, 
     Returns
     -------
     list of TranslocationEvent
-        All the events in the signal. 
-    
+        All the events in the signal.
+
     """
 
     if os.path.getsize(fullfilename) <= 8:
             print('File incorrect size')
-        return -1
+    return -1
 
     if 'ChimeraLowPass' in coefficients:
         ChimeraLowPass = coefficients['ChimeraLowPass']
@@ -381,11 +381,11 @@ def LoadEvents(loadname):
     AllEvents.SetFolder(loadname)
     return AllEvents
 
-def run(inputData, newExtension=None, newCoefficients={}, outputFile=None, force=False, cut=False, verboseLevel=0):
-    """ 
-    Function used to call all the other functions in the module 
-    needed to find the events in raw nanopore experiment data.  
-    
+def run(inputData, newExtension=None, newCoefficients={}, outputFile=None, force=True, cut=False, verboseLevel=0):
+    """
+    Function used to call all the other functions in the module
+    needed to find the events in raw nanopore experiment data.
+
     Parameters
     -----------
     inputData : str
@@ -407,9 +407,9 @@ def run(inputData, newExtension=None, newCoefficients={}, outputFile=None, force
     -------
     AllEvents object
         All the events.
-    
+
     """
-    
+
     if newExtension is None:
         newExtension = extension
 
@@ -474,11 +474,11 @@ if __name__ == '__main__':
 
     if os.path.isdir(inputData):
         print('extension is: ' + extension +'\nStarting.... \n')
-        TranslocationEvents = batcheventdetection(inputData, extension, newcoefficients=coefficients, force=args.force, cut=args.cut)
+        tEL = batcheventdetection(inputData, extension, coefficients)
     else:
         print('Starting.... \n')
-        TranslocationEvents = eventdetection(inputData,coefficients, args.cut)
+        tEL = eventdetection(inputData,coefficients, args.cut)
 
     #Check if list is empty
     if TranslocationEvents.events:
-        LoadData.SaveVariables(outputData, TranslocationEvents=TranslocationEvents)
+        LoadData.SaveVariables(outputData, tEL=TranslocationEvents)

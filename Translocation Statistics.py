@@ -50,7 +50,7 @@ for file in filenames:
     print(file)
     fileNamewithourend, end = os.path.splitext(file)
     shelfFile = shelve.open(fileNamewithourend)
-    event = shelfFile['translocationEvents']
+    event = shelfFile['TranslocationEvents']
     dIF = np.append(dIF, np.array(event.GetAllIdropsNorm())*100)
     dI = np.append(dI, np.array(event.GetAllIdrops())*1e9)
     tempvoltage = np.array([])
@@ -60,7 +60,7 @@ for file in filenames:
         tempvoltage = np.append(tempvoltage, ev.voltage)
         templocalbaseline = np.append(templocalbaseline, ev.baseline)
         tempeventlength = np.append(tempeventlength, ev.eventLength)
-    filepath = event.events[0].filename[19:].replace('2018 - CURRENT', '2018')
+    filepath = event.events[0].filename[18:].replace('2018 - CURRENT', '2018')
     st = os.stat('/Volumes/'+filepath.replace('\\','/'))
     dt = np.append(dt, tempeventlength*1e3)
     t = np.append(t, st.st_birthtime * np.ones(len(event.GetAllIdropsNorm())))

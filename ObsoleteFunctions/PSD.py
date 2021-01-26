@@ -19,7 +19,7 @@ matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
 from matplotlib.ticker import EngFormatter
 
-file = '/Volumes/lben/lben-commun/2018 User Data/Publications/Laser Power Generator/Data and Code/Raw/NorcadaCh1_100mMKCl_1mM_Cis_trans_ph74_640nm_100mW_IV_Later_Trace.dat'
+file =  '\\\\sti1arch.epfl.ch\\lben-archives\\2019 - CURRENT\\Mukesh_Archives\\Axopatch200B\\16052019\\GlassChip02_1MKCl_beforeECR_noise_0mV.dat'
 dat = uf.OpenFile(file)
 fs = dat['samplerate']
 endp = np.uint(147.658 * dat['samplerate'])

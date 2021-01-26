@@ -23,7 +23,7 @@ from matplotlib.ticker import EngFormatter
 fig = plt.figure(1, figsize=(10, 8))
 ax = fig.add_subplot(111)
 
-#file = '/Volumes/lben/lben-commun/2018 User Data/Michael/Axopatch/20181003/NIPm10_5nm_1MKCl_pH75_Noise_100kHz_0mV_1.dat'
+#file = '\\sti1arch.epfl.ch\lben-archives\\2019 - CURRENT\Mukesh_Archives\Axopatch200B\\09052019/gc_2_1MKCl_noise_0mV.dat'
 filenames = askopenfilenames() # show an "Open" dialog box and return the path to the selected file
 #colors=['k','r','b']
 root.update()
