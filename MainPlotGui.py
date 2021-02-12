@@ -47,7 +47,7 @@ def ItemChanged(it):
     ui.label.setText(currentFile)
 
 def UpdatePlots(currentFile):
-    inp = LoadData.OpenFile(folder + os.sep + currentFile, None, True)
+    inp = LoadData.OpenFile(folder + os.sep + currentFile, ChimeraLowPass= 1e3)
     ui.graphicsView.plotItem.clear()
     ui.graphicsView_2.plotItem.clear()
     ui.graphicsView_3.plotItem.clear()
@@ -58,7 +58,7 @@ def UpdatePlots(currentFile):
     if 'v2' in inp:
         ui.graphicsView_2.plot(y=inp['v2'], x=np.arange(0, len(inp['i2']))/inp['samplerate'], pen = 'b')
     if 'v1' in inp:
-        ui.graphicsView_2.plot(y=inp['v1'], x=np.arange(0, len(inp['i1']))/inp['samplerate'], pen = 'k')
+        ui.graphicsView_2.plot(y=inp['v1'], x=np.arange(0, len(inp['i1']))/inp['samplerate'], pen = 'r')
 
 def SaveWindow():
     win = pg.GraphicsWindow()
@@ -80,7 +80,7 @@ ui.pushSave.pressed.connect(SaveWindow)
 ui.graphicsView.plotItem.setDownsampling(ds=10, auto=True, mode='subsample')
 ui.graphicsView.plotItem.setClipToView(True)
 pg.setConfigOptions(antialias=True)
-pg.setConfigOptions(background=None)
+pg.setConfigOptions(background='b')
 ui.graphicsView.plotItem.setLabel('left', "Current", units='A')
 ui.graphicsView.plotItem.setLabel('bottom', "Time", units='s')
 

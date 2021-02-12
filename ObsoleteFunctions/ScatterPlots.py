@@ -15,8 +15,8 @@ pm.init()
 #currents = {'i1','i2'}
 currents = {'i1'}
 
-#filenames = askopenfilenames() # show an "Open" dialog box and return the path to the selected file
-filenames = {'/Users/migraf/Desktop/Chan/Data/R43_KCl gradient_100mMcis_1mM trans_4_20180405_182358_OriginalDB.hdf5'}
+filenames = askopenfilenames() # show an "Open" dialog box and return the path to the selected file
+# filenames = {'/Users/migraf/Desktop/Chan/Data/R43_KCl gradient_100mMcis_1mM trans_4_20180405_182358_OriginalDB.hdf5'}
 count = 0
 
 dt = {}

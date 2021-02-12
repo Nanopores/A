@@ -79,7 +79,7 @@ def PlotGTau(eventClass, xLim = None, yLim = None, showCurrent = False, normaliz
     yLim : 2D list, optional
         limits on y axis
     showCurrent : bool, optional
-        False by default. If True, it will change the SI unit in the y-axis from siemens [S] to ampers [A].
+        False by default. If True, it will change the SI unit in the y-axis from siemens [S] to ampere [A].
         So instead of units in conductance drop, it will have current drop.
     normalized : bool, optional
         False by default. If True, it will change in the y-axis the unit from siemens [S] to normalized current drop without unit.

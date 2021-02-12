@@ -325,7 +325,7 @@ def Reshape1DTo2D(inputarray, buffersize):
 #def PoreFromIVFile(file)
 
 
-def MakeIVData(output, approach='mean', delay=0.7, UseVoltageRange=0, verbose=False):
+def MakeIVData(output, approach='exponential', delay=0.7, UseVoltageRange=0, verbose=True):
     """
     Function used to build and analyse a dataset containing the applied voltages 
     and measured currents during a voltage sweep experiment. 

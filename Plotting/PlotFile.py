@@ -1,9 +1,7 @@
-
-from sys import platform as sys_pf
-if sys_pf == 'darwin':
-    import matplotlib
-    matplotlib.use("TkAgg")
-
+import matplotlib
+import platform
+if platform.system() == 'Darwin':
+    matplotlib.use('MacOSX')
 import numpy as np
 import scipy
 from scipy.optimize import curve_fit
@@ -22,43 +20,93 @@ from tkinter import Tk
 from tkinter.filedialog import askopenfilenames
 import seaborn as sns
 from matplotlib import gridspec
-root = Tk()
-root.withdraw()
-
-
 formCurrent = EngFormatter(unit='A', places=3)
 formA = EngFormatter(unit='A', places=3)
 formB = EngFormatter(unit='s', places=3)
 
 filenames = askopenfilenames()
-root.update()
 
-#1  Plot 211 and 212 type graph::: Current-time (top), Voltage-time (below)
 
+#1 Current (top), Voltage (below)
+
+# for i,file in enumerate(filenames):
+#     dat = LoadData.OpenFile(file)
+#     fig1 = plt.figure(1, figsize=(8, 4))
+#     ax_part1 = fig1.add_subplot(2, 1, 1)
+#
+#     t = np.arange(len(dat['i1']))/dat['samplerate']
+#     # ax_part1.plot(t, dat['i1'] * 1e9)
+#
+#     ax_part1.set_ylabel('Ionic Current (nA)')
+#
+#     current_array = np.array(dat['i1'] * 1e9)
+#     ax_part1.plot(t, current_array)
+#
+#     voltage_array = np.array(len(dat['v1']))
+#
+#     conductance_array = (current_array/voltage_array)
+#
+#     print(np.mean(conductance_array))
+#     print(filenames)
+#
+# # # ax_part1.set_xlim(0, 50)
+# # # ax_part1.set_ylim(-5, 5)
+#     fig2 = plt.figure(1, figsize=(8, 4))
+#     ax_part2 = fig1.add_subplot(2, 1, 2, sharex=ax_part1)
+#     t = np.arange(len(dat['v1']))/dat['samplerate']
+#     ax_part2.plot(t, dat['v1']*1e3)
+#     ax_part2.set_xlabel('Time (s)')
+#     ax_part2.set_ylabel('Voltage (mV)')
+# # ax_part2.set_xlim(0, 50)      §
+# # ax_part2.set_ylim(-60, 60)
+#
+# plt.show()
+
+# os.chdir(os.path.dirname(file))
+# directory = (str(os.path.split(file)[0]) + os.sep + 'Extracted' + '_traces')
+# if not os.path.exists(directory):
+#     os.makedirs(directory)
+#
+# fig.savefig(directory + os.sep + filename)
+#
+# plt.savefig("test.svg")
+
+
+# # 2 Current-time (top), Voltage-time (below), Histogram (right)
 
 # for i,file in enumerate(filenames):
 #     dat = LoadData.OpenFile(file)
 #     fig1 = plt.figure(1, figsize=(8, 4))
 #     ax_part1 = fig1.add_subplot(2, 1, 1)
 #     t = np.arange(len(dat['i1']))/dat['samplerate']
-#     ax_part1.plot(t, dat['i1']*1e12)
-#     # ax_part1.set_xlabel('Time (s)')
-#     ax_part1.set_ylabel('Ionic Current (pA)')
-# # ax_part1.set_xlim(0, 50)
-# # ax_part1.set_ylim(-5, 5)
+#     ax_part1.plot(t, dat['i1'] * 1e9)
+#     ax_part1.set_ylabel('Ionic Current (nA)')
+#     current_array = np.array(dat['i1'] * 1e9)
+#     # print("mean/std at 0 mV : ", np.mean(current_array[0:47821], axis = 0), np.std(current_array[0:47821], axis = 0))
+#     # print("mean/std at 50 mV  : ", np.mean(current_array[49992:20274], axis=0),  np.std(current_array[49992:20274], axis = 0))
+#     # print("mean/std at 50 mV  : ", np.mean(current_array[204383:209565], axis=0),np.std(current_array[204383:209565], axis=0))
+#
+# # # ax_part1.set_xlim(0, 50)
+# # # ax_part1.set_ylim(-5, 5)
 #     fig2 = plt.figure(1, figsize=(8, 4))
 #     ax_part2 = fig1.add_subplot(2, 1, 2, sharex=ax_part1)
 #     t = np.arange(len(dat['v1']))/dat['samplerate']
 #     ax_part2.plot(t, dat['v1']*1e3)
-# ax_part2.set_xlabel('Time (s)')
-# ax_part2.set_ylabel('Voltage (mV)')
-# # ax_part2.set_xlim(0, 50)
-# # ax_part2.set_ylim(-60, 60)
+# # ax_part2.set_xlabel('Time (s)')
+# # ax_part2.set_ylabel('Voltage (mV)')
+# # # ax_part2.set_xlim(0, 50)      §
+# # # ax_part2.set_ylim(-60, 60)
+# #
+# fig3 = plt.figure(1, figsize = (1,1))
+# ax_part3 = fig1.add_subplot(2,2,2, sharey=ax_part1)
+# current_array = np.array(dat['i1']*1e9)
+# ax_part3 = sns.distplot(current_array, color="r",  norm_hist = True, vertical = True) #bins = 3000,
 # plt.show()
 
 
-#2  Plot: Current-time (top), Voltage-time ON SAME graph
 
+# 3  Plot: Current-time (top), Voltage-time ON SAME graph
+#
 # for i,file in enumerate(filenames):
 #     dat = LoadData.OpenFile(file)
 #     fig1 = plt.figure(1, figsize=(8, 4))
@@ -80,59 +128,133 @@ root.update()
 #     ax_part2.plot(t2, dat['v1']*1e3, color=color2)
 #     ax_part2.set_ylabel('Voltage (mV)')
 #     ax_part2.tick_params( labelcolor=color2)
-
+# print(file)
 # plt.show()
-# ax_part2.set_xlim(0, 50)
-# ax_part2.set_ylim(-60, 60)
+# # ax_part2.set_xlim(0, 50)
+# # ax_part2.set_ylim(-60, 60)
 
 
-# # 3  Plot: Conductance-time (top), Voltage-time ON SAME graph
+# # 4  Plot: Conductance or Pore Size (top), Voltage-time ON SAME graph
+
+for i,file in enumerate(filenames):
+    dat = LoadData.OpenFile(file)
+
+    fig1 = plt.figure(1, figsize=(10, 6))
+    ax_part1 = fig1.add_subplot(2, 1, 1)
+    t = np.arange(len(dat['i1']))/dat['samplerate']
+    # t2 = t/60
+
+    G = dat['i1']/dat['v1']*1e9
+
+    # size = (G+np.sqrt(G*(G+16*10.5/np.pi)))/(2*10.5) #change the bulk conductivity and thickness
+    G_mean = np.mean(G)
+    G_std = np.std(G)
+    print(G_mean, G_std)
+
+    ax_part1.plot(t[::], G[::], label = G_mean)  #dat['i1']/dat['v1']*1e9 or #size
+    ax_part1.legend()
+    ax_part1.set_xlabel('Time (s)')
+    ax_part1.set_ylabel('Conductance (nS)')
+
+
+    fig2 = plt.figure(1, figsize=(10, 6))
+    ax_part2 = fig1.add_subplot(2, 1, 2, sharex=ax_part1)
+    ax_part2.plot(t[::], dat['v1'][::])
+    ax_part2.set_xlabel('Time (s)')
+    ax_part2.set_ylabel('Voltage (V)')
+    # # ax_part2.set_xlim(0, 50)
+    # ax_part1.set_ylim(0, 5)
+    # ax_part2.set_ylim(0, 0.5)
+
+plt.show()
+# plt.savefig("Stability_300mV.svg")
+
+#5  Plot: Current-time (top) and Histogram-counts (sideways)
 # for i,file in enumerate(filenames):
 #     dat = LoadData.OpenFile(file)
 #     fig1 = plt.figure(1, figsize=(8, 4))
-#     ax_part1 = fig1.add_subplot(2, 1, 1)
+#     ax_part1 = fig1.add_subplot(1,2,1)
 #     t = np.arange(len(dat['i1']))/dat['samplerate']
-#     ax_part1.plot(t, dat['i1']/dat['v1']*1e9)
-#     # ax_part1.set_xlabel('Time (s)')
-#     ax_part1.set_ylabel('Conductance (nS)')
+#     ax_part1.plot(t, dat['i1'] * 1e9)
+#
+#
+#     fig2 = plt.figure(1, figsize=(1, 1))
+#     ax_part2 = fig1.add_subplot(1,2,2, sharey=ax_part1)
+#     current_array = np.array(dat['i1']*1e9)
+#     ax_part2 = sns.distplot(current_array, color="r",bins = 1000,  norm_hist = True, vertical = True) #bins = 3000,
+#     # ax_part2 = sns.kdeplot(current_array, color="r",  shade=True, vertical=True, kernel='gau') #bins = 3000,
+#
+#
+#     ax_part1.set_xlabel('Time (s)')
+#     ax_part1.set_ylabel('Ionic Current (nA)')
+#     ax_part1.set_ylim(0, 1.2)
+#     # ax_part1.set_xlim(0, 11.8)
+#     ax_part2.set_xlabel('Counts (a.u.)')
+#     # plt.tight_layout()
+#     plt.show()
+# root.update()
+
+# for i,file in enumerate(filenames):
+#     dat = LoadData.ImportABF(file)
+#     fig1 = plt.figure(1, figsize=(8, 4))
+#     ax_part1 = fig1.add_subplot(2, 1, 1)
+#
+#     t = np.arange(len(dat['i1']))/dat['samplerate']
+#     # ax_part1.plot(t, dat['i1'] * 1e9)
+#
+#     ax_part1.set_ylabel('Ionic Current (nA)')
+#
+#     current_array = np.array(dat['i1'] * 1e9)
+#     ax_part1.plot(t, current_array)
+#
+#     voltage_array = np.array(len(dat['v1']))
+#
+#     conductance_array = (current_array/voltage_array)
+#     print(np.mean(conductance_array))
+#
+# # # ax_part1.set_xlim(0, 50)
+# # # ax_part1.set_ylim(-5, 5)
 #     fig2 = plt.figure(1, figsize=(8, 4))
 #     ax_part2 = fig1.add_subplot(2, 1, 2, sharex=ax_part1)
 #     t = np.arange(len(dat['v1']))/dat['samplerate']
 #     ax_part2.plot(t, dat['v1']*1e3)
-# ax_part2.set_xlabel('Time (s)')
-# ax_part2.set_ylabel('Voltage (mV)')
-# # # ax_part2.set_xlim(0, 50)
-# # # ax_part2.set_ylim(-60, 60)
+#     ax_part2.set_xlabel('Time (s)')
+#     ax_part2.set_ylabel('Voltage (mV)')
+# # ax_part2.set_xlim(0, 50)      §
+# # ax_part2.set_ylim(-60, 60)
+
+# plt.show()
+
+# # 6  Plot: Conductance - Time and Histogram-counts (sideways)
+#
+# for i,file in enumerate(filenames):
+#     dat = LoadData.OpenFile(file)
+#     fig1 = plt.figure(1, figsize=(8, 4))
+#     ax_part1 = fig1.add_subplot(1,1,1)
+#     t = np.arange(len(dat['i1']))/dat['samplerate']
+#     v = np.arange(len(dat['v1']))/dat['samplerate']
+#     G = (dat['i1'] * 1e9/ v )
+#     ax_part1.plot(t, G)
+#
+#
+#     fig2 = plt.figure(1, figsize=(1, 1))
+#     ax_part2 = fig1.add_subplot(1,2,2, sharey=ax_part1)
+#     current_array = np.array(dat['i1']*1e9)
+#     ax_part2 = sns.distplot(current_array, color="r",bins = 2000,  norm_hist = True, vertical = True) #bins = 3000,
+#     # ax_part2 = sns.kdeplot(current_array, color="r",  shade=True, vertical=True, kernel='gau') #bins = 3000,
+#
+#
+#     ax_part1.set_xlabel('Time (s)')
+#     ax_part1.set_ylabel('Conductance (nS)')
+#     # ax_part1.set_ylim(0, 1)
+#     # ax_part1.set_xlim(0, 11.8)
+#     # ax_part2.set_xlabel('Counts')
+#     # plt.tight_layout()
+#
 # plt.show()
 
 
-# 4  Plot: Current-time (top) and Histogram-counts (sideways)
-for i,file in enumerate(filenames):
-    dat = LoadData.OpenFile(file)
-    fig1 = plt.figure(1, figsize=(8, 4))
-    ax_part1 = fig1.add_subplot(1,2,1)
-    t = np.arange(len(dat['i1']))/dat['samplerate']
-    ax_part1.plot(t, dat['i1'] * 1e9)
-
-
-    fig2 = plt.figure(1, figsize=(1, 1))
-    ax_part2 = fig1.add_subplot(1,2,2, sharey=ax_part1)
-    current_array = np.array(dat['i1']*1e9)
-    ax_part2 = sns.distplot(current_array, color="r",  norm_hist = True, vertical = True)
-
-
-    ax_part1.set_xlabel('Time (s)')
-    ax_part1.set_ylabel('Ionic Current (nA)')
-    # ax_part1.set_ylim(0, 1)
-    ax_part2.set_xlabel('Counts')
-    plt.tight_layout()
-    plt.show()
-#
-
-
-
-
-
+# --------------------------------------------------------------------------------------
 # import os.path, time
 #
 # print("last modified: %s" % time.ctime(os.path.getmtime(file)))

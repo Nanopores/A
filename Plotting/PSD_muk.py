@@ -102,7 +102,3 @@ plt.show()
 
 # fig.savefig(directory + os.sep + filename + '_PSD.pdf', transparent=True)
 # fig.savefig(directory + os.sep + filename + '_PSD.png', dpi=300)
-
-# Plotting ideas for the manuscript
-#  Coefficients (Probability density coefficients across 10 devices)
-#  Noise comparison monolayer vs bilayer, Michal vs Yanfei samples?

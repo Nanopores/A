@@ -20,12 +20,12 @@ timeInSec = EngFormatter(unit='s', places=2)
 Amp = EngFormatter(unit='A', places=2)
 
 #Default parameters
-extension = '*.log'
+extension = '*.dat'
 coefficients = {'a': 0.999,
                 'E': 0,
                 'S': 5,
-                'maxEventLength': 200e-3,  # maximal event length to be considered an event
-                'minEventLength': 600e-6,  # maximal event length to be considered an impulse
+                'maxEventLength': 500e-3,  # maximal event length to be considered an event
+                'minEventLength': 100e-6,  # maximal event length to be considered an impulse
                 'fitLength': 3e-3,  # minimal event length to be fitted for impulses
                 'dt': 25,  # go back dt points for fitting of impulses
                 'hbook': 1,
@@ -478,7 +478,7 @@ if __name__ == '__main__':
 
     if os.path.isdir(inputData):
         print('extension is: ' + extension +'\nStarting.... \n')
-        TranslocationEvents = batcheventdetection(inputData, extension, newcoefficients=coefficients, force=args.force, cut=args.cut)
+        TranslocationEvents = batcheventdetection(inputData, extension, coefficients, forceRun=args.force, CutTraces=args.cut)
     else:
         print('Starting.... \n')
         TranslocationEvents = eventdetection(inputData,coefficients, args.cut)

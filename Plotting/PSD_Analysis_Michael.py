@@ -1,17 +1,15 @@
 
 # -*- coding: utf-8 -*-
 from sys import platform as sys_pf
-if sys_pf == 'darwin':
-    import matplotlib
-    matplotlib.use("TkAgg")
-
+import matplotlib
+import platform
+if platform.system() == 'Darwin':
+    matplotlib.use('QT5Agg')
 import numpy as np
 import scipy
 from scipy.optimize import curve_fit
-
 import scipy.signal as sig
 from ObsoleteFunctions import UsefulFunctions as uf
-import pyqtgraph as pg
 import os
 import matplotlib.pyplot as plt
 import matplotlib
@@ -38,11 +36,11 @@ filenames = askopenfilenames() # show an "Open" dialog box and return the path t
 root.update()
 
 def func(x, alpha, beta):
-    return beta * x**(-alpha) #beta is I2A, x is f
+    return beta * x**(-alpha) #beta is I2A, x is freq
 
 
 for i,file in enumerate(filenames):
-    dat = uf.OpenFile(file)
+    dat = ld.OpenFile(file)
     filename = str(os.path.split(file)[1][:-4])
     os.chdir(os.path.dirname(file))
     directory = (str(os.path.split(file)[0]) + os.sep + 'PSD' + '_SavedImages')
@@ -68,24 +66,24 @@ ax.set_ylabel(r'PSD ($\frac{pA^2}{Hz}$)')
 ax.set_yscale('log')
 ax.set_xscale('log')
 ax.legend()
-plt.show()
+
 
 # fig.savefig(directory + os.sep + filename + '_PSD.pdf', transparent=True)
 # fig.savefig(directory + os.sep + filename + '_PSD.png', dpi=300)
-
+# plt.show()
 
 
 #########################################
 ##### Curve fitting #####################
 #########################################
-# print(np.shape(f))
+print(np.shape(f))
 
-# x_data = f[2:50]
-# y_data = Pxx*1e24
-# y_data = y_data[2:50]
-# popt, pcov = curve_fit(func, x_data, y_data)
-# y_fit = func(x_data, *popt)
-# ax.plot(x_data, y_fit)
-# print(popt)
-# plt.show()
+x_data = f[2:50]
+y_data = Pxx*1e24
+y_data = y_data[2:50]
+popt, pcov = curve_fit(func, x_data, y_data)
+y_fit = func(x_data, *popt)
+ax.plot(x_data, y_fit)
+print(popt)
+plt.show()
 
