@@ -44,7 +44,7 @@ expname = 'All'
 Parameters = {
   'Type': 'Nanopore',  # Nanopore, Nanocapillary, NanocapillaryShrunken
   'reversePolarity':  0,
-  'specificConductance': 21,  # 10.5 S/m for 1M KCl
+  'specificConductance': 26.7,  # 10.5 S/m for 1M KCl, 26.27 for 3MKCl,
   'delay': 5,  # seconds for reading current
    # Nanopore
   'poreLength':  1e-9,
