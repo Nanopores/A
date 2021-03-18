@@ -102,3 +102,64 @@ plt.show()
 
 # fig.savefig(directory + os.sep + filename + '_PSD.pdf', transparent=True)
 # fig.savefig(directory + os.sep + filename + '_PSD.png', dpi=300)
+
+import numpy as np
+import scipy
+from scipy import signal
+import scipy.signal as sig
+import scipy.signal as sig
+import Functions as uf
+import LoadData
+import os
+import matplotlib
+import matplotlib.pyplot as plt
+import platform
+
+if platform.system() == 'Darwin':
+    matplotlib.use('MacOSX')
+
+from tkinter import Tk
+from tkinter.filedialog import askopenfilenames
+from matplotlib.font_manager import FontProperties
+
+fontP = FontProperties()
+fontP.set_size('small')
+props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
+from matplotlib.ticker import EngFormatter
+
+root = Tk()
+root.withdraw()
+
+#file = '/Volumes/lben/lben-commun/2018 User Data/Michael/Axopatch/20181003/NIPm10_5nm_1MKCl_pH75_Noise_100kHz_0mV_1.dat'
+filenames = askopenfilenames() # show an "Open" dialog box and return the path to the selected file
+
+
+root.update()
+
+### For normalizing the traces to zero:
+
+for i,file in enumerate(filenames):
+    fig = plt.figure(1, figsize=(10, 8))
+    ax = fig.add_subplot(111)
+    dat = LoadData.OpenFile(file)
+
+    filename = str(os.path.split(file)[1][:-4])
+    os.chdir(os.path.dirname(file))
+    directory = (str(os.path.split(file)[0]) + os.sep + 'PSD' + '_SavedImages')
+
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    current_array = np.array(dat['i1'] * 1e9)
+    current_mean = np.mean(current_array)
+    current_array_normalized = current_array - current_mean
+
+    #
+    # print (len(current_array))
+    # print ((current_mean))
+    # print (len(current_array_normalized))
+
+ax.plot(current_array_normalized)
+
